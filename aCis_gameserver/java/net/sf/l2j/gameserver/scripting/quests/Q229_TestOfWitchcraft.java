@@ -1,5 +1,6 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -264,7 +265,7 @@ public class Q229_TestOfWitchcraft extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.KNIGHT && player.getClassId() != ClassId.HUMAN_WIZARD && player.getClassId() != ClassId.PALUS_KNIGHT)
 					htmltext = "30630-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30630-02.htm";
 				else
 					htmltext = (player.getClassId() == ClassId.HUMAN_WIZARD) ? "30630-03.htm" : "30630-05.htm";
@@ -512,7 +513,7 @@ public class Q229_TestOfWitchcraft extends SecondClassQuest
 				}
 				else if (npc == _drevanulPrinceZeruel_Evert && cond == 9 && npc.isScriptValue(0))
 				{
-					if (st.getItemEquipped(7) == SWORD_OF_BINDING)
+					if (st.getItemIdFrom(Paperdoll.RHAND) == SWORD_OF_BINDING)
 					{
 						npc.setScriptValue(player.getObjectId());
 						npc.broadcastNpcSay("That sword is really...!");

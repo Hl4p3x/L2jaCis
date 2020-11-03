@@ -6,7 +6,8 @@ import java.sql.ResultSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.commons.pool.ConnectionPool;
+
 import net.sf.l2j.gameserver.communitybbs.BB.Forum;
 
 public class ForumsBBSManager extends BaseBBSManager
@@ -19,7 +20,7 @@ public class ForumsBBSManager extends BaseBBSManager
 	
 	protected ForumsBBSManager()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_FORUMS))
 		{
 			try (ResultSet rs = ps.executeQuery())

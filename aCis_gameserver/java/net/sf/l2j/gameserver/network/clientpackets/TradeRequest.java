@@ -4,7 +4,6 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SendTradeRequest;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -69,21 +68,19 @@ public final class TradeRequest extends L2GameClientPacket
 		
 		if (target.isProcessingRequest() || target.isProcessingTransaction())
 		{
-			SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.S1_IS_BUSY_TRY_LATER).addCharName(target);
-			player.sendPacket(sm);
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IS_BUSY_TRY_LATER).addCharName(target));
 			return;
 		}
 		
-		if (target.getTradeRefusal())
+		if (target.getBlockList().isBlockingAll())
 		{
-			player.sendMessage("Your target is in trade refusal mode.");
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addCharName(target));
 			return;
 		}
 		
-		if (BlockList.isBlocked(target, player))
+		if (target.getBlockList().isInBlockList(player))
 		{
-			SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_ADDED_YOU_TO_IGNORE_LIST).addCharName(target);
-			player.sendPacket(sm);
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_ADDED_YOU_TO_IGNORE_LIST).addCharName(target));
 			return;
 		}
 		

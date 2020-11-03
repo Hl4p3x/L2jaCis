@@ -3,15 +3,12 @@ package net.sf.l2j.gameserver.scripting.scripts.ai.group;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.enums.CabalType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 
@@ -179,14 +176,14 @@ public class CabalBuffers extends L2AttackableAIScript
 						if (i1 < 1)
 							npc.broadcastNpcSay((!player.isMageClass()) ? PREACHER_OF_DOOM_CAST_CHAT[0] : PREACHER_OF_DOOM_CAST_CHAT[2], player.getName());
 						
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(skillId, 1), false, false), null);
+						npc.getAI().tryToCast(player, skillId, 1);
 					}
 					else if (i0 < 5)
 					{
 						if (i1 < 500)
 							npc.broadcastNpcSay((!player.isMageClass()) ? PREACHER_OF_DOOM_CAST_CHAT[1] : PREACHER_OF_DOOM_CAST_CHAT[3], player.getName());
 						
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(skillId, 2), false, false), null);
+						npc.getAI().tryToCast(player, skillId, 2);
 					}
 				}
 			}
@@ -201,14 +198,14 @@ public class CabalBuffers extends L2AttackableAIScript
 						if (i1 < 1)
 							npc.broadcastNpcSay((!player.isMageClass()) ? ORATOR_OF_REVELATIONS_CAST_CHAT[0] : ORATOR_OF_REVELATIONS_CAST_CHAT[2], player.getName());
 						
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(skillId, 1), false, false), null);
+						npc.getAI().tryToCast(player, skillId, 1);
 					}
 					else if (i0 < 5)
 					{
 						if (i1 < 500)
 							npc.broadcastNpcSay((!player.isMageClass()) ? ORATOR_OF_REVELATIONS_CAST_CHAT[1] : ORATOR_OF_REVELATIONS_CAST_CHAT[3], player.getName());
 						
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(skillId, 2), false, false), null);
+						npc.getAI().tryToCast(player, skillId, 2);
 					}
 				}
 			}

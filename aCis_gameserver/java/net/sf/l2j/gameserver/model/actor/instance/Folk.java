@@ -2,14 +2,11 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.List;
 
-import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.xml.SkillTreeData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.AcquireSkillType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.holder.skillnode.EnchantSkillNode;
 import net.sf.l2j.gameserver.model.holder.skillnode.GeneralSkillNode;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -86,7 +83,7 @@ public class Folk extends Npc
 			return;
 		}
 		
-		if (player.getClassId().level() < 3)
+		if (player.getClassId().getLevel() < 3)
 		{
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setHtml("<html><body> You must have 3rd class change quest completed.</body></html>");
@@ -99,7 +96,7 @@ public class Folk extends Npc
 		{
 			player.sendPacket(SystemMessageId.THERE_IS_NO_SKILL_THAT_ENABLES_ENCHANT);
 			
-			if (player.getLevel() < 74)
+			if (player.getStatus().getLevel() < 74)
 				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.DO_NOT_HAVE_FURTHER_SKILLS_TO_LEARN_S1).addNumber(74));
 			else
 				player.sendPacket(SystemMessageId.NO_MORE_SKILLS_TO_LEARN);
@@ -112,27 +109,6 @@ public class Folk extends Npc
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
 	
-	public void giveBlessingSupport(Player player)
-	{
-		if (player == null)
-			return;
-		
-		// Select the player
-		setTarget(player);
-		
-		// If the player is too high level, display a message and return
-		if (player.getLevel() > 39 || player.getClassId().level() >= 2)
-		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setHtml("<html><body>Newbie Guide:<br>I'm sorry, but you are not eligible to receive the protection blessing.<br1>It can only be bestowed on <font color=\"LEVEL\">characters below level 39 who have not made a seccond transfer.</font></body></html>");
-			html.replace("%objectId%", getObjectId());
-			player.sendPacket(html);
-			return;
-		}
-		
-		getAI().tryTo(IntentionType.CAST, new SkillUseHolder(this, player, FrequentSkill.BLESSING_OF_PROTECTION.getSkill(), false, false), null);
-	}
-	
 	@Override
 	public void onBypassFeedback(Player player, String command)
 	{
@@ -140,8 +116,6 @@ public class Folk extends Npc
 			showSkillList(player);
 		else if (command.startsWith("EnchantSkillList"))
 			showEnchantSkillList(player);
-		else if (command.startsWith("GiveBlessing"))
-			giveBlessingSupport(player);
 		else
 			super.onBypassFeedback(player, command);
 	}

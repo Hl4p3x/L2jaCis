@@ -20,7 +20,7 @@ public class ConditionTargetHpMinMax extends Condition
 		if (effected == null)
 			return false;
 		
-		final int currentHp = (int) effected.getCurrentHp() * 100 / effected.getMaxHp();
+		final double currentHp = effected.getStatus().getHpRatio() * 100;
 		return currentHp >= _minHp && currentHp <= _maxHp;
 	}
 }

@@ -59,7 +59,7 @@ public class Q317_CatchTheWind extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 18) ? "30361-02.htm" : "30361-03.htm";
+				htmltext = (player.getStatus().getLevel() < 18) ? "30361-02.htm" : "30361-03.htm";
 				break;
 			
 			case STATE_STARTED:

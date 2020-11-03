@@ -50,7 +50,7 @@ public class OverhitState
 		}
 		
 		// Calculate the over-hit damage.
-		final double overhitDamage = ((_owner.getCurrentHp() - damage) * (-1));
+		final double overhitDamage = ((_owner.getStatus().getHp() - damage) * (-1));
 		
 		// Not enough damage to kill the Monster.
 		if (overhitDamage < 0)
@@ -82,7 +82,7 @@ public class OverhitState
 	public long calculateOverhitExp(long normalExp)
 	{
 		// Get the percentage based on the total of extra (over-hit) damage done relative to the total (maximum) amount of HP.
-		double overhitPercentage = ((_overhitDamage * 100) / _owner.getMaxHp());
+		double overhitPercentage = ((_overhitDamage * 100) / _owner.getStatus().getMaxHp());
 		
 		// Over-hit damage percentages are limited to 25% max.
 		if (overhitPercentage > 25)

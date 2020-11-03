@@ -86,7 +86,7 @@ public class Q661_MakingTheHarvestGroundsSafe extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 21) ? "30210-01a.htm" : "30210-01.htm";
+				htmltext = (player.getStatus().getLevel() < 21) ? "30210-01a.htm" : "30210-01.htm";
 				break;
 			
 			case STATE_STARTED:

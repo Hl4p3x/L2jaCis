@@ -63,7 +63,7 @@ public class Q660_AidingTheFloranVillage extends Quest
 		}
 		else if (event.equalsIgnoreCase("30291-02.htm"))
 		{
-			if (player.getLevel() < 30)
+			if (player.getStatus().getLevel() < 30)
 				htmltext = "30291-02a.htm";
 			else
 			{
@@ -170,7 +170,7 @@ public class Q660_AidingTheFloranVillage extends Quest
 				switch (npc.getNpcId())
 				{
 					case MARIA:
-						htmltext = (player.getLevel() < 30) ? "30608-01.htm" : "30608-02.htm";
+						htmltext = (player.getStatus().getLevel() < 30) ? "30608-01.htm" : "30608-02.htm";
 						break;
 					
 					case ALEX:

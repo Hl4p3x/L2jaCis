@@ -87,7 +87,7 @@ public class Q296_TarantulasSpiderSilk extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30519-01.htm" : "30519-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30519-01.htm" : "30519-02.htm";
 				break;
 			
 			case STATE_STARTED:

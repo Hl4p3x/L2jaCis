@@ -60,7 +60,7 @@ public class Q414_PathToAnOrcRaider extends Quest
 		{
 			if (player.getClassId() != ClassId.ORC_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.ORC_RAIDER) ? "30570-02a.htm" : "30570-03.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30570-02.htm";
 			else if (st.hasQuestItems(MARK_OF_RAIDER))
 				htmltext = "30570-04.htm";

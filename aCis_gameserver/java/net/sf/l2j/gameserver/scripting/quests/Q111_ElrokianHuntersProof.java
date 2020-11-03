@@ -111,7 +111,7 @@ public class Q111_ElrokianHuntersProof extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 75) ? "32113-000.htm" : "32113-001.htm";
+				htmltext = (player.getStatus().getLevel() < 75) ? "32113-000.htm" : "32113-001.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -1,6 +1,7 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Folk;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
@@ -84,7 +85,7 @@ public final class SendWarehouseWithdrawList extends L2GameClientPacket
 		if (!Config.KARMA_PLAYER_CAN_USE_WH && player.getKarma() > 0)
 			return;
 		
-		if (Config.ALT_MEMBERS_CAN_WITHDRAW_FROM_CLANWH)
+		if (Config.MEMBERS_CAN_WITHDRAW_FROM_CLANWH)
 		{
 			if (warehouse instanceof ClanWarehouse && !player.hasClanPrivileges(Clan.CP_CL_VIEW_WAREHOUSE))
 				return;
@@ -154,7 +155,7 @@ public final class SendWarehouseWithdrawList extends L2GameClientPacket
 		
 		// Update current load status on player
 		StatusUpdate su = new StatusUpdate(player);
-		su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
 		player.sendPacket(su);
 	}
 }

@@ -128,13 +128,10 @@ public class RaidbossInfo extends Quest
 		
 		if (StringUtil.isDigit(event))
 		{
-			int rbid = Integer.parseInt(event);
+			final Location loc = RADARS.get(Integer.parseInt(event));
+			if (loc != null)
+				st.addRadar(loc);
 			
-			if (RADARS.containsKey(rbid))
-			{
-				Location loc = RADARS.get(rbid);
-				st.addRadar(loc.getX(), loc.getY(), loc.getZ());
-			}
 			st.exitQuest(true);
 			return null;
 		}

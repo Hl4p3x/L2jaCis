@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -35,6 +34,6 @@ public final class RequestPetGetItem extends L2GameClientPacket
 			return;
 		}
 		
-		pet.getAI().tryTo(IntentionType.PICK_UP, item, false);
+		pet.getAI().tryToPickUp(_objectId, false);
 	}
 }

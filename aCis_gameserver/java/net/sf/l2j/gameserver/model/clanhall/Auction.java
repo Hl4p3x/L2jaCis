@@ -7,11 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -77,7 +77,7 @@ public class Auction
 			_seller = new Seller(sellerName, sellerClanName, sellerBid);
 		
 		// Load Bidders.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_BIDDERS))
 		{
 			ps.setInt(1, ch.getId());
@@ -150,7 +150,7 @@ public class Auction
 		{
 			_endDate = currentTime + 604800000; // 1 week
 			
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_DATE))
 			{
 				ps.setLong(1, _endDate);
@@ -237,7 +237,7 @@ public class Auction
 		clan.setAuctionBiddedAt(_ch.getId());
 		
 		// Save the bidder on database.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_OR_UPDATE_BIDDER))
 		{
 			ps.setInt(1, _ch.getId());
@@ -305,7 +305,7 @@ public class Auction
 	 */
 	public void removeBids(Clan newOwner)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_BIDDERS))
 		{
 			ps.setInt(1, _ch.getId());
@@ -384,7 +384,7 @@ public class Auction
 		if (clan == null)
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_BIDDER))
 		{
 			ps.setInt(1, _ch.getId());
@@ -433,7 +433,7 @@ public class Auction
 		if (_seller == null)
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_SELLER))
 		{
 			ps.setInt(1, _seller.getBid());

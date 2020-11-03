@@ -65,7 +65,7 @@ public class Q324_SweetestVenom extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 18) ? "30351-02.htm" : "30351-03.htm";
+				htmltext = (player.getStatus().getLevel() < 18) ? "30351-02.htm" : "30351-03.htm";
 				break;
 			
 			case STATE_STARTED:

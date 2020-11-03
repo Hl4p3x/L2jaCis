@@ -36,19 +36,19 @@ public class CharSelected extends L2GameServerPacket
 		writeD(_player.getX());
 		writeD(_player.getY());
 		writeD(_player.getZ());
-		writeF(_player.getCurrentHp());
-		writeF(_player.getCurrentMp());
-		writeD(_player.getSp());
-		writeQ(_player.getExp());
-		writeD(_player.getLevel());
+		writeF(_player.getStatus().getHp());
+		writeF(_player.getStatus().getMp());
+		writeD(_player.getStatus().getSp());
+		writeQ(_player.getStatus().getExp());
+		writeD(_player.getStatus().getLevel());
 		writeD(_player.getKarma());
 		writeD(_player.getPkKills());
-		writeD(_player.getINT());
-		writeD(_player.getSTR());
-		writeD(_player.getCON());
-		writeD(_player.getMEN());
-		writeD(_player.getDEX());
-		writeD(_player.getWIT());
+		writeD(_player.getStatus().getINT());
+		writeD(_player.getStatus().getSTR());
+		writeD(_player.getStatus().getCON());
+		writeD(_player.getStatus().getMEN());
+		writeD(_player.getStatus().getDEX());
+		writeD(_player.getStatus().getWIT());
 		
 		for (int i = 0; i < 30; i++)
 		{

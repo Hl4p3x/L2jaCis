@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import java.util.logging.Level;
-
 import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -27,27 +25,20 @@ public class L2SkillAppearance extends L2Skill
 	@Override
 	public void useSkill(Creature caster, WorldObject[] targets)
 	{
-		try
+		for (WorldObject target : targets)
 		{
-			for (WorldObject target : targets)
+			if (target instanceof Player)
 			{
-				if (target instanceof Player)
-				{
-					Player targetPlayer = (Player) target;
-					if (_faceId >= 0)
-						targetPlayer.getAppearance().setFace(_faceId);
-					if (_hairColorId >= 0)
-						targetPlayer.getAppearance().setHairColor(_hairColorId);
-					if (_hairStyleId >= 0)
-						targetPlayer.getAppearance().setHairStyle(_hairStyleId);
-					
-					targetPlayer.broadcastUserInfo();
-				}
+				final Player targetPlayer = (Player) target;
+				if (_faceId >= 0)
+					targetPlayer.getAppearance().setFace(_faceId);
+				if (_hairColorId >= 0)
+					targetPlayer.getAppearance().setHairColor(_hairColorId);
+				if (_hairStyleId >= 0)
+					targetPlayer.getAppearance().setHairStyle(_hairStyleId);
+				
+				targetPlayer.broadcastUserInfo();
 			}
-		}
-		catch (Exception e)
-		{
-			_log.log(Level.SEVERE, "", e);
 		}
 	}
 }

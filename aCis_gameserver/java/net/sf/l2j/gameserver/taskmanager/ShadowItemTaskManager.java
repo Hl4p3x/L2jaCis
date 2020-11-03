@@ -5,8 +5,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
@@ -51,7 +52,7 @@ public class ShadowItemTaskManager implements Runnable, OnEquipListener
 			if (mana == -1)
 			{
 				// Remove item first.
-				player.getInventory().unEquipItemInSlotAndRecord(item.getLocationSlot());
+				player.getInventory().unequipItemInSlotAndRecord(item.getLocationSlot());
 				InventoryUpdate iu = new InventoryUpdate();
 				iu.addModifiedItem(item);
 				player.sendPacket(iu);
@@ -83,7 +84,7 @@ public class ShadowItemTaskManager implements Runnable, OnEquipListener
 	}
 	
 	@Override
-	public final void onEquip(int slot, ItemInstance item, Playable playable)
+	public final void onEquip(Paperdoll slot, ItemInstance item, Playable playable)
 	{
 		// Must be a shadow item.
 		if (!item.isShadowItem())
@@ -97,7 +98,7 @@ public class ShadowItemTaskManager implements Runnable, OnEquipListener
 	}
 	
 	@Override
-	public final void onUnequip(int slot, ItemInstance item, Playable actor)
+	public final void onUnequip(Paperdoll slot, ItemInstance item, Playable actor)
 	{
 		// Must be a shadow item.
 		if (!item.isShadowItem())

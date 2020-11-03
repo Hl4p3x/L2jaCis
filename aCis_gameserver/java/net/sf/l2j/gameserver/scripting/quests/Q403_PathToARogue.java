@@ -2,11 +2,11 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
@@ -56,7 +56,7 @@ public class Q403_PathToARogue extends Quest
 		{
 			if (player.getClassId() != ClassId.HUMAN_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.ROGUE) ? "30379-02a.htm" : "30379-02.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30379-02.htm";
 			else if (st.hasQuestItems(BEZIQUE_RECOMMENDATION))
 				htmltext = "30379-04.htm";
@@ -161,7 +161,7 @@ public class Q403_PathToARogue extends Quest
 		if (st == null)
 			return null;
 		
-		final int equippedItemId = st.getItemEquipped(Inventory.PAPERDOLL_RHAND);
+		final int equippedItemId = st.getItemIdFrom(Paperdoll.RHAND);
 		if (equippedItemId != NETI_BOW && equippedItemId != NETI_DAGGER)
 			return null;
 		

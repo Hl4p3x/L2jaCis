@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.model.actor.Player;
 
 /**
@@ -32,7 +32,7 @@ public class RaidPointManager
 	
 	public RaidPointManager()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_DATA);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -81,7 +81,7 @@ public class RaidPointManager
 		}
 		playerData.merge(bossId, points, Integer::sum);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_DATA))
 		{
 			ps.setInt(1, objectId);
@@ -115,7 +115,7 @@ public class RaidPointManager
 	{
 		_entries.clear();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_DATA))
 		{
 			ps.executeUpdate();

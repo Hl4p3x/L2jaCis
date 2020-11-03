@@ -165,7 +165,7 @@ public class Q330_AdeptOfTaste extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 24) ? "30469-01.htm" : "30469-02.htm";
+				htmltext = (player.getStatus().getLevel() < 24) ? "30469-01.htm" : "30469-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -513,7 +513,7 @@
 	<skill id="4343" levels="3" name="Clan Hall: Decrease Weight">
 		<table name="#mpConsume"> 50 0 100 </table>
 		<table name="#stackOrder"> 1 2 3 </table>
-		<table name="#Weight"> 3000 6000 9000 </table>
+		<table name="#weightPenalty"> 3000 6000 9000 </table>
 		<table name="#sMagicLevel"> 35 44 52 </table>
 		<set name="mpConsume" val="#mpConsume"/>
 		<set name="magicLvl" val="#sMagicLevel" />
@@ -525,7 +525,7 @@
 		<set name="effectRange" val="900"/>
 		<for>
 			<effect name="Buff" time="1200" val="0" stackOrder="#stackOrder" stackType="decrease_weight_penalty">
-				<add stat="maxLoad" val="#Weight"/>
+				<add stat="weightPenalty" val="#weightPenalty"/>
 			</effect>
 		</for>
 	</skill>
@@ -936,7 +936,7 @@
 		<set name="canBeDispeled" val="false" />
 		<for>
 			<effect name="Buff" time="1200" val="0" stackOrder="#stackOrder" stackType="ssq_town_blessing">
-				<mul stat="maxLoad" val="1.25"/>
+				<mul stat="weightLimit" val="1.25"/>
 				<addMul stat="poisonVuln" val="25" />
 				<addMul stat="bleedVuln" val="25" />
 				<addMul stat="rootVuln" val="#additionalVulns" />
@@ -976,7 +976,7 @@
 		<set name="canBeDispeled" val="false" />
 		<for>
 			<effect name="Buff" time="1200" val="0" stackOrder="1" stackType="decrease_weight_penalty">
-				<mul stat="maxLoad" val="1.25"/>
+				<mul stat="weightLimit" val="1.25"/>
 				<addMul stat="poisonVuln" val="25" />
 				<addMul stat="bleedVuln" val="25" />
 			</effect>

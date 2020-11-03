@@ -12,21 +12,25 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.CastleManorManager;
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
+import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.enums.SealType;
+import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.enums.SpawnType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.actor.instance.ControlTower;
 import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.HolyThing;
+import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.item.MercenaryTicket;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.location.Location;
@@ -56,6 +60,8 @@ public class Castle
 	
 	private static final String DELETE_OWNER = "UPDATE clan_data SET hasCastle=0 WHERE hasCastle=?";
 	private static final String UPDATE_OWNER = "UPDATE clan_data SET hasCastle=? WHERE clan_id=?";
+	
+	private static final String LOAD_GUARDS = "SELECT npcId,x,y,z,heading,respawnDelay FROM castle_siege_guards WHERE castleId=?";
 	
 	private static final String LOAD_TRAPS = "SELECT * FROM castle_trapupgrade WHERE castleId=?";
 	private static final String UPDATE_TRAP = "REPLACE INTO castle_trapupgrade (castleId, towerIndex, level) values (?,?,?)";
@@ -137,10 +143,10 @@ public class Castle
 		if (!isGoodArtifact(target))
 			return;
 		
-		setOwner(clan);
-		
 		// "Clan X engraved the ruler" message.
-		getSiege().announceToPlayers(SystemMessage.getSystemMessage(SystemMessageId.CLAN_S1_ENGRAVED_RULER).addString(clan.getName()), true);
+		getSiege().announce(SystemMessage.getSystemMessage(SystemMessageId.CLAN_S1_ENGRAVED_RULER).addString(clan.getName()), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
+		
+		setOwner(clan);
 	}
 	
 	/**
@@ -205,7 +211,7 @@ public class Castle
 				_treasury += amount;
 		}
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_TREASURY))
 		{
 			ps.setLong(1, _treasury);
@@ -225,17 +231,6 @@ public class Castle
 	public void banishForeigners()
 	{
 		getCastleZone().banishForeigners(_ownerId);
-	}
-	
-	/**
-	 * @param x
-	 * @param y
-	 * @param z
-	 * @return true if object is inside the zone
-	 */
-	public boolean checkIfInZone(int x, int y, int z)
-	{
-		return getSiegeZone().isInsideZone(x, y, z);
 	}
 	
 	public SiegeZone getSiegeZone()
@@ -264,17 +259,17 @@ public class Castle
 	}
 	
 	/**
-	 * Set (and optionally save on database) left certificates count.
-	 * @param leftCertificates : the count to save.
-	 * @param save : true means we store it on database. Basically setted to false on server startup.
+	 * Set (and optionally save on database) left certificates amount.
+	 * @param leftCertificates : The amount to save.
+	 * @param storeInDb : If true, we store it on database. Basically set to false on server startup.
 	 */
-	public void setLeftCertificates(int leftCertificates, boolean save)
+	public void setLeftCertificates(int leftCertificates, boolean storeInDb)
 	{
 		_leftCertificates = leftCertificates;
 		
-		if (save)
+		if (storeInDb)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_CERTIFICATES))
 			{
 				ps.setInt(1, leftCertificates);
@@ -354,12 +349,7 @@ public class Castle
 		
 		// If siege is in progress, mid victory phase of siege.
 		if (getSiege().isInProgress())
-		{
 			getSiege().midVictory();
-			
-			// "There is a new castle Lord" message when the castle change of hands. Message sent for both sides.
-			getSiege().announceToPlayers(SystemMessage.getSystemMessage(SystemMessageId.NEW_CASTLE_LORD), true);
-		}
 	}
 	
 	/**
@@ -389,7 +379,13 @@ public class Castle
 		
 		// Unspawn Mercenaries, if any.
 		for (Npc npc : _siegeGuards)
+		{
+			final Spawn spawn = npc.getSpawn();
+			if (spawn != null)
+				spawn.setRespawnState(false);
+			
 			npc.doDie(npc);
+		}
 		
 		// Clear the List.
 		_siegeGuards.clear();
@@ -441,7 +437,7 @@ public class Castle
 		
 		if (save)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_TAX))
 			{
 				ps.setInt(1, taxPercent);
@@ -467,8 +463,7 @@ public class Castle
 				door.doRevive();
 			
 			door.closeMe();
-			door.setCurrentHp((isDoorWeak) ? door.getMaxHp() / 2 : door.getMaxHp());
-			door.broadcastStatusUpdate();
+			door.getStatus().setHp((isDoorWeak) ? door.getStatus().getMaxHp() / 2 : door.getStatus().getMaxHp());
 		}
 	}
 	
@@ -493,12 +488,12 @@ public class Castle
 		if (door == null)
 			return;
 		
-		door.getStat().setUpgradeHpRatio(hp);
-		door.setCurrentHp(door.getMaxHp());
+		door.getStatus().setUpgradeHpRatio(hp);
+		door.getStatus().setMaxHp();
 		
 		if (db)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_DOORS))
 			{
 				ps.setInt(1, doorId);
@@ -518,7 +513,7 @@ public class Castle
 	 */
 	public void loadDoorUpgrade()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_DOORS))
 		{
 			ps.setInt(1, _castleId);
@@ -541,9 +536,9 @@ public class Castle
 	public void removeDoorUpgrade()
 	{
 		for (Door door : _doors)
-			door.getStat().setUpgradeHpRatio(1);
+			door.getStatus().setUpgradeHpRatio(1);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_DOOR))
 		{
 			ps.setInt(1, _castleId);
@@ -574,7 +569,7 @@ public class Castle
 			clan.broadcastToOnlineMembers(new PledgeShowInfoUpdate(clan), new PlaySound(1, "Siege_Victory"));
 		}
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_OWNER);
 			PreparedStatement ps2 = con.prepareStatement(UPDATE_OWNER))
 		{
@@ -679,7 +674,11 @@ public class Castle
 					spawn.setLoc(item.getPosition());
 					spawn.setRespawnState(false);
 					
-					_siegeGuards.add(spawn.doSpawn(false));
+					// Spawn the Npc and associate it to this Castle.
+					final Npc guard = spawn.doSpawn(false);
+					guard.setCastle(this);
+					
+					_siegeGuards.add(guard);
 				}
 				catch (Exception e)
 				{
@@ -695,7 +694,54 @@ public class Castle
 		}
 		else
 		{
-			// TODO Territory based spawn
+			try (Connection con = ConnectionPool.getConnection();
+				PreparedStatement ps = con.prepareStatement(LOAD_GUARDS))
+			{
+				ps.setInt(1, _castleId);
+				
+				try (ResultSet rs = ps.executeQuery())
+				{
+					while (rs.next())
+					{
+						final NpcTemplate template = NpcData.getInstance().getTemplate(rs.getInt("npcId"));
+						if (template == null)
+							continue;
+						
+						final Spawn spawn = new Spawn(template);
+						spawn.setLoc(rs.getInt("x"), rs.getInt("y"), rs.getInt("z"), rs.getInt("heading"));
+						spawn.setRespawnDelay(rs.getInt("respawnDelay"));
+						spawn.setRespawnState(true);
+						
+						double distToTower = Double.MAX_VALUE;
+						ControlTower towerToAdd = null;
+						
+						for (ControlTower tower : _siege.getControlTowers())
+						{
+							final double distance = tower.distance3D(spawn.getLoc());
+							if (distToTower > distance)
+							{
+								distToTower = distance;
+								towerToAdd = tower;
+							}
+						}
+						
+						if (towerToAdd != null)
+						{
+							towerToAdd.addSpawn(spawn);
+							
+							// Spawn the Npc and associate it to this Castle.
+							final Npc guard = spawn.doSpawn(false);
+							guard.setCastle(this);
+							
+							_siegeGuards.add(guard);
+						}
+					}
+				}
+			}
+			catch (Exception e)
+			{
+				LOGGER.error("Couldn't load siege guards.", e);
+			}
 		}
 	}
 	
@@ -704,16 +750,21 @@ public class Castle
 	 */
 	public void despawnSiegeGuardsOrMercenaries()
 	{
-		if (_ownerId > 0)
+		for (Npc npc : _siegeGuards)
 		{
-			for (Npc npc : _siegeGuards)
-				npc.doDie(npc);
+			final Spawn spawn = npc.getSpawn();
+			if (spawn != null)
+				spawn.setRespawnState(false);
 			
-			_siegeGuards.clear();
+			npc.doDie(npc);
 		}
-		else
+		
+		_siegeGuards.clear();
+		
+		if (_ownerId <= 0)
 		{
-			// TODO territory based despawn
+			for (ControlTower tower : _siege.getControlTowers())
+				tower.getSpawns().clear();
 		}
 	}
 	
@@ -729,7 +780,7 @@ public class Castle
 	
 	public void loadTrapUpgrade()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_TRAPS))
 		{
 			ps.setInt(1, _castleId);
@@ -898,7 +949,7 @@ public class Castle
 	{
 		if (save)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_TRAP))
 			{
 				ps.setInt(1, _castleId);
@@ -925,7 +976,7 @@ public class Castle
 		for (TowerSpawnLocation ts : _flameTowers)
 			ts.setUpgradeLevel(0);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_TRAP))
 		{
 			ps.setInt(1, _castleId);
@@ -944,7 +995,7 @@ public class Castle
 			player.checkItemRestriction();
 		else
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_ITEMS_LOC))
 			{
 				ps.setInt(1, _circletId);
@@ -960,7 +1011,7 @@ public class Castle
 	
 	public void checkItemsForClan(Clan clan)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_ITEMS_LOC))
 		{
 			ps.setInt(1, _circletId);

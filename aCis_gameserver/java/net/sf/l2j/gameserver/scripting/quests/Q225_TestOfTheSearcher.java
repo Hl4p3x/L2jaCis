@@ -180,7 +180,7 @@ public class Q225_TestOfTheSearcher extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.ROGUE && player.getClassId() != ClassId.ELVEN_SCOUT && player.getClassId() != ClassId.ASSASSIN && player.getClassId() != ClassId.SCAVENGER)
 					htmltext = "30690-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30690-02.htm";
 				else
 					htmltext = (player.getClassId() == ClassId.SCAVENGER) ? "30690-04.htm" : "30690-03.htm";

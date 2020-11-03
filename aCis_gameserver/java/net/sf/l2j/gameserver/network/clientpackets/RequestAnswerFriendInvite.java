@@ -3,10 +3,12 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.commons.pool.ConnectionPool;
+
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.FriendList;
+import net.sf.l2j.gameserver.network.serverpackets.FriendAddRequestResult;
+import net.sf.l2j.gameserver.network.serverpackets.L2Friend;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public final class RequestAnswerFriendInvite extends L2GameClientPacket
@@ -37,18 +39,18 @@ public final class RequestAnswerFriendInvite extends L2GameClientPacket
 			requestor.sendPacket(SystemMessageId.YOU_HAVE_SUCCEEDED_INVITING_FRIEND);
 			
 			// Player added to your friendlist
+			requestor.sendPacket(FriendAddRequestResult.STATIC_ACCEPT);
 			requestor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_ADDED_TO_FRIENDS).addCharName(player));
 			requestor.getFriendList().add(player.getObjectId());
+			requestor.sendPacket(new L2Friend(player, 1));
 			
 			// has joined as friend.
+			player.sendPacket(FriendAddRequestResult.STATIC_ACCEPT);
 			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_JOINED_AS_FRIEND).addCharName(requestor));
 			player.getFriendList().add(requestor.getObjectId());
+			player.sendPacket(new L2Friend(requestor, 1));
 			
-			// update friendLists *heavy method*
-			requestor.sendPacket(new FriendList(requestor));
-			player.sendPacket(new FriendList(player));
-			
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(ADD_FRIEND))
 			{
 				ps.setInt(1, requestor.getObjectId());
@@ -63,7 +65,7 @@ public final class RequestAnswerFriendInvite extends L2GameClientPacket
 			}
 		}
 		else
-			requestor.sendPacket(SystemMessageId.FAILED_TO_INVITE_A_FRIEND);
+			requestor.sendPacket(FriendAddRequestResult.STATIC_FAIL);
 		
 		player.setActiveRequester(null);
 		requestor.onTransactionResponse();

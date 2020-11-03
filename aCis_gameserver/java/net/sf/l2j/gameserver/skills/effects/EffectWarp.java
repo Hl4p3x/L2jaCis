@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.skills.effects;
 
 import net.sf.l2j.commons.math.MathUtil;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.FlyType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
@@ -56,7 +55,7 @@ public class EffectWarp extends AbstractEffect
 		_z = destiny.getZ();
 		
 		// TODO: check if this AI intention is retail-like.
-		_actor.getAI().tryTo(IntentionType.IDLE, null, null);
+		_actor.getAI().tryToIdle();
 		
 		_actor.broadcastPacket(new FlyToLocation(_actor, _x, _y, _z, FlyType.DUMMY));
 		_actor.getAttack().stop();

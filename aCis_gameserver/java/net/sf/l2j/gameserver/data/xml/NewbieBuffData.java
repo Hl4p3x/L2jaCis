@@ -3,6 +3,7 @@ package net.sf.l2j.gameserver.data.xml;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.util.StatsSet;
@@ -12,7 +13,7 @@ import net.sf.l2j.gameserver.model.holder.NewbieBuffHolder;
 import org.w3c.dom.Document;
 
 /**
- * This class loads and store {@link NewbieBuffHolder} into a List.
+ * This class loads and store {@link NewbieBuffHolder} into a {@link List}.
  */
 public class NewbieBuffData implements IXmlReader
 {
@@ -20,9 +21,6 @@ public class NewbieBuffData implements IXmlReader
 	
 	private int _magicLowestLevel = 100;
 	private int _physicLowestLevel = 100;
-	
-	private int _magicHighestLevel = 1;
-	private int _physicHighestLevel = 1;
 	
 	protected NewbieBuffData()
 	{
@@ -43,63 +41,33 @@ public class NewbieBuffData implements IXmlReader
 		{
 			final StatsSet set = parseAttributes(buffNode);
 			final int lowerLevel = set.getInteger("lowerLevel");
-			final int upperLevel = set.getInteger("upperLevel");
 			if (set.getBool("isMagicClass"))
 			{
 				if (lowerLevel < _magicLowestLevel)
 					_magicLowestLevel = lowerLevel;
-				if (upperLevel > _magicHighestLevel)
-					_magicHighestLevel = upperLevel;
 			}
 			else
 			{
 				if (lowerLevel < _physicLowestLevel)
 					_physicLowestLevel = lowerLevel;
-				if (upperLevel > _physicHighestLevel)
-					_physicHighestLevel = upperLevel;
 			}
 			_buffs.add(new NewbieBuffHolder(set));
 		}));
 	}
 	
 	/**
-	 * @return the Helper Buff List
+	 * @param isAlikeMage : If true, return buffs list associated to mage-alike classes.
+	 * @param level : Filter the list by the given level.
+	 * @return The {@link List} of valid {@link NewbieBuffHolder}s for the given class type and level.
 	 */
-	public List<NewbieBuffHolder> getBuffs()
+	public List<NewbieBuffHolder> getValidBuffs(boolean isAlikeMage, int level)
 	{
-		return _buffs;
+		return _buffs.stream().filter(b -> b.isMagicClassBuff() == isAlikeMage && level >= b.getLowerLevel() && level <= b.getUpperLevel()).collect(Collectors.toList());
 	}
 	
-	/**
-	 * @return Returns the magicHighestLevel.
-	 */
-	public int getMagicHighestLevel()
+	public int getLowestBuffLevel(boolean isMage)
 	{
-		return _magicHighestLevel;
-	}
-	
-	/**
-	 * @return Returns the magicLowestLevel.
-	 */
-	public int getMagicLowestLevel()
-	{
-		return _magicLowestLevel;
-	}
-	
-	/**
-	 * @return Returns the physicHighestLevel.
-	 */
-	public int getPhysicHighestLevel()
-	{
-		return _physicHighestLevel;
-	}
-	
-	/**
-	 * @return Returns the physicLowestLevel.
-	 */
-	public int getPhysicLowestLevel()
-	{
-		return _physicLowestLevel;
+		return (isMage) ? _magicLowestLevel : _physicLowestLevel;
 	}
 	
 	public static NewbieBuffData getInstance()

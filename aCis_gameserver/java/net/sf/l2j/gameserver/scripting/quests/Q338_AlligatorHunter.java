@@ -70,7 +70,7 @@ public class Q338_AlligatorHunter extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 40) ? "30892-00.htm" : "30892-01.htm";
+				htmltext = (player.getStatus().getLevel() < 40) ? "30892-00.htm" : "30892-01.htm";
 				break;
 			
 			case STATE_STARTED:

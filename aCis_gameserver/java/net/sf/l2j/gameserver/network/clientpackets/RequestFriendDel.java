@@ -3,12 +3,13 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.commons.pool.ConnectionPool;
+
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.FriendList;
+import net.sf.l2j.gameserver.network.serverpackets.L2Friend;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public final class RequestFriendDel extends L2GameClientPacket
@@ -33,24 +34,28 @@ public final class RequestFriendDel extends L2GameClientPacket
 		final int targetId = PlayerInfoTable.getInstance().getPlayerObjectId(_targetName);
 		if (targetId == -1 || !player.getFriendList().contains(targetId))
 		{
-			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_NOT_ON_YOUR_FRIENDS_LIST).addString(_targetName));
+			player.sendPacket(SystemMessageId.THE_USER_NOT_IN_FRIENDS_LIST);
 			return;
 		}
 		
-		// Player deleted from your friendlist
-		player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST).addString(_targetName));
-		
 		player.getFriendList().remove(Integer.valueOf(targetId));
-		player.sendPacket(new FriendList(player)); // update friendList *heavy method*
 		
 		final Player target = World.getInstance().getPlayer(_targetName);
 		if (target != null)
 		{
+			player.sendPacket(new L2Friend(target, 3));
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST).addString(_targetName));
+			
 			target.getFriendList().remove(Integer.valueOf(player.getObjectId()));
-			target.sendPacket(new FriendList(target)); // update friendList *heavy method*
+			target.sendPacket(new L2Friend(player, 3));
+		}
+		else
+		{
+			player.sendPacket(new L2Friend(_targetName, 3));
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_BEEN_DELETED_FROM_YOUR_FRIENDS_LIST).addString(_targetName));
 		}
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_FRIEND))
 		{
 			ps.setInt(1, player.getObjectId());

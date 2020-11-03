@@ -81,7 +81,7 @@ public class Q119_LastImperialPrince extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (!st.hasQuestItems(ANTIQUE_BROOCH) || player.getLevel() < 74) ? "31453-00a.htm" : "31453-01.htm";
+				htmltext = (!st.hasQuestItems(ANTIQUE_BROOCH) || player.getStatus().getLevel() < 74) ? "31453-00a.htm" : "31453-01.htm";
 				break;
 			
 			case STATE_STARTED:

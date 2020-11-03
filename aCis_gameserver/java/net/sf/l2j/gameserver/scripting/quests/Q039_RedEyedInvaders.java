@@ -140,7 +140,7 @@ public class Q039_RedEyedInvaders extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "30334-2.htm" : "30334-0.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "30334-2.htm" : "30334-0.htm";
 				break;
 			
 			case STATE_STARTED:

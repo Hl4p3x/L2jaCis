@@ -24,17 +24,15 @@ public class Q106_ForgottenTruth extends Quest
 	private static final int KARTIA_TRANSLATION = 988;
 	
 	// Rewards
-	private static final int SPIRITSHOT_NO_GRADE = 2509;
-	private static final int SOULSHOT_NO_GRADE = 1835;
 	private static final int ELDRITCH_DAGGER = 989;
-	private static final int SPIRITSHOT_FOR_BEGINNERS = 5790;
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
+	private static final int LESSER_HEALING_POTION = 1060;
+	private static final int SOULSHOT_NO_GRADE = 1835;
+	private static final int SPIRITSHOT_NO_GRADE = 2509;
 	private static final int ECHO_BATTLE = 4412;
 	private static final int ECHO_LOVE = 4413;
 	private static final int ECHO_SOLITUDE = 4414;
 	private static final int ECHO_FEAST = 4415;
 	private static final int ECHO_CELEBRATION = 4416;
-	private static final int LESSER_HEALING_POTION = 1060;
 	
 	public Q106_ForgottenTruth()
 	{
@@ -79,7 +77,7 @@ public class Q106_ForgottenTruth extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30358-00.htm";
-				else if (player.getLevel() < 10)
+				else if (player.getStatus().getLevel() < 10)
 					htmltext = "30358-02.htm";
 				else
 					htmltext = "30358-03.htm";
@@ -101,33 +99,20 @@ public class Q106_ForgottenTruth extends Quest
 							htmltext = "30358-07.htm";
 							st.takeItems(KARTIA_TRANSLATION, 1);
 							st.giveItems(ELDRITCH_DAGGER, 1);
-							st.giveItems(LESSER_HEALING_POTION, 100);
 							
 							if (player.isMageClass())
-								st.giveItems(SPIRITSHOT_NO_GRADE, 500);
+								st.rewardItems(SPIRITSHOT_NO_GRADE, 500);
 							else
-								st.giveItems(SOULSHOT_NO_GRADE, 1000);
+								st.rewardItems(SOULSHOT_NO_GRADE, 1000);
 							
-							if (player.isNewbie())
-							{
-								st.showQuestionMark(26);
-								if (player.isMageClass())
-								{
-									st.playTutorialVoice("tutorial_voice_027");
-									st.giveItems(SPIRITSHOT_FOR_BEGINNERS, 3000);
-								}
-								else
-								{
-									st.playTutorialVoice("tutorial_voice_026");
-									st.giveItems(SOULSHOT_FOR_BEGINNERS, 6000);
-								}
-							}
+							st.rewardNewbieShots(0, 3000);
+							st.rewardItems(LESSER_HEALING_POTION, 100);
+							st.rewardItems(ECHO_BATTLE, 10);
+							st.rewardItems(ECHO_LOVE, 10);
+							st.rewardItems(ECHO_SOLITUDE, 10);
+							st.rewardItems(ECHO_FEAST, 10);
+							st.rewardItems(ECHO_CELEBRATION, 10);
 							
-							st.giveItems(ECHO_BATTLE, 10);
-							st.giveItems(ECHO_LOVE, 10);
-							st.giveItems(ECHO_SOLITUDE, 10);
-							st.giveItems(ECHO_FEAST, 10);
-							st.giveItems(ECHO_CELEBRATION, 10);
 							player.broadcastPacket(new SocialAction(player, 3));
 							st.playSound(QuestState.SOUND_FINISH);
 							st.exitQuest(false);

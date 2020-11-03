@@ -625,60 +625,21 @@ public class GeoEngine
 	 */
 	public final boolean canSeeTarget(WorldObject object, WorldObject target)
 	{
-		return canSeeTarget(object, target, null);
-	}
-	
-	/**
-	 * Check line of sight from {@link WorldObject} to {@link WorldObject}.<br>
-	 * Note: If target is {@link IGeoObject} (e.g. {@link Door}), it ignores its geodata modification.
-	 * @param object : The origin object.
-	 * @param target : The target object.
-	 * @param debug : The debug packet to add debug informations in.
-	 * @return True, when object can see target.
-	 */
-	public final boolean canSeeTarget(WorldObject object, WorldObject target, ExServerPrimitive debug)
-	{
-		// Get object's and position's world coordinates.
-		final int ox = object.getX();
-		final int oy = object.getY();
-		final int oz = object.getZ();
-		final int tx = target.getX();
-		final int ty = target.getY();
-		final int tz = target.getZ();
-		
-		// Get object's geo coordinates and check them.
-		final int gox = getGeoX(ox);
-		final int goy = getGeoY(oy);
-		if (!hasGeoPos(gox, goy))
-			return true;
-		
-		final short goz = getHeightNearest(gox, goy, oz);
-		
-		// Get target's geo coordinates and check them.
-		final int gtx = getGeoX(tx);
-		final int gty = getGeoY(ty);
-		if (!hasGeoPos(gtx, gty))
-			return true;
-		
+		// Check if target is geo object. If so, it must be ignored for line of sight check.
 		final IGeoObject ignore = target instanceof IGeoObject ? (IGeoObject) target : null;
-		final short gtz = getHeightNearest(gtx, gty, tz, ignore);
 		
-		// Check for object and target are on same cell.
-		if (gox == gtx && goy == gty)
-			return goz == gtz;
-			
 		// Get object's and target's line of sight height (if relevant).
-		// Note: Real creature height = collision height * 2.
-		double losoz = goz;
+		// Note: real creature height = collision height * 2
+		double oheight = 0;
 		if (object instanceof Creature)
-			losoz += ((Creature) object).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100;
+			oheight += ((Creature) object).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100;
 		
-		double lostz = gtz;
+		double theight = 0;
 		if (target instanceof Creature)
-			lostz += ((Creature) target).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100;
+			theight += ((Creature) target).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100;
 		
 		// Perform geodata check.
-		return canSee(gox, goy, goz, losoz, gtx, gty, gtz, lostz, ignore, debug);
+		return canSee(object.getX(), object.getY(), object.getZ(), oheight, target.getX(), target.getY(), target.getZ(), theight, ignore, null);
 	}
 	
 	/**
@@ -690,185 +651,151 @@ public class GeoEngine
 	 */
 	public final boolean canSeeLocation(WorldObject object, Location position)
 	{
-		// Get object's and position's world coordinates.
-		final int ox = object.getX();
-		final int oy = object.getY();
-		final int oz = object.getZ();
-		final int tx = position.getX();
-		final int ty = position.getY();
-		final int tz = position.getZ();
-		
-		// Get object's geo coordinates and check them.
-		final int gox = getGeoX(ox);
-		final int goy = getGeoY(oy);
-		if (!hasGeoPos(gox, goy))
-			return true;
-		
-		final short goz = getHeightNearest(gox, goy, oz);
-		
-		// Get position's geo coordinates and check them.
-		final int gtx = getGeoX(tx);
-		final int gty = getGeoY(ty);
-		if (!hasGeoPos(gtx, gty))
-			return true;
-		
-		final short gtz = getHeightNearest(gtx, gty, tz);
-		
-		// Check for object and position are on same cell.
-		if (gox == gtx && goy == gty)
-			return goz == gtz;
-			
 		// Get object's line of sight height (if relevant).
-		// Note: Real creature height = collision height * 2.
-		double losoz = goz;
+		// Note: real creature height = collision height * 2
+		double oheight = 0;
 		if (object instanceof Creature)
-			losoz += ((Creature) object).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100;
+			oheight += ((Creature) object).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100;
 		
 		// Perform geodata check.
-		return canSee(gox, goy, goz, losoz, gtx, gty, gtz, tz, null, null);
+		return canSee(object.getX(), object.getY(), object.getZ(), oheight, position.getX(), position.getY(), position.getZ(), 0, null, null);
 	}
 	
 	/**
 	 * Simple check for origin to target visibility.<br>
 	 * Note: Ignores geodata modification of given {@link IGeoObject}.
-	 * @param gox : Origin X geodata coordinate.
-	 * @param goy : Origin Y geodata coordinate.
-	 * @param goz : Origin Z geodata coordinate.
-	 * @param losoz : Origin line of sight height (absolute coordinates).
-	 * @param gtx : Target X geodata coordinate.
-	 * @param gty : Target Y geodata coordinate.
-	 * @param gtz : Target Z geodata coordinate.
-	 * @param lostz : Target line of sight height (absolute coordinates).
+	 * @param ox : Origin X coordinate.
+	 * @param oy : Origin Y coordinate.
+	 * @param oz : Origin Z coordinate.
+	 * @param oheight : The height of origin, used as start point.
+	 * @param tx : Target X coordinate.
+	 * @param ty : Target Y coordinate.
+	 * @param tz : Target Z coordinate.
+	 * @param theight : The height of target, used as end point.
 	 * @param debug : The debug packet to add debug informations in.
 	 * @param ignore : The {@link IGeoObject}, which geodata modification is ignored and original geodata picked instead.
 	 * @return True, when origin can see target.
 	 */
-	protected final boolean canSee(int gox, int goy, int goz, double losoz, int gtx, int gty, int gtz, double lostz, IGeoObject ignore, ExServerPrimitive debug)
+	public final boolean canSee(int ox, int oy, int oz, double oheight, int tx, int ty, int tz, double theight, IGeoObject ignore, ExServerPrimitive debug)
 	{
-		// Get X delta, signum and direction flags.
-		final int dx = Math.abs(gtx - gox);
-		final int sx = gox < gtx ? 1 : -1;
-		final byte dirox = sx > 0 ? GeoStructure.CELL_FLAG_E : GeoStructure.CELL_FLAG_W;
-		final byte dirtx = sx > 0 ? GeoStructure.CELL_FLAG_W : GeoStructure.CELL_FLAG_E;
+		// Get delta coordinates and slope of line (XY, XZ).
+		final int dx = tx - ox;
+		final int dy = ty - oy;
+		final double dz = (tz + theight) - (oz + oheight);
+		final double m = (double) dy / dx;
+		final double mz = dz / dx;
 		
-		// Get Y delta, signum and direction flags.
-		final int dy = Math.abs(gty - goy);
-		final int sy = goy < gty ? 1 : -1;
-		final byte diroy = sy > 0 ? GeoStructure.CELL_FLAG_S : GeoStructure.CELL_FLAG_N;
-		final byte dirty = sy > 0 ? GeoStructure.CELL_FLAG_N : GeoStructure.CELL_FLAG_S;
+		// Get signum coordinates (world -16, 0, 16 and geodata -1, 0, 1).
+		final int sx = dx > 0 ? GeoStructure.CELL_SIZE : dx < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int sy = dy > 0 ? GeoStructure.CELL_SIZE : dy < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int gsx = sx / GeoStructure.CELL_SIZE;
+		final int gsy = sy / GeoStructure.CELL_SIZE;
 		
-		// Get Z delta.
-		final int dm = Math.max(dx, dy);
-		final double dz = (lostz - losoz) / dm;
+		// Get cell grid coordinate and cell border offsets in a direction of iteration.
+		int gridX = ox & 0xFFFFFFF0;
+		int gridY = oy & 0xFFFFFFF0;
+		final int bx = sx >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		final int by = sy >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
 		
-		// Get direction flag for diagonal movement.
-		final byte diroxy = getDirXY(dirox, diroy);
-		final byte dirtxy = getDirXY(dirtx, dirty);
+		// Get geodata coordinates and nswe and direction flags.
+		int gox = getGeoX(ox);
+		int goy = getGeoY(oy);
+		int goz = getHeight(ox, oy, oz);
+		final int gtx = getGeoX(tx);
+		final int gty = getGeoY(ty);
+		int nswe = getNsweNearest(gox, goy, goz, ignore);
+		final byte dirx = sx > 0 ? GeoStructure.CELL_FLAG_E : sx < 0 ? GeoStructure.CELL_FLAG_W : 0;
+		final byte diry = sy > 0 ? GeoStructure.CELL_FLAG_S : sy < 0 ? GeoStructure.CELL_FLAG_N : 0;
 		
-		// Get delta, determines axis to move on (+..X axis, -..Y axis).
-		int d = dx - dy;
-		
-		// Get direction flags of iteration and NSWE of first cells.
-		byte diro = 0;
-		byte dirt = 0;
-		byte nsweo = getNsweNearest(gox, goy, goz, ignore);
-		byte nswet = getNsweNearest(gtx, gty, gtz, ignore);
+		// Add points to debug packet, if present.
+		if (debug != null)
+		{
+			debug.addSquare(Color.BLUE, gridX, gridY, goz + 1, 15);
+			debug.addSquare(Color.BLUE, tx & 0xFFFFFFF0, ty & 0xFFFFFFF0, tz, 15);
+		}
 		
 		// Run loop.
-		ABlock block;
-		int index;
-		for (int i = 0; i < (dm + 1) / 2; i++)
+		byte dir;
+		while (gox != gtx || goy != gty)
 		{
-			// Add points to debug packet, if present.
-			if (debug != null)
+			// Calculate intersection with cell's X border.
+			int checkX = gridX + bx;
+			int checkY = oy + (int) (m * (checkX - ox));
+			
+			if (sx != 0 && Math.abs(getGeoY(checkY) - goy) == 0)
 			{
-				debug.addPoint(Color.CYAN, getWorldX(gox), getWorldY(goy), goz - 24);
-				debug.addPoint(Color.YELLOW, getWorldX(gtx), getWorldY(gty), gtz - 24);
+				// Show border points.
+				if (debug != null)
+				{
+					debug.addPoint(dirx == GeoStructure.CELL_FLAG_E ? "E" : "W", Color.CYAN, true, checkX, checkY, goz);
+					debug.addSquare(Color.GREEN, gridX, gridY, goz, 15);
+				}
+				
+				// Set next cell in X direction.
+				gridX += sx;
+				gox += gsx;
+				dir = dirx;
+			}
+			else
+			{
+				// Calculate intersection with cell's Y border.
+				checkY = gridY + by;
+				checkX = ox + (int) ((checkY - oy) / m);
+				checkX = MathUtil.limit(checkX, gridX, gridX + 15);
+				
+				// Show border points.
+				if (debug != null)
+				{
+					debug.addPoint(diry == GeoStructure.CELL_FLAG_S ? "S" : "N", Color.YELLOW, true, checkX, checkY, goz);
+					debug.addSquare(Color.GREEN, gridX, gridY, goz, 15);
+				}
+				
+				// Set next cell in Y direction.
+				gridY += sy;
+				goy += gsy;
+				dir = diry;
 			}
 			
-			// Calculate next point coordinates.
-			int e2 = 2 * d;
-			if (e2 > -dy && e2 < dx)
+			// Get block of the next cell.
+			ABlock block = getBlock(gox, goy);
+			
+			// Get index of particular layer, based on movement conditions.
+			int index;
+			if ((nswe & dir) == 0)
+				index = block.getIndexAbove(gox, goy, goz, ignore);
+			else
+				index = block.getIndexBelow(gox, goy, goz + GeoStructure.CELL_IGNORE_HEIGHT, ignore);
+			
+			// Next cell's layer does not exist (no geodata with valid condition), return.
+			if (index < 0)
 			{
-				// Next point has different XY coordinates.
-				d -= dy;
-				d += dx;
-				gox += sx;
-				gtx -= sx;
-				goy += sy;
-				gty -= sy;
-				diro = diroxy;
-				dirt = dirtxy;
-			}
-			else if (e2 > -dy)
-			{
-				// Next point has different X coordinate.
-				d -= dy;
-				gox += sx;
-				gtx -= sx;
-				diro = dirox;
-				dirt = dirtx;
-			}
-			else if (e2 < dx)
-			{
-				// Next point has different Y coordinate.
-				d += dx;
-				goy += sy;
-				gty -= sy;
-				diro = diroy;
-				dirt = dirty;
+				// Show last iterated cell.
+				if (debug != null)
+					debug.addSquare(Color.RED, gridX, gridY, goz, 15);
+				
+				return false;
 			}
 			
+			// Get next cell's line of sight Z coordinate.
+			int z = block.getHeight(index, ignore);
+			double losoz = oz + oheight + (int) (mz * (checkX - ox));
+			
+			// Perform line of sight check, return when fails.
+			if ((z - losoz) > Config.MAX_OBSTACLE_HEIGHT)
 			{
-				// Get block of the next cell.
-				block = getBlock(gox, goy);
+				// Show last iterated cell.
+				if (debug != null)
+				{
+					debug.addPoint(Color.RED, checkX, checkY, (int) losoz);
+					debug.addSquare(Color.RED, gridX, gridY, z, 15);
+				}
 				
-				// Get index of particular layer, based on movement conditions.
-				if ((nsweo & diro) == 0)
-					index = block.getIndexAbove(gox, goy, goz - GeoStructure.CELL_IGNORE_HEIGHT, ignore);
-				else
-					index = block.getIndexBelow(gox, goy, goz + GeoStructure.CELL_IGNORE_HEIGHT, ignore);
-				
-				// Next cell's layer does not exist (no geodata with valid condition), return.
-				if (index < 0)
-					return false;
-				
-				// Get next cell's line of sight Z coordinate.
-				goz = block.getHeight(index, ignore);
-				losoz += dz;
-				
-				// Perform line of sight check, return when fails.
-				if ((goz - losoz) > Config.MAX_OBSTACLE_HEIGHT)
-					return false;
-				
-				// Get next cell's NSWE.
-				nsweo = block.getNswe(index, ignore);
+				return false;
 			}
-			{
-				// Get block of the next cell.
-				block = getBlock(gtx, gty);
-				
-				// Get index of particular layer, based on movement conditions.
-				if ((nswet & dirt) == 0)
-					index = block.getIndexAbove(gtx, gty, gtz - GeoStructure.CELL_IGNORE_HEIGHT, ignore);
-				else
-					index = block.getIndexBelow(gtx, gty, gtz + GeoStructure.CELL_IGNORE_HEIGHT, ignore);
-				
-				// Next cell's layer does not exist (no geodata with valid condition), return.
-				if (index < 0)
-					return false;
-				
-				// Get next cell's line of sight Z coordinate.
-				gtz = block.getHeight(index, ignore);
-				lostz -= dz;
-				
-				// Perform line of sight check, return when fails.
-				if ((gtz - lostz) > Config.MAX_OBSTACLE_HEIGHT)
-					return false;
-				
-				// Get next cell's NSWE.
-				nswet = block.getNswe(index, ignore);
-			}
+			
+			// Get next cell's NSWE.
+			goz = z;
+			nswe = block.getNswe(index, ignore);
 		}
 		
 		// Iteration is completed, no obstacle is found.
@@ -905,7 +832,7 @@ public class GeoEngine
 	 */
 	public final boolean canMoveToTarget(Location origin, Location target)
 	{
-		return canMoveToTarget(origin.getX(), origin.getY(), origin.getZ(), target.getX(), target.getY(), target.getZ());
+		return canMove(origin.getX(), origin.getY(), origin.getZ(), target.getX(), target.getY(), target.getZ(), null);
 	}
 	
 	/**
@@ -920,112 +847,127 @@ public class GeoEngine
 	 */
 	public final boolean canMoveToTarget(int ox, int oy, int oz, int tx, int ty, int tz)
 	{
-		// Get origin's geo coordinates and check them.
-		final int gox = getGeoX(ox);
-		final int goy = getGeoY(oy);
-		if (!hasGeoPos(gox, goy))
-			return true;
-		
-		final short goz = getHeightNearest(gox, goy, oz);
-		
-		// Get target's geo coordinates and check them.
-		final int gtx = getGeoX(tx);
-		final int gty = getGeoY(ty);
-		if (!hasGeoPos(gtx, gty))
-			return true;
-		
-		final short gtz = getHeightNearest(gtx, gty, tz);
-		
-		// Check for origin and target are on same cell.
-		if (gox == gtx && goy == gty && goz == gtz)
-			return true;
-		
-		// Perform geodata check.
-		return canMove(gox, goy, goz, gtx, gty, gtz);
+		return canMove(ox, oy, oz, tx, ty, tz, null);
 	}
 	
 	/**
-	 * Simple check for origin to target movement.
-	 * @param gox : Origin X geodata coordinate.
-	 * @param goy : Origin Y geodata coordinate.
-	 * @param goz : Origin Z geodata coordinate.
-	 * @param gtx : Target X geodata coordinate.
-	 * @param gty : Target Y geodata coordinate.
-	 * @param gtz : Target Z geodata coordinate.
+	 * Check movement from coordinates to coordinates.
+	 * @param ox : Origin X coordinate.
+	 * @param oy : Origin Y coordinate.
+	 * @param oz : Origin Z coordinate.
+	 * @param tx : Target X coordinate.
+	 * @param ty : Target Y coordinate.
+	 * @param tz : Target Z coordinate.
+	 * @param debug : The debug packet to add debug informations in.
 	 * @return True, when target coordinates are reachable from origin coordinates.
 	 */
-	protected final boolean canMove(int gox, int goy, short goz, int gtx, int gty, short gtz)
+	public final boolean canMove(int ox, int oy, int oz, int tx, int ty, int tz, ExServerPrimitive debug)
 	{
-		// Get X delta, signum and direction flags.
-		final int dx = Math.abs(gtx - gox);
-		final int sx = gox < gtx ? 1 : -1;
-		final byte dirX = sx > 0 ? GeoStructure.CELL_FLAG_E : GeoStructure.CELL_FLAG_W;
+		// Get delta coordinates and slope of line.
+		final int dx = tx - ox;
+		final int dy = ty - oy;
+		final double m = (double) dy / dx;
 		
-		// Get Y delta, signum and direction flags.
-		final int dy = Math.abs(gty - goy);
-		final int sy = goy < gty ? 1 : -1;
-		final byte dirY = sy > 0 ? GeoStructure.CELL_FLAG_S : GeoStructure.CELL_FLAG_N;
+		// Get signum coordinates (world -16, 0, 16 and geodata -1, 0, 1).
+		final int sx = dx > 0 ? GeoStructure.CELL_SIZE : dx < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int sy = dy > 0 ? GeoStructure.CELL_SIZE : dy < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int gsx = sx / GeoStructure.CELL_SIZE;
+		final int gsy = sy / GeoStructure.CELL_SIZE;
 		
-		// Get direction flag for diagonal movement.
-		final byte dirXY = getDirXY(dirX, dirY);
+		// Get cell grid coordinate and cell border offsets in a direction of iteration.
+		int gridX = ox & 0xFFFFFFF0;
+		int gridY = oy & 0xFFFFFFF0;
+		final int bx = sx >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		final int by = sy >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
 		
-		// Get delta, determines axis to move on (+..X axis, -..Y axis).
-		int d = dx - dy;
+		// Get geodata coordinates and direction flags.
+		int gox = getGeoX(ox);
+		int goy = getGeoY(oy);
+		int goz = getHeight(ox, oy, oz);
+		final int gtx = getGeoX(tx);
+		final int gty = getGeoY(ty);
+		int nswe = getNsweNearest(gox, goy, goz, null);
+		final byte dirx = sx > 0 ? GeoStructure.CELL_FLAG_E : sx < 0 ? GeoStructure.CELL_FLAG_W : 0;
+		final byte diry = sy > 0 ? GeoStructure.CELL_FLAG_S : sy < 0 ? GeoStructure.CELL_FLAG_N : 0;
 		
-		// NSWE direction of movement (iteration).
-		byte direction = 0;
+		// Add points to debug packet, if present.
+		if (debug != null)
+		{
+			debug.addSquare(Color.BLUE, gridX, gridY, goz + 1, 15);
+			debug.addSquare(Color.BLUE, tx & 0xFFFFFFF0, ty & 0xFFFFFFF0, tz, 15);
+		}
 		
-		// Load next pointer.
+		// Run loop.
+		byte dir;
 		int nx = gox;
 		int ny = goy;
-		
-		// Run until target coordinates reached.
 		while (gox != gtx || goy != gty)
 		{
-			// Calculate next point coordinates.
-			int e2 = 2 * d;
-			if (e2 > -dy && e2 < dx)
+			// Calculate intersection with cell's X border.
+			int checkX = gridX + bx;
+			int checkY = oy + (int) (m * (checkX - ox));
+			
+			if (sx != 0 && Math.abs(getGeoY(checkY) - goy) == 0)
 			{
-				// Next point has different XY coordinates.
-				d -= dy;
-				d += dx;
-				nx += sx;
-				ny += sy;
-				direction = dirXY;
+				// Show border points.
+				if (debug != null)
+				{
+					debug.addPoint(dirx == GeoStructure.CELL_FLAG_E ? "E" : "W", Color.CYAN, true, checkX, checkY, goz);
+					debug.addSquare(Color.GREEN, gridX, gridY, goz, 15);
+				}
+				
+				// Set next cell is in X direction.
+				gridX += sx;
+				nx += gsx;
+				dir = dirx;
 			}
-			else if (e2 > -dy)
+			else
 			{
-				// Next point has different X coordinate.
-				d -= dy;
-				nx += sx;
-				direction = dirX;
-			}
-			else if (e2 < dx)
-			{
-				// Next point has different Y coordinate.
-				d += dx;
-				ny += sy;
-				direction = dirY;
+				// Calculate intersection with cell's Y border.
+				checkY = gridY + by;
+				checkX = ox + (int) ((checkY - oy) / m);
+				checkX = MathUtil.limit(checkX, gridX, gridX + 15);
+				
+				// Show border points.
+				if (debug != null)
+				{
+					debug.addPoint(diry == GeoStructure.CELL_FLAG_S ? "S" : "N", Color.YELLOW, true, checkX, checkY, goz);
+					debug.addSquare(Color.GREEN, gridX, gridY, goz, 15);
+				}
+				
+				// Set next cell in Y direction.
+				gridY += sy;
+				ny += gsy;
+				dir = diry;
 			}
 			
 			// Check point heading into obstacle, if so return current point.
-			if ((getNsweNearest(gox, goy, goz) & direction) == 0)
+			if ((nswe & dir) == 0)
+			{
+				if (debug != null)
+					debug.addSquare(Color.RED, gridX, gridY, goz, 15);
 				return false;
+			}
 			
 			// Check next point for extensive Z difference, if so return current point.
 			final ABlock block = getBlock(nx, ny);
 			final int i = block.getIndexBelow(nx, ny, goz + GeoStructure.CELL_IGNORE_HEIGHT, null);
 			if (i < 0)
+			{
+				if (debug != null)
+					debug.addSquare(Color.RED, gridX, gridY, goz, 15);
 				return false;
+			}
 			
-			// Update next point's coordinates.
+			// Update current point's coordinates and nswe.
 			gox = nx;
 			goy = ny;
 			goz = block.getHeight(i, null);
+			nswe = block.getNswe(i, null);
 		}
 		
-		// When Z coordinates are same, path is okay. Otherwise not.
-		return goz == gtz;
+		// When origin Z is target Z, the move is successful.
+		return goz == getHeight(tx, ty, tz);
 	}
 	
 	/**
@@ -1147,96 +1089,110 @@ public class GeoEngine
 	 */
 	public final Location getValidLocation(int ox, int oy, int oz, int tx, int ty, int tz, ExServerPrimitive debug)
 	{
-		// Get origin's geo coordinates and check them.
+		// Get delta coordinates and slope of line.
+		final int dx = tx - ox;
+		final int dy = ty - oy;
+		final double m = (double) dy / dx;
+		
+		// Get signum coordinates (world -16, 0, 16 and geodata -1, 0, 1).
+		final int sx = dx > 0 ? GeoStructure.CELL_SIZE : dx < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int sy = dy > 0 ? GeoStructure.CELL_SIZE : dy < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int gsx = sx / GeoStructure.CELL_SIZE;
+		final int gsy = sy / GeoStructure.CELL_SIZE;
+		
+		// Get cell grid coordinate and cell border offsets in a direction of iteration.
+		int gridX = ox & 0xFFFFFFF0;
+		int gridY = oy & 0xFFFFFFF0;
+		final int bx = sx >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		final int by = sy >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		
+		// Get geodata coordinates and direction flags.
 		int gox = getGeoX(ox);
 		int goy = getGeoY(oy);
-		if (!hasGeoPos(gox, goy))
-			return new Location(tx, ty, tz);
-		
-		short goz = getHeightNearest(gox, goy, oz);
-		
-		// Get target's geo coordinates and check them.
+		int goz = getHeight(ox, oy, oz);
 		final int gtx = getGeoX(tx);
 		final int gty = getGeoY(ty);
-		if (!hasGeoPos(gtx, gty))
-			return new Location(tx, ty, tz);
+		final int gtz = getHeight(tx, ty, tz);
+		int nswe = getNsweNearest(gox, goy, goz, null);
+		final byte dirx = sx > 0 ? GeoStructure.CELL_FLAG_E : sx < 0 ? GeoStructure.CELL_FLAG_W : 0;
+		final byte diry = sy > 0 ? GeoStructure.CELL_FLAG_S : sy < 0 ? GeoStructure.CELL_FLAG_N : 0;
 		
-		final short gtz = getHeightNearest(gtx, gty, tz);
+		// Add points to debug packet, if present.
+		if (debug != null)
+		{
+			debug.addSquare(Color.BLUE, gridX, gridY, goz + 1, 15);
+			debug.addSquare(Color.BLUE, tx & 0xFFFFFFF0, ty & 0xFFFFFFF0, tz, 15);
+		}
 		
-		// Check for origin and target are on same cell.
-		if (gox == gtx && goy == gty && goz == gtz)
-			return new Location(tx, ty, tz);
-		
-		// Get X delta, signum and direction flags.
-		final int dx = Math.abs(gtx - gox);
-		final int sx = gox < gtx ? 1 : -1;
-		final byte dirX = sx > 0 ? GeoStructure.CELL_FLAG_E : GeoStructure.CELL_FLAG_W;
-		
-		// Get Y delta, signum and direction flags.
-		final int dy = Math.abs(gty - goy);
-		final int sy = goy < gty ? 1 : -1;
-		final byte dirY = sy > 0 ? GeoStructure.CELL_FLAG_S : GeoStructure.CELL_FLAG_N;
-		
-		// Get direction flag for diagonal movement.
-		final byte dirXY = getDirXY(dirX, dirY);
-		
-		// Get delta, determines axis to move on (+..X axis, -..Y axis).
-		int d = dx - dy;
-		
-		// NSWE direction of movement (iteration).
-		byte direction = 0;
-		
-		// Load next pointer.
+		// Run loop.
+		byte dir;
 		int nx = gox;
 		int ny = goy;
-		
-		// Run until target coordinates reached.
 		while (gox != gtx || goy != gty)
 		{
-			// Add points to debug packet, if present.
-			if (debug != null)
-				debug.addPoint(Color.GREEN, getWorldX(gox), getWorldY(goy), goz - 24);
+			// Calculate intersection with cell's X border.
+			int checkX = gridX + bx;
+			int checkY = oy + (int) (m * (checkX - ox));
 			
-			// Calculate next point coordinates.
-			int e2 = 2 * d;
-			if (e2 > -dy && e2 < dx)
+			if (sx != 0 && Math.abs(getGeoY(checkY) - goy) == 0)
 			{
-				// Next point has different XY coordinates.
-				d -= dy;
-				d += dx;
-				nx += sx;
-				ny += sy;
-				direction = dirXY;
+				// Show border points.
+				if (debug != null)
+				{
+					debug.addPoint(dirx == GeoStructure.CELL_FLAG_E ? "E" : "W", Color.CYAN, true, checkX, checkY, goz);
+					debug.addSquare(Color.GREEN, gridX, gridY, goz, 15);
+				}
+				
+				// Set next cell is in X direction.
+				gridX += sx;
+				nx += gsx;
+				dir = dirx;
 			}
-			else if (e2 > -dy)
+			else
 			{
-				// Next point has different X coordinate.
-				d -= dy;
-				nx += sx;
-				direction = dirX;
-			}
-			else if (e2 < dx)
-			{
-				// Next point has different Y coordinate.
-				d += dx;
-				ny += sy;
-				direction = dirY;
+				// Calculate intersection with cell's Y border.
+				checkY = gridY + by;
+				checkX = ox + (int) ((checkY - oy) / m);
+				checkX = MathUtil.limit(checkX, gridX, gridX + 15);
+				
+				// Show border points.
+				if (debug != null)
+				{
+					debug.addPoint(diry == GeoStructure.CELL_FLAG_S ? "S" : "N", Color.YELLOW, true, checkX, checkY, goz);
+					debug.addSquare(Color.GREEN, gridX, gridY, goz, 15);
+				}
+				
+				// Set next cell in Y direction.
+				gridY += sy;
+				ny += gsy;
+				dir = diry;
 			}
 			
-			// Check point heading into obstacle, if so return current point.
-			if ((getNsweNearest(gox, goy, goz) & direction) == 0)
-				return calculateBorderPoint(ox, oy, tx, ty, sx, sy, gox, goy, goz);
+			// Check point heading into obstacle, if so return current (border) point.
+			if ((nswe & dir) == 0)
+			{
+				if (debug != null)
+					debug.addSquare(Color.RED, gridX, gridY, goz, 15);
+				
+				return new Location(checkX, checkY, goz);
+			}
 			
-			// Check next point for extensive Z difference, if so return current point.
+			// Check next point for extensive Z difference, if so return current (border) point.
 			final ABlock block = getBlock(nx, ny);
 			final int i = block.getIndexBelow(nx, ny, goz + GeoStructure.CELL_IGNORE_HEIGHT, null);
 			if (i < 0)
-				return calculateBorderPoint(ox, oy, tx, ty, sx, sy, gox, goy, goz);
+			{
+				if (debug != null)
+					debug.addSquare(Color.RED, gridX, gridY, goz, 15);
+				
+				return new Location(checkX, checkY, goz);
+			}
 			
-			// Update next point's coordinates.
+			// Update current point's coordinates and nswe.
 			gox = nx;
 			goy = ny;
 			goz = block.getHeight(i, null);
+			nswe = block.getNswe(i, null);
 		}
 		
 		// Compare Z coordinates:
@@ -1246,68 +1202,395 @@ public class GeoEngine
 	}
 	
 	/**
-	 * @param dirX : The W-E flag (X axis).
-	 * @param dirY : The N-S flag (Y axis).
-	 * @return The diagonal NSWE flag of two combined axis flags (N-S and W-E).
+	 * Check movement of {@link WorldObject} to {@link WorldObject}.
+	 * @param object : The origin object.
+	 * @param oheight : The height of origin, used for corridor evaluation.
+	 * @param target : The target object.
+	 * @return True, when the path is clear.
 	 */
-	private static final byte getDirXY(byte dirX, byte dirY)
+	public final boolean canFloatToTarget(WorldObject object, double oheight, WorldObject target)
 	{
-		if (dirY == GeoStructure.CELL_FLAG_N)
-		{
-			if (dirX == GeoStructure.CELL_FLAG_W)
-				return GeoStructure.CELL_FLAG_NW;
-			
-			return GeoStructure.CELL_FLAG_NE;
-		}
-		
-		if (dirX == GeoStructure.CELL_FLAG_W)
-			return GeoStructure.CELL_FLAG_SW;
-		
-		return GeoStructure.CELL_FLAG_SE;
+		return canFloatToTarget(object.getPosition(), oheight, target.getPosition());
 	}
 	
 	/**
+	 * Check movement of {@link WorldObject} to {@link Location}.
+	 * @param object : The origin object.
+	 * @param oheight : The height of origin, used for corridor evaluation.
+	 * @param position : The target position.
+	 * @return True, when the path is clear.
+	 */
+	public final boolean canFloatToTarget(WorldObject object, double oheight, Location position)
+	{
+		return canFloatToTarget(object.getPosition(), oheight, position);
+	}
+	
+	/**
+	 * Check movement of {@link Location} to {@link Location}.
+	 * @param origin : The origin position.
+	 * @param oheight : The height of origin, used for corridor evaluation.
+	 * @param target : The target position.
+	 * @return True, when the path is clear.
+	 */
+	public final boolean canFloatToTarget(Location origin, double oheight, Location target)
+	{
+		return canFloat(origin.getX(), origin.getY(), origin.getZ(), oheight, target.getX(), target.getY(), target.getZ(), null);
+	}
+	
+	/**
+	 * Check movement from coordinates to coordinates.
 	 * @param ox : Origin X coordinate.
 	 * @param oy : Origin Y coordinate.
+	 * @param oz : Origin Z coordinate.
+	 * @param oheight : The height of origin, used for corridor evaluation.
 	 * @param tx : Target X coordinate.
 	 * @param ty : Target Y coordinate.
-	 * @param sx : Signum of movement (iteration) in X axis.
-	 * @param sy : Signum of movement (iteration) in Y axis.
-	 * @param gpx : Iterated point X geodata coordinate.
-	 * @param gpy : Iterated point Y geodata coordinate.
-	 * @param gpz : Iterated point Z geodata coordinate.
-	 * @return The {@link Location} inside iterated point, which has correct offset given to movement (iteration) direction.
+	 * @param tz : Target Z coordinate.
+	 * @return True, when target coordinates are reachable from origin coordinates.
 	 */
-	private static final Location calculateBorderPoint(int ox, int oy, int tx, int ty, int sx, int sy, int gpx, int gpy, short gpz)
+	public final boolean canFloatToTarget(int ox, int oy, int oz, double oheight, int tx, int ty, int tz)
 	{
-		// Get world Y coordinate of the point and update it to cell border (adjust by -8, +7 by given direction).
-		int py = getWorldY(gpy);
-		py += sy > 0 ? 7 : -8;
+		return canFloat(ox, oy, oz, oheight, tx, ty, tz, null);
+	}
+	
+	/**
+	 * Check float movement from coordinates to coordinates.
+	 * @param ox : Origin X coordinate.
+	 * @param oy : Origin Y coordinate.
+	 * @param oz : Origin Z coordinate.
+	 * @param oheight : The height of origin, used for corridor evaluation.
+	 * @param tx : Target X coordinate.
+	 * @param ty : Target Y coordinate.
+	 * @param tz : Target Z coordinate.
+	 * @param debug : The debug packet to add debug informations in.
+	 * @return True, when origin can see target.
+	 */
+	public final boolean canFloat(int ox, int oy, int oz, double oheight, int tx, int ty, int tz, ExServerPrimitive debug)
+	{
+		// Get delta coordinates and slope of line (XY, XZ).
+		final int dx = tx - ox;
+		final int dy = ty - oy;
+		final int dz = tz - oz;
+		final double m = (double) dy / dx;
+		final double mz = dz / Math.sqrt(dx * dx + dy * dy);
 		
-		// Calculate X coordinate and adjust it (rounding "up" based on direction, to not lose precision).
-		double pxc = ox + (double) (tx - ox) * (py - oy) / (ty - oy);
-		pxc = sx > 0 ? Math.ceil(pxc) : Math.floor(pxc);
+		// Get signum coordinates (world -16, 0, 16 and geodata -1, 0, 1).
+		final int sx = dx > 0 ? GeoStructure.CELL_SIZE : dx < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int sy = dy > 0 ? GeoStructure.CELL_SIZE : dy < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int gsx = sx / GeoStructure.CELL_SIZE;
+		final int gsy = sy / GeoStructure.CELL_SIZE;
 		
-		// Check XY coordinates. If calculated X is outside of point, calculate the other pair of XY.
-		if (getGeoX((int) pxc) == gpx)
-			// Return Location which lays on the current point in the direction of.
-			return new Location((int) pxc, py, gpz);
+		// Get cell grid coordinate and cell border offsets in a direction of iteration.
+		int gridX = ox & 0xFFFFFFF0;
+		int gridY = oy & 0xFFFFFFF0;
+		final int bx = sx >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		final int by = sy >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
 		
-		// Get world X coordinate of the point and update it to cell border (adjust by -8, +7 by given direction).
-		int px = getWorldX(gpx);
-		px += sx > 0 ? 7 : -8;
+		// Get geodata coordinates and nswe and direction flags.
+		int gox = getGeoX(ox);
+		int goy = getGeoY(oy);
+		int goz = getHeight(ox, oy, oz);
+		final int gtx = getGeoX(tx);
+		final int gty = getGeoY(ty);
 		
-		// Calculate Y coordinate and adjust it (rounding "up" based on direction, to not lose precision).
-		double pyc = oy + (double) (ty - oy) * (px - ox) / (tx - ox);
-		pyc = sy > 0 ? Math.ceil(pyc) : Math.floor(pyc);
+		// Add points to debug packet, if present.
+		if (debug != null)
+		{
+			debug.addSquare(Color.BLUE, gridX, gridY, goz - 32, 15);
+			debug.addSquare(Color.BLUE, tx & 0xFFFFFFF0, ty & 0xFFFFFFF0, tz - 32, 15);
+		}
 		
-		// Check XY coordinates. If calculated X is outside of point, calculate the other pair of XY.
-		if (getGeoY((int) pyc) == gpy)
-			// Return Location which lays on the current point in the direction of.
-			return new Location(px, (int) pyc, gpz);
+		// Run loop.
+		int nextZ;
+		int index;
+		String debugDir = null;
+		Color debugColor = null;
+		while (gox != gtx || goy != gty)
+		{
+			// Calculate intersection with cell's X border.
+			int checkX = gridX + bx;
+			int checkY = oy + (int) (m * (checkX - ox));
+			
+			if (sx != 0 && Math.abs(getGeoY(checkY) - goy) == 0)
+			{
+				// Set next cell in X direction.
+				gridX += sx;
+				gox += gsx;
+				
+				// Set direction and color for debug, if enabled.
+				if (debug != null)
+				{
+					debugDir = sx > 0 ? "E" : "W";
+					debugColor = Color.CYAN;
+				}
+			}
+			else
+			{
+				// Calculate intersection with cell's Y border.
+				checkY = gridY + by;
+				checkX = ox + (int) ((checkY - oy) / m);
+				checkX = MathUtil.limit(checkX, gridX, gridX + 15);
+				
+				// Set direction and color for debug, if enabled.
+				if (debug != null)
+				{
+					debugDir = sy > 0 ? "S" : "N";
+					debugColor = Color.YELLOW;
+				}
+				
+				// Set next cell in Y direction.
+				gridY += sy;
+				goy += gsy;
+			}
+			
+			// Get block of the next cell.
+			ABlock block = getBlock(gox, goy);
+			
+			// Evaluate bottom border (min Z).
+			{
+				// Get next border Z (bottom).
+				nextZ = oz + (int) (mz * Math.sqrt((checkX - ox) * (checkX - ox) + (checkY - oy) * (checkY - oy)));
+				
+				// Get index of geodata below top border (max Z).
+				index = block.getIndexBelow(gox, goy, nextZ + (int) oheight, null);
+				
+				// If no geodata, fail. There always have to be some geodata below character.
+				if (index < 0)
+				{
+					// Show last iterated cell.
+					if (debug != null)
+						debug.addSquare(Color.RED, gridX, gridY, nextZ - 32, 15);
+					
+					return false;
+				}
+				
+				// Get real geodata Z.
+				goz = block.getHeight(index, null);
+				
+				// Check geodata to be above bottom border. If so, obstacle in path.
+				if (goz > nextZ)
+				{
+					// Show last iterated cell.
+					if (debug != null)
+						debug.addSquare(Color.RED, gridX, gridY, nextZ - 32, 15);
+					
+					return false;
+				}
+				
+				// Show iterated cell.
+				if (debug != null)
+				{
+					debug.addPoint(debugDir, debugColor, true, checkX, checkY, nextZ - 32);
+					debug.addSquare(Color.GREEN, gridX, gridY, nextZ - 32, 15);
+				}
+			}
+			
+			// Evaluate top border (max Z).
+			{
+				// Get index of geodata below top border (max Z).
+				index = block.getIndexAbove(gox, goy, nextZ, null);
+				
+				// Get next border Z (top).
+				nextZ += (int) oheight;
+				
+				// If there are geodata, check them protruding top border.
+				if (index >= 0)
+				{
+					// Get real geodata Z.
+					goz = block.getHeight(index, null);
+					
+					// Check geodata to be below top border. If so, obstacle in path.
+					if (goz < nextZ)
+					{
+						// Show last iterated cell.
+						if (debug != null)
+							debug.addSquare(Color.RED, gridX, gridY, nextZ - 32, 15);
+						
+						return false;
+					}
+				}
+				
+				// Show iterated cell.
+				if (debug != null)
+					debug.addSquare(Color.GREEN, gridX, gridY, nextZ - 32, 15);
+			}
+		}
 		
-		// No coordinates found (is possible, but rare occasions), set coordinates to the point.
-		return new Location(px, py, gpz);
+		// Iteration is completed, no obstacle is found.
+		return true;
+	}
+	
+	/**
+	 * Check floating movement from origin to target coordinates. Returns last available point in the checked path.<br>
+	 * @param ox : Origin X coordinate.
+	 * @param oy : Origin Y coordinate.
+	 * @param oz : Origin Z coordinate.
+	 * @param oheight : The height of origin, used for corridor evaluation.
+	 * @param tx : Target X coordinate.
+	 * @param ty : Target Y coordinate.
+	 * @param tz : Target Z coordinate.
+	 * @param debug : The debug packet to add debug informations in.
+	 * @return The {@link Location} representing last point of movement (e.g. just before wall).
+	 */
+	public final Location getValidFloatLocation(int ox, int oy, int oz, double oheight, int tx, int ty, int tz, ExServerPrimitive debug)
+	{
+		// Get delta coordinates and slope of line (XY, XZ).
+		final int dx = tx - ox;
+		final int dy = ty - oy;
+		final int dz = tz - oz;
+		final double m = (double) dy / dx;
+		final double mz = dz / Math.sqrt(dx * dx + dy * dy);
+		
+		// Get signum coordinates (world -16, 0, 16 and geodata -1, 0, 1).
+		final int sx = dx > 0 ? GeoStructure.CELL_SIZE : dx < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int sy = dy > 0 ? GeoStructure.CELL_SIZE : dy < 0 ? -GeoStructure.CELL_SIZE : 0;
+		final int gsx = sx / GeoStructure.CELL_SIZE;
+		final int gsy = sy / GeoStructure.CELL_SIZE;
+		
+		// Get cell grid coordinate and cell border offsets in a direction of iteration.
+		int gridX = ox & 0xFFFFFFF0;
+		int gridY = oy & 0xFFFFFFF0;
+		final int bx = sx >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		final int by = sy >= 0 ? GeoStructure.CELL_SIZE - 1 : 0;
+		
+		// Get geodata coordinates and nswe and direction flags.
+		int gox = getGeoX(ox);
+		int goy = getGeoY(oy);
+		int goz = getHeight(ox, oy, oz);
+		final int gtx = getGeoX(tx);
+		final int gty = getGeoY(ty);
+		
+		// Add points to debug packet, if present.
+		if (debug != null)
+		{
+			debug.addSquare(Color.BLUE, gridX, gridY, goz - 32, 15);
+			debug.addSquare(Color.BLUE, tx & 0xFFFFFFF0, ty & 0xFFFFFFF0, tz - 32, 15);
+		}
+		
+		// Run loop.
+		int checkX;
+		int checkY;
+		int checkZ = oz;
+		int index;
+		String debugDir = null;
+		Color debugColor = null;
+		while (gox != gtx || goy != gty)
+		{
+			// Calculate intersection with cell's X border.
+			checkX = gridX + bx;
+			checkY = oy + (int) (m * (checkX - ox));
+			
+			if (sx != 0 && Math.abs(getGeoY(checkY) - goy) == 0)
+			{
+				// Set next cell in X direction.
+				gridX += sx;
+				gox += gsx;
+				
+				// Set direction and color for debug, if enabled.
+				if (debug != null)
+				{
+					debugDir = sx > 0 ? "E" : "W";
+					debugColor = Color.CYAN;
+				}
+			}
+			else
+			{
+				// Calculate intersection with cell's Y border.
+				checkY = gridY + by;
+				checkX = ox + (int) ((checkY - oy) / m);
+				checkX = MathUtil.limit(checkX, gridX, gridX + 15);
+				
+				// Set direction and color for debug, if enabled.
+				if (debug != null)
+				{
+					debugDir = sy > 0 ? "S" : "N";
+					debugColor = Color.YELLOW;
+				}
+				
+				// Set next cell in Y direction.
+				gridY += sy;
+				goy += gsy;
+			}
+			
+			// Get block of the next cell.
+			ABlock block = getBlock(gox, goy);
+			
+			// Evaluate bottom border (min Z).
+			int bottomZ;
+			{
+				// Get next border Z (bottom).
+				bottomZ = oz + (int) (mz * Math.sqrt((checkX - ox) * (checkX - ox) + (checkY - oy) * (checkY - oy)));
+				
+				// Get index of geodata below top border (max Z).
+				index = block.getIndexBelow(gox, goy, bottomZ + (int) oheight, null);
+				
+				// If no geodata, fail. There always have to be some geodata below character.
+				if (index < 0)
+				{
+					// Show last iterated cell.
+					if (debug != null)
+						debug.addSquare(Color.RED, gridX, gridY, bottomZ - 32, 15);
+					
+					return new Location(checkX, checkY, checkZ);
+				}
+				
+				// Get real geodata Z.
+				goz = block.getHeight(index, null);
+				
+				// Check geodata to be above bottom border. If so, obstacle in path.
+				if (goz > bottomZ)
+				{
+					// Show last iterated cell.
+					if (debug != null)
+						debug.addSquare(Color.RED, gridX, gridY, bottomZ - 32, 15);
+					
+					return new Location(checkX, checkY, checkZ);
+				}
+				
+				// Show iterated cell.
+				if (debug != null)
+				{
+					debug.addPoint(debugDir, debugColor, true, checkX, checkY, bottomZ - 32);
+					debug.addSquare(Color.GREEN, gridX, gridY, bottomZ - 32, 15);
+				}
+			}
+			
+			// Evaluate top border (max Z).
+			{
+				// Get index of geodata below top border (max Z).
+				index = block.getIndexAbove(gox, goy, bottomZ, null);
+				
+				// Get next border Z (top).
+				int topZ = bottomZ + (int) oheight;
+				
+				// If there are geodata, check them protruding top border.
+				if (index >= 0)
+				{
+					// Get real geodata Z.
+					goz = block.getHeight(index, null);
+					
+					// Check geodata to be below top border. If so, obstacle in path.
+					if (goz < topZ)
+					{
+						// Show last iterated cell.
+						if (debug != null)
+							debug.addSquare(Color.RED, gridX, gridY, topZ - 32, 15);
+						
+						return new Location(checkX, checkY, checkZ);
+					}
+				}
+				
+				// Show iterated cell.
+				if (debug != null)
+					debug.addSquare(Color.GREEN, gridX, gridY, topZ - 32, 15);
+			}
+			
+			// Set Z coord of current bottom layer intersection.
+			checkZ = bottomZ;
+		}
+		
+		// Iteration is completed, no obstacle is found.
+		return new Location(tx, ty, tz);
 	}
 	
 	/**
@@ -1417,7 +1700,7 @@ public class GeoEngine
 			GeoLocation nodeC = (GeoLocation) path.get(point.nextIndex());
 			
 			// check movement from node A to node C
-			if (canMove(nodeAx, nodeAy, nodeAz, nodeC.getGeoX(), nodeC.getGeoY(), (short) nodeC.getZ()))
+			if (canMove(getWorldX(nodeAx), getWorldY(nodeAy), nodeAz, nodeC.getX(), nodeC.getY(), nodeC.getZ(), null))
 			{
 				// can move from node A to node C
 				

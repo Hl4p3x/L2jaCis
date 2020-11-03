@@ -50,7 +50,7 @@ public class Fisherman extends Merchant
 			showFishSkillList(player);
 		else if (command.startsWith("FishingChampionship"))
 		{
-			if (!Config.ALT_FISH_CHAMPIONSHIP_ENABLED)
+			if (!Config.ALLOW_FISH_CHAMPIONSHIP)
 			{
 				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 				html.setFile("data/html/fisherman/championship/no_fish_event001.htm");
@@ -61,7 +61,7 @@ public class Fisherman extends Merchant
 		}
 		else if (command.startsWith("FishingReward"))
 		{
-			if (!Config.ALT_FISH_CHAMPIONSHIP_ENABLED)
+			if (!Config.ALLOW_FISH_CHAMPIONSHIP)
 			{
 				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 				html.setFile("data/html/fisherman/championship/no_fish_event001.htm");

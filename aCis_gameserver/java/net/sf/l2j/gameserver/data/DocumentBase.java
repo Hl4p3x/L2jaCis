@@ -38,7 +38,6 @@ import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerCharges;
 import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerHasCastle;
 import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerHasClanHall;
 import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerHp;
-import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerHpPercentage;
 import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerInvSize;
 import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerIsHero;
 import net.sf.l2j.gameserver.skills.conditions.ConditionPlayerLevel;
@@ -442,11 +441,6 @@ abstract class DocumentBase
 			{
 				int hp = Integer.decode(getValue(a.getNodeValue(), null));
 				cond = joinAnd(cond, new ConditionPlayerHp(hp));
-			}
-			else if ("hprate".equalsIgnoreCase(a.getNodeName()))
-			{
-				double rate = Double.parseDouble(getValue(a.getNodeValue(), null));
-				cond = joinAnd(cond, new ConditionPlayerHpPercentage(rate));
 			}
 			else if ("mp".equalsIgnoreCase(a.getNodeName()))
 			{

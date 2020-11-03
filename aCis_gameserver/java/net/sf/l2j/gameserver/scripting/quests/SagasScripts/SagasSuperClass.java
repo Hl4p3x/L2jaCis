@@ -8,7 +8,6 @@ import java.util.Map;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
@@ -191,7 +190,7 @@ public class SagasSuperClass extends Quest
 				// Attack player
 				Player target = st2.getPlayer();
 				((Attackable) Archon).addDamageHate(st2.getPlayer(), 0, 99999);
-				Archon.getAI().tryTo(IntentionType.ATTACK, target, false);
+				Archon.getAI().tryToAttack(target);
 			}
 			else
 			{
@@ -239,7 +238,7 @@ public class SagasSuperClass extends Quest
 			}
 			else if (event.equalsIgnoreCase("0-1"))
 			{
-				if (player.getLevel() < 76)
+				if (player.getStatus().getLevel() < 76)
 				{
 					htmltext = "0-02.htm";
 					if (st.isCreated())
@@ -250,7 +249,7 @@ public class SagasSuperClass extends Quest
 			}
 			else if (event.equalsIgnoreCase("0-2"))
 			{
-				if (player.getLevel() >= 76)
+				if (player.getStatus().getLevel() >= 76)
 				{
 					st.exitQuest(false);
 					st.set("cond", "0");
@@ -457,7 +456,7 @@ public class SagasSuperClass extends Quest
 			// Attack player
 			final Player target = st.getPlayer();
 			((Attackable) npc).addDamageHate(target, 0, 99999);
-			npc.getAI().tryTo(IntentionType.ATTACK, target, false);
+			npc.getAI().tryToAttack(target);
 			npc.broadcastNpcSay(Text[0].replace("PLAYERNAME", player.getName()));
 		}
 		else if (name.equalsIgnoreCase("Mob_1 has despawned"))
@@ -482,7 +481,7 @@ public class SagasSuperClass extends Quest
 			if (_SpawnList.containsKey(target) && _SpawnList.get(target) == player.getObjectId())
 			{
 				((Attackable) npc).addDamageHate(target, 0, 99999);
-				npc.getAI().tryTo(IntentionType.ATTACK, target, false);
+				npc.getAI().tryToAttack(target);
 				npc.broadcastNpcSay(Text[14]);
 			}
 		}
@@ -679,7 +678,7 @@ public class SagasSuperClass extends Quest
 				{
 					if (npcId == NPC[0])
 					{
-						if (player.getLevel() >= 76)
+						if (player.getStatus().getLevel() >= 76)
 						{
 							htmltext = "0-09.htm";
 							st.exitQuest(false);

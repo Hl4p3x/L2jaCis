@@ -69,7 +69,7 @@ public class Q358_IllegitimateChildOfAGoddess extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 63) ? "30862-01.htm" : "30862-02.htm";
+				htmltext = (player.getStatus().getLevel() < 63) ? "30862-01.htm" : "30862-02.htm";
 				break;
 			
 			case STATE_STARTED:

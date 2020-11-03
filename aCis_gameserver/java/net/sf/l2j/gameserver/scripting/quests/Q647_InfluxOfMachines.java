@@ -67,7 +67,7 @@ public class Q647_InfluxOfMachines extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 46) ? "32069-03.htm" : "32069-01.htm";
+				htmltext = (player.getStatus().getLevel() < 46) ? "32069-03.htm" : "32069-01.htm";
 				break;
 			
 			case STATE_STARTED:

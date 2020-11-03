@@ -4,23 +4,27 @@ import net.sf.l2j.gameserver.model.actor.Player;
 
 public class RecipeShopItemInfo extends L2GameServerPacket
 {
-	private final Player _player;
+	private final int _objectId;
 	private final int _recipeId;
+	private final int _mp;
+	private final int _maxMp;
 	
 	public RecipeShopItemInfo(Player player, int recipeId)
 	{
-		_player = player;
+		_objectId = player.getObjectId();
 		_recipeId = recipeId;
+		_mp = (int) player.getStatus().getMp();
+		_maxMp = player.getStatus().getMaxMp();
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0xda);
-		writeD(_player.getObjectId());
+		writeD(_objectId);
 		writeD(_recipeId);
-		writeD((int) _player.getCurrentMp());
-		writeD(_player.getMaxMp());
+		writeD(_mp);
+		writeD(_maxMp);
 		writeD(0xffffffff);
 	}
 }

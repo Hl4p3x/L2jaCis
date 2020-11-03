@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.skills.effects;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
@@ -27,7 +26,7 @@ public class EffectChameleonRest extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		((Player) getEffected()).getAI().tryTo(IntentionType.SIT, null, null);
+		((Player) getEffected()).sitDown();
 		
 		return super.onStart();
 	}
@@ -54,13 +53,13 @@ public class EffectChameleonRest extends AbstractEffect
 				return false;
 		}
 		
-		if (getTemplate().getValue() > getEffected().getCurrentMp())
+		if (getTemplate().getValue() > getEffected().getStatus().getMp())
 		{
 			getEffected().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP));
 			return false;
 		}
 		
-		getEffected().reduceCurrentMp(getTemplate().getValue());
+		getEffected().getStatus().reduceMp(getTemplate().getValue());
 		return true;
 	}
 	

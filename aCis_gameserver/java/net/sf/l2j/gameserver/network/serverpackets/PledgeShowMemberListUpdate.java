@@ -19,7 +19,7 @@ public final class PledgeShowMemberListUpdate extends L2GameServerPacket
 		_pledgeType = player.getPledgeType();
 		_hasSponsor = (player.getSponsor() != 0 || player.getApprentice() != 0) ? 1 : 0;
 		_name = player.getName();
-		_level = player.getLevel();
+		_level = player.getStatus().getLevel();
 		_classId = player.getClassId().getId();
 		_race = player.getRace().ordinal();
 		_sex = player.getAppearance().getSex().ordinal();

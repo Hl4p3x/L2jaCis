@@ -81,7 +81,7 @@ public class Q028_ChestCaughtWithABaitOfIcyAir extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 36)
+				if (player.getStatus().getLevel() < 36)
 					htmltext = "31572-02.htm";
 				else
 				{

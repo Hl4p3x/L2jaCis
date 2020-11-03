@@ -69,7 +69,7 @@ public class Q649_ALooterAndARailroadMan extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 30) ? "32052-0a.htm" : "32052-0.htm";
+				htmltext = (player.getStatus().getLevel() < 30) ? "32052-0a.htm" : "32052-0.htm";
 				break;
 			
 			case STATE_STARTED:

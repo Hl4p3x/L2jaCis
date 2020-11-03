@@ -5,11 +5,11 @@ import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.entity.Duel.DuelState;
 
-public class NpcStatus extends CreatureStatus
+public class NpcStatus<T extends Npc> extends CreatureStatus<T>
 {
-	public NpcStatus(Npc activeChar)
+	public NpcStatus(T actor)
 	{
-		super(activeChar);
+		super(actor);
 	}
 	
 	@Override
@@ -21,7 +21,7 @@ public class NpcStatus extends CreatureStatus
 	@Override
 	public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption)
 	{
-		if (getActiveChar().isDead())
+		if (_actor.isDead())
 			return;
 		
 		if (attacker != null)
@@ -35,8 +35,8 @@ public class NpcStatus extends CreatureStatus
 	}
 	
 	@Override
-	public Npc getActiveChar()
+	public int getLevel()
 	{
-		return (Npc) super.getActiveChar();
+		return _actor.getTemplate().getLevel();
 	}
 }

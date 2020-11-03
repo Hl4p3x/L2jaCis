@@ -112,7 +112,7 @@ public class Q037_MakeFormalWear extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "30842-0a.htm" : "30842-0.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "30842-0a.htm" : "30842-0.htm";
 				break;
 			
 			case STATE_STARTED:

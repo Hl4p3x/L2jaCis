@@ -103,7 +103,7 @@ public class SeedState
 				}
 			}
 			
-			final int diff = _owner.getLevel() - _seed.getLevel() - 5;
+			final int diff = _owner.getStatus().getLevel() - _seed.getLevel() - 5;
 			if (diff > 0)
 				count += diff;
 			

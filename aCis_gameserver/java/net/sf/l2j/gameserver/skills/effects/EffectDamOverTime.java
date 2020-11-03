@@ -27,7 +27,7 @@ public class EffectDamOverTime extends AbstractEffect
 			return false;
 		
 		double damage = getTemplate().getValue();
-		if (damage >= getEffected().getCurrentHp())
+		if (damage >= getEffected().getStatus().getHp())
 		{
 			if (getSkill().isToggle())
 			{
@@ -39,10 +39,10 @@ public class EffectDamOverTime extends AbstractEffect
 			if (!getSkill().killByDOT())
 			{
 				// Fix for players dying by DOTs if HP < 1 since reduceCurrentHP method will kill them
-				if (getEffected().getCurrentHp() <= 1)
+				if (getEffected().getStatus().getHp() <= 1)
 					return true;
 				
-				damage = getEffected().getCurrentHp() - 1;
+				damage = getEffected().getStatus().getHp() - 1;
 			}
 		}
 		getEffected().reduceCurrentHpByDOT(damage, getEffector(), getSkill());

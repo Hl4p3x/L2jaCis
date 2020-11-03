@@ -13,7 +13,7 @@ public class GameServerListener extends FloodProtectedListener
 	
 	public GameServerListener() throws IOException
 	{
-		super(Config.GAME_SERVER_LOGIN_HOST, Config.GAME_SERVER_LOGIN_PORT);
+		super(Config.GAMESERVER_LOGIN_HOSTNAME, Config.GAMESERVER_LOGIN_PORT);
 	}
 	
 	@Override

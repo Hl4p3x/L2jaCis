@@ -38,7 +38,7 @@ public class PartyMatchRoomManager
 	 */
 	public PartyMatchRoom getFirstAvailableRoom(Player player)
 	{
-		return _rooms.values().stream().filter(r -> player.getLevel() >= r.getMinLvl() && player.getLevel() <= r.getMaxLvl() && !r.isFull()).findFirst().orElse(null); // TODO Implement bbs behavior.
+		return _rooms.values().stream().filter(r -> player.getStatus().getLevel() >= r.getMinLvl() && player.getStatus().getLevel() <= r.getMaxLvl() && !r.isFull()).findFirst().orElse(null); // TODO Implement bbs behavior.
 	}
 	
 	public void addRoom(int id, PartyMatchRoom room)
@@ -87,7 +87,7 @@ public class PartyMatchRoomManager
 			if (member == player)
 				continue;
 			
-			if (member.getLevel() < minLvl || member.getLevel() > maxLvl)
+			if (member.getStatus().getLevel() < minLvl || member.getStatus().getLevel() > maxLvl)
 				continue;
 			
 			members.add(member);

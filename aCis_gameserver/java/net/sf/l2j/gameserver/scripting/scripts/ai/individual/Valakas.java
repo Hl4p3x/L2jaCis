@@ -7,14 +7,12 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.model.zone.type.BossZone;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
@@ -106,7 +104,7 @@ public class Valakas extends L2AttackableAIScript
 				final Npc valakas = addSpawn(VALAKAS, loc_x, loc_y, loc_z, heading, false, 0, false);
 				GrandBossManager.getInstance().addBoss((GrandBoss) valakas);
 				
-				valakas.setCurrentHpMp(hp, mp);
+				valakas.getStatus().setHpMp(hp, mp);
 				valakas.forceRunStance();
 				
 				// stores current time for inactivity task.
@@ -186,7 +184,7 @@ public class Valakas extends L2AttackableAIScript
 			if (Rnd.get(30) == 0)
 			{
 				L2Skill skillRegen;
-				final double hpRatio = npc.getCurrentHp() / npc.getMaxHp();
+				final double hpRatio = npc.getStatus().getHpRatio();
 				
 				// Current HPs are inferior to 25% ; apply lvl 4 of regen skill.
 				if (hpRatio < 0.25)
@@ -347,8 +345,7 @@ public class Valakas extends L2AttackableAIScript
 			return;
 		}
 		
-		final L2Skill skill = SkillTable.getInstance().getInfo(getRandomSkill(npc), 1);
-		npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, _actualVictim, skill, false, false), null);
+		npc.getAI().tryToCast(_actualVictim, getRandomSkill(npc), 1);
 	}
 	
 	/**
@@ -360,7 +357,7 @@ public class Valakas extends L2AttackableAIScript
 	 */
 	private static int getRandomSkill(Npc npc)
 	{
-		final double hpRatio = npc.getCurrentHp() / npc.getMaxHp();
+		final double hpRatio = npc.getStatus().getHpRatio();
 		
 		// Valakas Lava Skin is prioritary.
 		if (hpRatio < 0.25 && Rnd.get(1500) == 0 && npc.getFirstEffect(4680) == null)

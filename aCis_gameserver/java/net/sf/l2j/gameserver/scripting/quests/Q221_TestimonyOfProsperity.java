@@ -134,7 +134,7 @@ public class Q221_TestimonyOfProsperity extends SecondClassQuest
 			st.takeItems(RING_OF_TESTIMONY_1, 1);
 			st.playSound(QuestState.SOUND_MIDDLE);
 			
-			if (player.getLevel() < 38)
+			if (player.getStatus().getLevel() < 38)
 			{
 				st.set("cond", "3");
 				st.giveItems(PARMAN_INSTRUCTIONS, 1);
@@ -272,9 +272,9 @@ public class Q221_TestimonyOfProsperity extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DWARF)
 					htmltext = "30104-01.htm";
-				else if (player.getLevel() < 37)
+				else if (player.getStatus().getLevel() < 37)
 					htmltext = "30104-02.htm";
-				else if (player.getClassId().level() != 1)
+				else if (player.getClassId().getLevel() != 1)
 					htmltext = "30104-01a.htm";
 				else
 					htmltext = "30104-03.htm";
@@ -291,7 +291,7 @@ public class Q221_TestimonyOfProsperity extends SecondClassQuest
 							htmltext = "30104-06.htm";
 						else if (cond == 3)
 						{
-							if (player.getLevel() < 38)
+							if (player.getStatus().getLevel() < 38)
 								htmltext = "30104-09.htm";
 							else
 							{

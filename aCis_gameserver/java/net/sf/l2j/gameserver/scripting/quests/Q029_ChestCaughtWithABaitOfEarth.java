@@ -81,7 +81,7 @@ public class Q029_ChestCaughtWithABaitOfEarth extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 48)
+				if (player.getStatus().getLevel() < 48)
 					htmltext = "31574-02.htm";
 				else
 				{

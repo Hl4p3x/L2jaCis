@@ -63,7 +63,7 @@ public class Q637_ThroughTheGateOnceMore extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 73 || !st.hasQuestItems(FADED_VISITOR_MARK))
+				if (player.getStatus().getLevel() < 73 || !st.hasQuestItems(FADED_VISITOR_MARK))
 					htmltext = "32010-01a.htm";
 				else if (st.hasQuestItems(PAGAN_MARK))
 					htmltext = "32010-00.htm";

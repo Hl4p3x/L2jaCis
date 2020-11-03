@@ -153,7 +153,7 @@ public class Q355_FamilyHonor extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 36) ? "30181-0a.htm" : "30181-0.htm";
+				htmltext = (player.getStatus().getLevel() < 36) ? "30181-0a.htm" : "30181-0.htm";
 				break;
 			
 			case STATE_STARTED:

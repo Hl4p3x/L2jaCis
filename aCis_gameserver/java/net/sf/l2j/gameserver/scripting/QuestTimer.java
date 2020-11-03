@@ -3,7 +3,7 @@ package net.sf.l2j.gameserver.scripting;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;

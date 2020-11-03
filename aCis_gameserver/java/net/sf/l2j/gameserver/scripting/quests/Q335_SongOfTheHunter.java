@@ -10,13 +10,12 @@ import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
@@ -767,7 +766,7 @@ public class Q335_SongOfTheHunter extends Quest
 			{
 				final Attackable monster = (Attackable) addSpawn(_spawnId, npc, true, 300000, true);
 				monster.addDamageHate(player, 0, 99999);
-				monster.getAI().tryTo(IntentionType.ATTACK, player, false);
+				monster.getAI().tryToAttack(player);
 				
 				if (_message != null)
 					monster.broadcastNpcSay(_message);
@@ -1181,7 +1180,7 @@ public class Q335_SongOfTheHunter extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 35)
+				if (player.getStatus().getLevel() >= 35)
 					htmltext = "30744-02.htm";
 				else
 					htmltext = "30744-01.htm";
@@ -1213,7 +1212,7 @@ public class Q335_SongOfTheHunter extends Quest
 						else if (cond == 2)
 						{
 							// Hunter license 1 below 45 lvl
-							if (player.getLevel() < 45)
+							if (player.getStatus().getLevel() < 45)
 								htmltext = "30744-07.htm";
 							// Hunter license 1 above 45 lvl, without started test 2
 							else if (st.getInt("grey2") == 0)
@@ -1262,7 +1261,7 @@ public class Q335_SongOfTheHunter extends Quest
 								if (cond == 2)
 								{
 									// hunting license 1 - multiple options
-									if (player.getLevel() >= 45)
+									if (player.getStatus().getLevel() >= 45)
 									{
 										if (st.hasQuestItems(TEST_INSTRUCTIONS_2))
 											htmltext = "30745-03.htm";
@@ -1424,7 +1423,7 @@ public class Q335_SongOfTheHunter extends Quest
 			}
 			
 			// Solving Cybellin's request ; the proper monster was killed using Cybellin's Dagger.
-			if (st.getInt("cybellin") > 0 && ArraysUtil.contains(CYBELLIN_REQUEST_DROPLIST, npc.getNpcId()) && st.getItemEquipped(Inventory.PAPERDOLL_RHAND) == CYBELLIN_DAGGER)
+			if (st.getInt("cybellin") > 0 && ArraysUtil.contains(CYBELLIN_REQUEST_DROPLIST, npc.getNpcId()) && st.getItemIdFrom(Paperdoll.RHAND) == CYBELLIN_DAGGER)
 			{
 				final boolean isSuccessful = Rnd.get(100) < 60;
 				

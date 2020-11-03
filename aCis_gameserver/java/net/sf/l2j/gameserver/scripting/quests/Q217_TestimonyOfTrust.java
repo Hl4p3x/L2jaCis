@@ -152,7 +152,7 @@ public class Q217_TestimonyOfTrust extends SecondClassQuest
 		}
 		else if (event.equalsIgnoreCase("30657-03.htm"))
 		{
-			if (player.getLevel() < 38)
+			if (player.getStatus().getLevel() < 38)
 			{
 				htmltext = "30657-02.htm";
 				if (st.getInt("cond") == 10)
@@ -185,11 +185,11 @@ public class Q217_TestimonyOfTrust extends SecondClassQuest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getClassId().level() != 1)
+				if (player.getClassId().getLevel() != 1)
 					htmltext = "30191-01a.htm";
 				else if (player.getRace() != ClassRace.HUMAN)
 					htmltext = "30191-02.htm";
-				else if (player.getLevel() < 37)
+				else if (player.getStatus().getLevel() < 37)
 					htmltext = "30191-01.htm";
 				else
 					htmltext = "30191-03.htm";

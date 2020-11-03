@@ -159,7 +159,7 @@ public class Q234_FatesWhisper extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 75) ? "31002-01.htm" : "31002-02.htm";
+				htmltext = (player.getStatus().getLevel() < 75) ? "31002-01.htm" : "31002-02.htm";
 				break;
 			
 			case STATE_STARTED:

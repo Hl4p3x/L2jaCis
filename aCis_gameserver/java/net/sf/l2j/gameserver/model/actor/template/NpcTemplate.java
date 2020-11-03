@@ -405,7 +405,7 @@ public class NpcTemplate extends CreatureTemplate
 	 */
 	public boolean canTeach(ClassId classId)
 	{
-		return _teachInfo != null && _teachInfo.contains((classId.level() == 3) ? classId.getParent() : classId);
+		return _teachInfo != null && _teachInfo.contains((classId.getLevel() == 3) ? classId.getParent() : classId);
 	}
 	
 	/**

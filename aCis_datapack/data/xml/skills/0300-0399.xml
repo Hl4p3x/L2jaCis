@@ -672,7 +672,7 @@
 		<set name="coolTime" val="720" />
 		<set name="SSBoost" val="2.0"/>
 		<set name="reuseDelay" val="5000"/>
-		<set name="skillType" val="STRSIEGEASSAULT"/>
+		<set name="skillType" val="STRIDER_SIEGE_ASSAULT"/>
 		<set name="operateType" val="ACTIVE"/>
 		<set name="castRange" val="40"/>
 		<set name="effectRange" val="400"/>
@@ -689,7 +689,7 @@
 		<set name="hitTime" val="4000" />
 		<set name="staticHitTime" val="true" />
 		<set name="staticReuse" val="true" />
-		<set name="skillType" val="SIEGEFLAG" />
+		<set name="skillType" val="SIEGE_FLAG" />
 		<set name="operateType" val="ACTIVE" />
 		<set name="isAdvanced" val="true" />
 	</skill>

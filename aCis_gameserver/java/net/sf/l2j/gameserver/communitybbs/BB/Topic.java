@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.communitybbs.Manager.TopicBBSManager;
 import net.sf.l2j.gameserver.enums.TopicType;
 
@@ -72,7 +72,7 @@ public class Topic
 	
 	private void insertIntoDb()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_TOPIC))
 		{
 			ps.setInt(1, _id);
@@ -96,7 +96,7 @@ public class Topic
 		TopicBBSManager.getInstance().deleteTopic(this);
 		forum.removeTopic(_id);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_TOPIC))
 		{
 			ps.setInt(1, _id);

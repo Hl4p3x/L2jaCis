@@ -3,6 +3,7 @@ package net.sf.l2j.gameserver.model.craft;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.Recipe;
@@ -98,7 +99,7 @@ public class RecipeItemMaker implements Runnable
 		}
 		
 		// Initial mana check requires MP as written on recipe.
-		if (_player.getCurrentMp() < _manaRequired)
+		if (_player.getStatus().getMp() < _manaRequired)
 		{
 			_target.sendPacket(SystemMessageId.NOT_ENOUGH_MP);
 			abort();
@@ -134,7 +135,7 @@ public class RecipeItemMaker implements Runnable
 			return;
 		}
 		
-		_player.reduceCurrentMp(_manaRequired);
+		_player.getStatus().reduceMp(_manaRequired);
 		
 		// First take adena for manufacture ; customer must pay for services.
 		if (_target != _player && _price > 0)
@@ -200,8 +201,8 @@ public class RecipeItemMaker implements Runnable
 	private void updateStatus()
 	{
 		final StatusUpdate su = new StatusUpdate(_target);
-		su.addAttribute(StatusUpdate.CUR_MP, (int) _target.getCurrentMp());
-		su.addAttribute(StatusUpdate.CUR_LOAD, _target.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_MP, (int) _target.getStatus().getMp());
+		su.addAttribute(StatusType.CUR_LOAD, _target.getCurrentWeight());
 		_target.sendPacket(su);
 	}
 	

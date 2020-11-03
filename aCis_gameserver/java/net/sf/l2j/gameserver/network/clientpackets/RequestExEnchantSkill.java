@@ -35,7 +35,7 @@ public final class RequestExEnchantSkill extends L2GameClientPacket
 		if (player == null)
 			return;
 		
-		if (player.getClassId().level() < 3 || player.getLevel() < 76)
+		if (player.getClassId().getLevel() < 3 || player.getStatus().getLevel() < 76)
 			return;
 		
 		final Folk folk = player.getCurrentFolk();
@@ -54,13 +54,13 @@ public final class RequestExEnchantSkill extends L2GameClientPacket
 			return;
 		
 		// Check exp and sp neccessary to enchant skill.
-		if (player.getSp() < esn.getSp())
+		if (player.getStatus().getSp() < esn.getSp())
 		{
 			player.sendPacket(SystemMessageId.YOU_DONT_HAVE_ENOUGH_SP_TO_ENCHANT_THAT_SKILL);
 			return;
 		}
 		
-		if (player.getExp() - esn.getExp() < player.getStat().getExpForLevel(76))
+		if (player.getStatus().getExp() - esn.getExp() < player.getStatus().getExpForLevel(76))
 		{
 			player.sendPacket(SystemMessageId.YOU_DONT_HAVE_ENOUGH_EXP_TO_ENCHANT_THAT_SKILL);
 			return;
@@ -80,7 +80,7 @@ public final class RequestExEnchantSkill extends L2GameClientPacket
 		int skillLevel = _skillLevel;
 		
 		// Try to enchant skill.
-		if (Rnd.get(100) <= esn.getEnchantRate(player.getLevel()))
+		if (Rnd.get(100) <= esn.getEnchantRate(player.getStatus().getLevel()))
 		{
 			player.addSkill(skill, true, true);
 			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_HAVE_SUCCEEDED_IN_ENCHANTING_THE_SKILL_S1).addSkillName(_skillId, _skillLevel));

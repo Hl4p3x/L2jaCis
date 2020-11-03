@@ -3,7 +3,7 @@ package net.sf.l2j.gameserver.model.actor.instance;
 import java.util.Calendar;
 import java.util.List;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.FourSepulchersManager;
 import net.sf.l2j.gameserver.data.xml.DoorData;

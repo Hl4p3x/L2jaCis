@@ -264,7 +264,7 @@ public class Q384_WarehouseKeepersPastime extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 40) ? "30182-04.htm" : "30182-01.htm";
+				htmltext = (player.getStatus().getLevel() < 40) ? "30182-04.htm" : "30182-01.htm";
 				break;
 			
 			case STATE_STARTED:

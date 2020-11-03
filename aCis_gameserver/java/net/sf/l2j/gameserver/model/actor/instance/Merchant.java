@@ -96,11 +96,11 @@ public class Merchant extends Folk
 		{
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			
-			if (player.getLevel() < 40)
+			if (player.getStatus().getLevel() < 40)
 				html.setFile("data/html/common/shadow_item-lowlevel.htm");
-			else if (player.getLevel() < 46)
+			else if (player.getStatus().getLevel() < 46)
 				html.setFile("data/html/common/shadow_item_mi_c.htm");
-			else if (player.getLevel() < 52)
+			else if (player.getStatus().getLevel() < 52)
 				html.setFile("data/html/common/shadow_item_hi_c.htm");
 			else
 				html.setFile("data/html/common/shadow_item_b.htm");
@@ -120,7 +120,7 @@ public class Merchant extends Folk
 			if (st.countTokens() < 1)
 				return;
 			
-			if (player.isNewbie())
+			if (player.isNewbie(true))
 				MultisellData.getInstance().separateAndSend(st.nextToken(), player, this, true);
 			else
 				showChatWindow(player, "data/html/exchangelvlimit.htm");

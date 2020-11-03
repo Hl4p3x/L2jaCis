@@ -64,7 +64,7 @@ public class Q274_SkirmishWithTheWerewolves extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30569-00.htm";
-				else if (player.getLevel() < 9)
+				else if (player.getStatus().getLevel() < 9)
 					htmltext = "30569-01.htm";
 				else if (st.hasAtLeastOneQuestItem(NECKLACE_OF_COURAGE, NECKLACE_OF_VALOR))
 					htmltext = "30569-02.htm";

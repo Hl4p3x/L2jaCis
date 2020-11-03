@@ -75,7 +75,7 @@ public class Q152_ShardsOfGolem extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 10) ? "30035-01a.htm" : "30035-01.htm";
+				htmltext = (player.getStatus().getLevel() < 10) ? "30035-01a.htm" : "30035-01.htm";
 				break;
 			
 			case STATE_STARTED:

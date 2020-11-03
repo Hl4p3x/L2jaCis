@@ -74,7 +74,7 @@ public class Q368_TrespassingIntoTheSacredArea extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 36) ? "30926-01a.htm" : "30926-01.htm";
+				htmltext = (player.getStatus().getLevel() < 36) ? "30926-01a.htm" : "30926-01.htm";
 				break;
 			
 			case STATE_STARTED:

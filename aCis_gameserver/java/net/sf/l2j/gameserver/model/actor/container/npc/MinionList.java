@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
@@ -203,8 +203,8 @@ public class MinionList
 		minion.setIsDead(false);
 		minion.setDecayed(false);
 		
-		// Set the Minion HP, MP and Heading
-		minion.setCurrentHpMp(minion.getMaxHp(), minion.getMaxMp());
+		// Set the Minion HP, MP.
+		minion.getStatus().setMaxHpMp();
 		
 		// Init the position of the Minion and add it in the world as a visible object
 		final int offset = (int) (100 + minion.getCollisionRadius() + master.getCollisionRadius());

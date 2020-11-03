@@ -79,7 +79,7 @@ public class Q298_LizardmensConspiracy extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 25) ? "30333-0b.htm" : "30333-0a.htm";
+				htmltext = (player.getStatus().getLevel() < 25) ? "30333-0b.htm" : "30333-0a.htm";
 				break;
 			
 			case STATE_STARTED:

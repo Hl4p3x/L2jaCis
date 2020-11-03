@@ -2,6 +2,7 @@ package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Fisherman;
@@ -105,7 +106,7 @@ public final class RequestSellItem extends L2GameClientPacket
 		
 		// Update current load as well
 		StatusUpdate su = new StatusUpdate(player);
-		su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
 		player.sendPacket(su);
 		player.sendPacket(new ItemList(player, true));
 	}

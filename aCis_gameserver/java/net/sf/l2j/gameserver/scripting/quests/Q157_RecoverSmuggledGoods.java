@@ -57,7 +57,7 @@ public class Q157_RecoverSmuggledGoods extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 5) ? "30005-02.htm" : "30005-03.htm";
+				htmltext = (player.getStatus().getLevel() < 5) ? "30005-02.htm" : "30005-03.htm";
 				break;
 			
 			case STATE_STARTED:

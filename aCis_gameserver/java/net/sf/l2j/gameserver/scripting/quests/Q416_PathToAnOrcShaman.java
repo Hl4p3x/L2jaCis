@@ -76,7 +76,7 @@ public class Q416_PathToAnOrcShaman extends Quest
 		{
 			if (player.getClassId() != ClassId.ORC_MYSTIC)
 				htmltext = (player.getClassId() == ClassId.ORC_SHAMAN) ? "30585-02a.htm" : "30585-02.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30585-03.htm";
 			else if (st.hasQuestItems(MASK_OF_MEDIUM))
 				htmltext = "30585-04.htm";

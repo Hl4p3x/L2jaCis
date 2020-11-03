@@ -4,6 +4,7 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.enums.CabalType;
 import net.sf.l2j.gameserver.enums.SealType;
+import net.sf.l2j.gameserver.enums.actors.NpcTalkCond;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -35,36 +36,47 @@ public class WyvernManagerNpc extends CastleChamberlain
 		
 		if (command.startsWith("RideWyvern"))
 		{
-			String val = "2";
-			if (player.isClanLeader())
+			if (!player.isClanLeader())
 			{
-				// Verify if Dusk own Seal of Strife (if true, CLs can't mount wyvern).
-				if (SevenSignsManager.getInstance().getSealOwner(SealType.STRIFE) == CabalType.DUSK)
-					val = "3";
-				// If player is mounted on a strider
-				else if (player.isMounted() && (player.getMountNpcId() == 12526 || player.getMountNpcId() == 12527 || player.getMountNpcId() == 12528))
-				{
-					// Check for strider level
-					if (player.getMountLevel() < Config.WYVERN_REQUIRED_LEVEL)
-						val = "6";
-					// Check for items consumption
-					else if (player.destroyItemByItemId("Wyvern", 1460, Config.WYVERN_REQUIRED_CRYSTALS, player, true))
-					{
-						player.dismount();
-						if (player.mount(12621, 0))
-							val = "4";
-					}
-					else
-						val = "5";
-				}
-				else
-				{
-					player.sendPacket(SystemMessageId.YOU_MAY_ONLY_RIDE_WYVERN_WHILE_RIDING_STRIDER);
-					val = "1";
-				}
+				sendHtm(player, "2");
+				return;
 			}
 			
-			sendHtm(player, val);
+			// Verify if Dusk owns the Seal of Strife (if true, CLs can't mount Wyvern).
+			if (SevenSignsManager.getInstance().getSealOwner(SealType.STRIFE) == CabalType.DUSK)
+			{
+				sendHtm(player, "3");
+				return;
+			}
+			
+			// Check if the Player is mounted on a Strider.
+			if (!player.isMounted() || (player.getMountNpcId() != 12526 && player.getMountNpcId() != 12527 && player.getMountNpcId() != 12528))
+			{
+				player.sendPacket(SystemMessageId.YOU_MAY_ONLY_RIDE_WYVERN_WHILE_RIDING_STRIDER);
+				sendHtm(player, "1");
+				return;
+			}
+			
+			// Check for strider level.
+			if (player.getMountLevel() < Config.WYVERN_REQUIRED_LEVEL)
+			{
+				sendHtm(player, "6");
+				return;
+			}
+			
+			// Check for items consumption.
+			if (!player.destroyItemByItemId("Wyvern", 1460, Config.WYVERN_REQUIRED_CRYSTALS, player, true))
+			{
+				sendHtm(player, "5");
+				return;
+			}
+			
+			// Dismount the Strider.
+			player.dismount();
+			
+			// Mount a Wyvern. If successful, call an HTM.
+			if (player.mount(12621, 0))
+				sendHtm(player, "4");
 		}
 		else if (command.startsWith("Chat"))
 		{
@@ -86,47 +98,22 @@ public class WyvernManagerNpc extends CastleChamberlain
 	@Override
 	public void showChatWindow(Player player)
 	{
-		String val = "0a"; // Default value : player's clan doesn't own castle.
-		
-		int condition = validateCondition(player);
-		if (condition > COND_ALL_FALSE)
-		{
-			if (condition == COND_OWNER) // Clan owns castle && player is CL ; send the good HTM.
-			{
-				if (player.isFlying()) // Already mounted on Wyvern
-					val = "4";
-				else
-					val = "0"; // Initial screen
-			}
-			else if (condition == COND_CLAN_MEMBER) // Good clan, but player isn't a CL.
-				val = "2";
-		}
-		sendHtm(player, val);
+		final NpcTalkCond condition = getNpcTalkCond(player);
+		if (condition == NpcTalkCond.OWNER)
+			sendHtm(player, (player.isFlying()) ? "4" : "0");
+		else if (condition == NpcTalkCond.CLAN_MEMBER)
+			sendHtm(player, "2");
+		else
+			sendHtm(player, "0a");
 	}
 	
 	@Override
-	protected int validateCondition(Player player)
+	protected NpcTalkCond getNpcTalkCond(Player player)
 	{
-		if (player.getClan() != null)
-		{
-			if (getCastle() != null)
-			{
-				if (getCastle().getSiege().isInProgress())
-					return COND_BUSY_BECAUSE_OF_SIEGE;
-				
-				if (getCastle().getOwnerId() == player.getClanId())
-					return (player.isClanLeader()) ? COND_OWNER : COND_CLAN_MEMBER;
-			}
-			else if (getSiegableHall() != null)
-			{
-				if (getSiegableHall().isInSiege())
-					return COND_BUSY_BECAUSE_OF_SIEGE;
-				
-				if (getSiegableHall().getOwnerId() == player.getClanId())
-					return (player.isClanLeader()) ? COND_OWNER : COND_CLAN_MEMBER;
-			}
-		}
-		return COND_ALL_FALSE;
+		if (player.getClan() != null && ((getCastle() != null && getCastle().getOwnerId() == player.getClanId()) || (getSiegableHall() != null && getSiegableHall().getOwnerId() == player.getClanId())))
+			return (player.isClanLeader()) ? NpcTalkCond.OWNER : NpcTalkCond.CLAN_MEMBER;
+		
+		return NpcTalkCond.NONE;
 	}
 	
 	private void sendHtm(Player player, String val)

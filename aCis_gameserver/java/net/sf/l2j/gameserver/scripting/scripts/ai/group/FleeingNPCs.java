@@ -22,23 +22,17 @@ public class FleeingNPCs extends L2AttackableAIScript
 	protected void registerNpcs()
 	{
 		addAttackId(20432);
-		addSpawnId(20432);
-	}
-	
-	@Override
-	public String onSpawn(Npc npc)
-	{
-		npc.disableCoreAi(true);
-		return super.onSpawn(npc);
 	}
 	
 	@Override
 	public String onAttack(Npc npc, Creature attacker, int damage, L2Skill skill)
 	{
+		npc.disableCoreAi(true);
+		
 		// Wait the NPC to be immobile to move him again.
 		if (!npc.isMoving())
 			npc.fleeFrom(attacker, Config.MAX_DRIFT_RANGE);
 		
-		return null;
+		return super.onAttack(npc, attacker, damage, skill);
 	}
 }

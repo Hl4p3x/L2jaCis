@@ -3,10 +3,11 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.BuyListManager;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -22,7 +23,6 @@ import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
 
 public final class RequestPreviewItem extends L2GameClientPacket
 {
-	private Map<Integer, Integer> _itemList;
 	@SuppressWarnings("unused")
 	private int _unk;
 	private int _listId;
@@ -83,8 +83,8 @@ public final class RequestPreviewItem extends L2GameClientPacket
 		long totalPrice = 0;
 		
 		_listId = buyList.getListId();
-		_itemList = new HashMap<>();
 		
+		final Map<Paperdoll, Integer> items = new HashMap<>();
 		for (int i = 0; i < _count; i++)
 		{
 			int itemId = _items[i];
@@ -97,16 +97,16 @@ public final class RequestPreviewItem extends L2GameClientPacket
 			if (template == null)
 				continue;
 			
-			final int slot = Inventory.getPaperdollIndex(template.getBodyPart());
-			if (slot < 0)
+			final Paperdoll slot = Inventory.getPaperdollIndex(template.getBodyPart());
+			if (slot == Paperdoll.NULL)
 				continue;
 			
-			if (_itemList.containsKey(slot))
+			if (items.containsKey(slot))
 			{
 				player.sendPacket(SystemMessageId.YOU_CAN_NOT_TRY_THOSE_ITEMS_ON_AT_THE_SAME_TIME);
 				return;
 			}
-			_itemList.put(slot, itemId);
+			items.put(slot, itemId);
 			
 			totalPrice += Config.WEAR_PRICE;
 			if (totalPrice > Integer.MAX_VALUE)
@@ -120,9 +120,9 @@ public final class RequestPreviewItem extends L2GameClientPacket
 			return;
 		}
 		
-		if (!_itemList.isEmpty())
+		if (!items.isEmpty())
 		{
-			player.sendPacket(new ShopPreviewInfo(_itemList));
+			player.sendPacket(new ShopPreviewInfo(items));
 			
 			// Schedule task
 			ThreadPool.schedule(() ->

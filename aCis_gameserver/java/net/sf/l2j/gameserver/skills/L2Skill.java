@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.util.logging.Logger;
 
+import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.math.MathUtil;
 import net.sf.l2j.commons.util.StatsSet;
 
@@ -20,6 +20,8 @@ import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.enums.skills.Stats;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.handler.ITargetHandler;
+import net.sf.l2j.gameserver.handler.TargetHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -44,7 +46,7 @@ import net.sf.l2j.gameserver.skills.extractable.ExtractableSkill;
 
 public abstract class L2Skill implements IChanceSkillTrigger
 {
-	protected static final Logger _log = Logger.getLogger(L2Skill.class.getName());
+	protected static final CLogger LOGGER = new CLogger(L2Skill.class.getName());
 	
 	public static final int SKILL_LUCKY = 194;
 	public static final int SKILL_EXPERTISE = 239;
@@ -340,7 +342,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 				}
 				
 				if (old == mask)
-					_log.info("[weaponsAllowed] Unknown item type name: " + item);
+					LOGGER.warn("Unknown item type {} found on weaponsAllowed parse.", item);
 			}
 			_weaponsAllowed = mask;
 		}
@@ -389,13 +391,13 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		
 		_simultaneousCast = set.getBool("simultaneousCast", false);
 		
-		String capsuled_items = set.getString("capsuled_items_skill", null);
-		if (capsuled_items != null)
+		final String capsuledItems = set.getString("capsuled_items_skill", null);
+		if (capsuledItems != null)
 		{
-			if (capsuled_items.isEmpty())
-				_log.warning("Empty extractable data for skill: " + _id);
+			if (capsuledItems.isEmpty())
+				LOGGER.warn("Empty extractable data for skill: {}.", _id);
 			
-			_extractableItems = parseExtractableSkill(_id, _level, capsuled_items);
+			_extractableItems = parseExtractableSkill(_id, _level, capsuledItems);
 		}
 	}
 	
@@ -466,9 +468,9 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		switch (_skillType)
 		{
 			case DEATHLINK:
-				return _power * Math.pow(1.7165 - activeChar.getCurrentHp() / activeChar.getMaxHp(), 2) * 0.577;
+				return _power * Math.pow(1.7165 - activeChar.getStatus().getHpRatio(), 2) * 0.577;
 			case FATAL:
-				return _power + (_power * Math.pow(1.7165 - activeChar.getCurrentHp() / activeChar.getMaxHp(), 3.5) * 0.577);
+				return _power + (_power * Math.pow(1.7165 - activeChar.getStatus().getHpRatio(), 3.5) * 0.577);
 			default:
 				return _power;
 		}
@@ -1043,7 +1045,6 @@ public abstract class L2Skill implements IChanceSkillTrigger
 			case SLEEP:
 			case CHARGEDAM:
 			case DEATHLINK:
-			case DETECT_WEAKNESS:
 			case MANADAM:
 			case MDOT:
 			case MUTE:
@@ -1406,47 +1407,35 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	
 	private ExtractableSkill parseExtractableSkill(int skillId, int skillLvl, String values)
 	{
-		final String[] prodLists = values.split(";");
 		final List<ExtractableProductItem> products = new ArrayList<>();
 		
-		for (String prodList : prodLists)
+		for (String prodList : values.split(";"))
 		{
-			final String[] prodData = prodList.split(",");
-			
-			if (prodData.length < 3)
-				_log.warning("Extractable skills data: Error in Skill Id: " + skillId + " Level: " + skillLvl + " -> wrong seperator!");
-			
-			final int lenght = prodData.length - 1;
-			
-			List<IntIntHolder> items = null;
-			double chance = 0;
-			int prodId = 0;
-			int quantity = 0;
-			
 			try
 			{
-				items = new ArrayList<>(lenght / 2);
-				for (int j = 0; j < lenght; j++)
+				final String[] prodData = prodList.split(",");
+				final int length = prodData.length - 1;
+				
+				final List<IntIntHolder> items = new ArrayList<>(length / 2);
+				for (int j = 0; j < length; j++)
 				{
-					prodId = Integer.parseInt(prodData[j]);
-					quantity = Integer.parseInt(prodData[j += 1]);
-					
-					if (prodId <= 0 || quantity <= 0)
-						_log.warning("Extractable skills data: Error in Skill Id: " + skillId + " Level: " + skillLvl + " wrong production Id: " + prodId + " or wrond quantity: " + quantity + "!");
+					final int prodId = Integer.parseInt(prodData[j]);
+					final int quantity = Integer.parseInt(prodData[j += 1]);
 					
 					items.add(new IntIntHolder(prodId, quantity));
 				}
-				chance = Double.parseDouble(prodData[lenght]);
+				final double chance = Double.parseDouble(prodData[length]);
+				
+				products.add(new ExtractableProductItem(items, chance));
 			}
 			catch (Exception e)
 			{
-				_log.warning("Extractable skills data: Error in Skill Id: " + skillId + " Level: " + skillLvl + " -> incomplete/invalid production data or wrong seperator!");
+				LOGGER.error("Couldn't properly parse extractable skill data for id: {} and level: {}.", skillId, skillLvl);
 			}
-			products.add(new ExtractableProductItem(items, chance));
 		}
 		
 		if (products.isEmpty())
-			_log.warning("Extractable skills data: Error in Skill Id: " + skillId + " Level: " + skillLvl + " -> There are no production items!");
+			LOGGER.warn("No production items were found for id: {} and level: {}.", skillId, skillLvl);
 		
 		return new ExtractableSkill(SkillTable.getSkillHashCode(this), products);
 	}
@@ -1542,6 +1531,26 @@ public abstract class L2Skill implements IChanceSkillTrigger
 				return true;
 		}
 		return false;
+	}
+	
+	public final Creature[] getTargetList(Creature caster, Creature target)
+	{
+		final ITargetHandler handler = TargetHandler.getInstance().getHandler(getTargetType());
+		if (handler != null)
+			return handler.getTargetList(caster, target, this);
+		
+		caster.sendMessage(getTargetType() + " skill target type isn't currently handled.");
+		return ITargetHandler.EMPTY_TARGET_ARRAY;
+	}
+	
+	public final Creature getFinalTarget(Creature caster, Creature target)
+	{
+		final ITargetHandler handler = TargetHandler.getInstance().getHandler(getTargetType());
+		if (handler != null)
+			return handler.getFinalTarget(caster, target, this);
+		
+		caster.sendMessage(getTargetType() + " skill target type isn't currently handled.");
+		return null;
 	}
 	
 	@Override

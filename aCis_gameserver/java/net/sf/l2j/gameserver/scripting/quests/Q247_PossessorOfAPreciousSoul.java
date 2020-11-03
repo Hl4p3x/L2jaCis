@@ -73,7 +73,7 @@ public class Q247_PossessorOfAPreciousSoul extends Quest
 		{
 			case STATE_CREATED:
 				if (st.hasQuestItems(CARADINE_LETTER))
-					htmltext = (!player.isSubClassActive() || player.getLevel() < 75) ? "31740-02.htm" : "31740-01.htm";
+					htmltext = (!player.isSubClassActive() || player.getStatus().getLevel() < 75) ? "31740-02.htm" : "31740-01.htm";
 				break;
 			
 			case STATE_STARTED:
@@ -92,7 +92,7 @@ public class Q247_PossessorOfAPreciousSoul extends Quest
 					
 					case LADY_OF_THE_LAKE:
 						if (cond == 2)
-							htmltext = (player.getLevel() < 75) ? "31745-06.htm" : "31745-01.htm";
+							htmltext = (player.getStatus().getLevel() < 75) ? "31745-06.htm" : "31745-01.htm";
 						break;
 				}
 				break;

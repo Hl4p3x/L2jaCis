@@ -61,7 +61,7 @@ public class Q331_ArrowOfVengeance extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 32) ? "30125-01.htm" : "30125-02.htm";
+				htmltext = (player.getStatus().getLevel() < 32) ? "30125-01.htm" : "30125-02.htm";
 				break;
 			
 			case STATE_STARTED:

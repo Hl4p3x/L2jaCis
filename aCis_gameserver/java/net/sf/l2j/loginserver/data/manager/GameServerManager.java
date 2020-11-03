@@ -14,10 +14,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.StatsSet;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.loginserver.model.GameServerInfo;
 
 import org.w3c.dom.Document;
@@ -86,7 +86,7 @@ public class GameServerManager implements IXmlReader
 	
 	private void loadRegisteredGameServers()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_SERVERS);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -139,7 +139,7 @@ public class GameServerManager implements IXmlReader
 	
 	public void registerServerOnDB(byte[] hexId, int id, String hostName)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(ADD_SERVER))
 		{
 			ps.setString(1, hexToString(hexId));

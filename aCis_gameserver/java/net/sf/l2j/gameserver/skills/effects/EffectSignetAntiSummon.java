@@ -6,7 +6,6 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.EffectPoint;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
@@ -32,7 +31,7 @@ public class EffectSignetAntiSummon extends AbstractEffect
 	public boolean onStart()
 	{
 		_actor = (EffectPoint) getEffected();
-		_isCtrlPressed = ((SkillUseHolder) ((Player) getEffector()).getAI().getCurrentIntention().getFirstParameter()).isCtrlPressed();
+		_isCtrlPressed = ((Player) getEffector()).getAI().getCurrentIntention().isCtrlPressed();
 		return true;
 	}
 	
@@ -43,13 +42,13 @@ public class EffectSignetAntiSummon extends AbstractEffect
 			return true; // do nothing first time
 			
 		final int mpConsume = getSkill().getMpConsume();
-		if (mpConsume > getEffector().getCurrentMp())
+		if (mpConsume > getEffector().getStatus().getMp())
 		{
 			getEffector().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP));
 			return false;
 		}
 		
-		getEffector().reduceCurrentMp(mpConsume);
+		getEffector().getStatus().reduceMp(mpConsume);
 		
 		final Player caster = (Player) getEffector();
 		for (Playable cha : _actor.getKnownTypeInRadius(Playable.class, getSkill().getSkillRadius()))

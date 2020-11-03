@@ -182,7 +182,7 @@ public class AdminCreateItem implements IAdminCommandHandler
 			return;
 		}
 		
-		if (!target.getInventory().validateCapacityByItemId(id))
+		if (!target.getInventory().validateCapacityByItemId(id, num))
 		{
 			activeChar.sendMessage("Your target's inventory is full.");
 			return;

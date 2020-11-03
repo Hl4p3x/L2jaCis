@@ -4,10 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 
@@ -117,7 +117,7 @@ public class ClanHallFunction
 	 */
 	public void dbSave()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_FUNCTION))
 		{
 			ps.setInt(1, _ch.getId());
@@ -146,7 +146,7 @@ public class ClanHallFunction
 		_ch.getFunctions().remove(getType());
 		
 		// Update the database.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_FUNCTION))
 		{
 			ps.setInt(1, _ch.getId());

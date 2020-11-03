@@ -127,7 +127,7 @@ public class Q622_SpecialtyLiquorDelivery extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 68) ? "31521-03.htm" : "31521-01.htm";
+				htmltext = (player.getStatus().getLevel() < 68) ? "31521-03.htm" : "31521-01.htm";
 				break;
 			
 			case STATE_STARTED:

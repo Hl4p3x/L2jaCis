@@ -2,11 +2,11 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassRace;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
@@ -113,7 +113,7 @@ public class Q218_TestimonyOfLife extends SecondClassQuest
 			st.takeItems(STARDUST, 1);
 			st.playSound(QuestState.SOUND_MIDDLE);
 			
-			if (player.getLevel() < 38)
+			if (player.getStatus().getLevel() < 38)
 			{
 				htmltext = "30371-10.htm";
 				st.set("cond", "13");
@@ -181,7 +181,7 @@ public class Q218_TestimonyOfLife extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30460-01.htm";
-				else if (player.getLevel() < 37 || player.getClassId().level() != 1)
+				else if (player.getStatus().getLevel() < 37 || player.getClassId().getLevel() != 1)
 					htmltext = "30460-02.htm";
 				else
 					htmltext = "30460-03.htm";
@@ -245,7 +245,7 @@ public class Q218_TestimonyOfLife extends SecondClassQuest
 							htmltext = "30371-09.htm";
 						else if (cond == 13)
 						{
-							if (player.getLevel() < 38)
+							if (player.getStatus().getLevel() < 38)
 								htmltext = "30371-12.htm";
 							else
 							{
@@ -424,7 +424,7 @@ public class Q218_TestimonyOfLife extends SecondClassQuest
 				break;
 			
 			case 27077:
-				if (st.getInt("cond") == 18 && st.getItemEquipped(Inventory.PAPERDOLL_RHAND) == TALINS_SPEAR)
+				if (st.getInt("cond") == 18 && st.getItemIdFrom(Paperdoll.RHAND) == TALINS_SPEAR)
 				{
 					st.set("cond", "19");
 					st.playSound(QuestState.SOUND_MIDDLE);

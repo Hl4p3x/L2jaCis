@@ -39,7 +39,7 @@ public class OlympiadManager
 		List<List<Integer>> result = null;
 		for (Map.Entry<Integer, List<Integer>> classList : _classBasedRegisters.entrySet())
 		{
-			if (classList.getValue() != null && classList.getValue().size() >= Config.ALT_OLY_CLASSED)
+			if (classList.getValue() != null && classList.getValue().size() >= Config.OLY_CLASSED)
 			{
 				if (result == null)
 					result = new ArrayList<>();
@@ -52,7 +52,7 @@ public class OlympiadManager
 	
 	protected final boolean hasEnoughRegisteredNonClassed()
 	{
-		return _nonClassBasedRegisters.size() >= Config.ALT_OLY_NONCLASSED;
+		return _nonClassBasedRegisters.size() >= Config.OLY_NONCLASSED;
 	}
 	
 	protected final void clearRegistered()
@@ -247,7 +247,7 @@ public class OlympiadManager
 			return false;
 		}
 		
-		if (player.getInventoryLimit() * 0.8 <= player.getInventory().getSize())
+		if (player.getStatus().isOverburden())
 		{
 			player.sendPacket(SystemMessageId.SINCE_80_PERCENT_OR_MORE_OF_YOUR_INVENTORY_SLOTS_ARE_FULL_YOU_CANNOT_PARTICIPATE_IN_THE_OLYMPIAD);
 			return false;
@@ -265,7 +265,7 @@ public class OlympiadManager
 			statDat = new StatsSet();
 			statDat.set(Olympiad.CLASS_ID, player.getBaseClass());
 			statDat.set(Olympiad.CHAR_NAME, player.getName());
-			statDat.set(Olympiad.POINTS, Config.ALT_OLY_START_POINTS);
+			statDat.set(Olympiad.POINTS, Config.OLY_START_POINTS);
 			statDat.set(Olympiad.COMP_DONE, 0);
 			statDat.set(Olympiad.COMP_WON, 0);
 			statDat.set(Olympiad.COMP_LOST, 0);

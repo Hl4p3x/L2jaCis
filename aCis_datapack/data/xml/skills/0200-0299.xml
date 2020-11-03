@@ -432,7 +432,7 @@
 		<set name="hitTime" val="180000"/>
 		<set name="reuseDelay" val="5000"/>
 		<set name="staticHitTime" val="true" />
-		<set name="skillType" val="TAKECASTLE"/>
+		<set name="skillType" val="TAKE_CASTLE"/>
 		<set name="operateType" val="ACTIVE"/>
 		<set name="castRange" val="85"/>
 		<set name="effectRange" val="400"/>
@@ -446,7 +446,7 @@
 		<set name="hitTime" val="4000"/>
 		<set name="staticReuse" val="true" />
 		<set name="staticHitTime" val="true" />
-		<set name="skillType" val="SIEGEFLAG"/>
+		<set name="skillType" val="SIEGE_FLAG"/>
 		<set name="operateType" val="ACTIVE"/>
 	</skill>
 	<skill id="248" levels="5" name="Crystallize">
@@ -702,13 +702,15 @@
 		<set name="effectRange" val="400"/>
 		<set name="isDebuff" val="true" />
 		<enchant1 name="magicLvl" val="#enchantMagicLvl"/>
-		<enchant1 name="effectPower" val="#ench1effectPower"/>
 		<enchant2 name="magicLvl" val="#enchantMagicLvl"/>
 		<enchant2 name="mpConsume" val="#ench2MpConsume"/>
 		<enchant2 name="power" val="#ench2Power"/>
 		<for>
 			<effect count="1" name="Stun" time="9" val="0" stackOrder="1" stackType="stun" effectPower="50" effectType="STUN" />
 		</for>
+		<enchant1for>
+			<effect count="1" name="Stun" time="9" val="0" stackOrder="1" stackType="stun" effectPower="#ench1effectPower" effectType="STUN" />
+		</enchant1for>
 	</skill>
 	<skill id="261" levels="22" name="Triple Sonic Slash" enchantLevels1="30" enchantLevels2="30">
 		<table name="#enchantMagicLvl"> 76 76 76 77 77 77 78 78 78 79 79 79 80 80 80 81 81 81 82 82 82 82 83 83 83 84 84 85 85 85 </table>
@@ -1337,13 +1339,15 @@
 		<set name="castRange" val="40"/>
 		<set name="effectRange" val="400"/>
 		<enchant1 name="magicLvl" val="#enchantMagicLvl"/>
-		<enchant1 name="effectPower" val="#ench1effectPower"/>
 		<enchant2 name="magicLvl" val="#enchantMagicLvl"/>
 		<enchant2 name="mpConsume" val="#ench2MpConsume"/>
 		<enchant2 name="power" val="#ench2power"/>
 		<for>
 			<effect name="Stun" time="9" val="0" effectPower="50" effectType="STUN" stackOrder="1" stackType="stun"/>
 		</for>
+		<enchant1for>
+			<effect name="Stun" time="9" val="0" effectPower="#ench1effectPower" effectType="STUN" stackOrder="1" stackType="stun"/>
+		</enchant1for>
 	</skill>
 	<skill id="282" levels="1" name="Puma Spirit Totem">
 		<set name="magicLvl" val="40" />

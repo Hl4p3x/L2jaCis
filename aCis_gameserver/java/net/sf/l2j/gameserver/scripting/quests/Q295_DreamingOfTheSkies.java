@@ -59,7 +59,7 @@ public class Q295_DreamingOfTheSkies extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 11) ? "30536-01.htm" : "30536-02.htm";
+				htmltext = (player.getStatus().getLevel() < 11) ? "30536-01.htm" : "30536-02.htm";
 				break;
 			
 			case STATE_STARTED:

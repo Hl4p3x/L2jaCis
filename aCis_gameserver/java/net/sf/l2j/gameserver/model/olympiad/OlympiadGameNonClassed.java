@@ -22,13 +22,13 @@ public class OlympiadGameNonClassed extends OlympiadGameNormal
 	@Override
 	protected final int getDivider()
 	{
-		return Config.ALT_OLY_DIVIDER_NON_CLASSED;
+		return Config.OLY_DIVIDER_NON_CLASSED;
 	}
 	
 	@Override
 	protected final IntIntHolder[] getReward()
 	{
-		return Config.ALT_OLY_NONCLASSED_REWARD;
+		return Config.OLY_NONCLASSED_REWARD;
 	}
 	
 	protected static final OlympiadGameNonClassed createGame(int id, List<Integer> list)

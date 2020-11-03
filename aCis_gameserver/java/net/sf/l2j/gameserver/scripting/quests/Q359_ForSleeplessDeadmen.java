@@ -91,7 +91,7 @@ public class Q359_ForSleeplessDeadmen extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "30857-01.htm" : "30857-02.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "30857-01.htm" : "30857-02.htm";
 				break;
 			
 			case STATE_STARTED:

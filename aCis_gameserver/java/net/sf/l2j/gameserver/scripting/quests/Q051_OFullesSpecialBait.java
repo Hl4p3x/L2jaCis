@@ -65,7 +65,7 @@ public class Q051_OFullesSpecialBait extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 36) ? "31572-02.htm" : "31572-01.htm";
+				htmltext = (player.getStatus().getLevel() < 36) ? "31572-02.htm" : "31572-01.htm";
 				break;
 			
 			case STATE_STARTED:

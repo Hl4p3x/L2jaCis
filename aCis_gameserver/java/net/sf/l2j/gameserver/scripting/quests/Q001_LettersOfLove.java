@@ -63,7 +63,7 @@ public class Q001_LettersOfLove extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 2) ? "30048-01.htm" : "30048-02.htm";
+				htmltext = (player.getStatus().getLevel() < 2) ? "30048-01.htm" : "30048-02.htm";
 				break;
 			
 			case STATE_STARTED:

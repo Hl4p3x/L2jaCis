@@ -1,10 +1,10 @@
 package net.sf.l2j.loginserver.model;
 
-import net.sf.l2j.commons.network.StatusType;
+import net.sf.l2j.commons.network.ServerType;
 
 public class ServerData
 {
-	private final StatusType _status;
+	private final ServerType _type;
 	private final String _hostName;
 	
 	private final int _serverId;
@@ -17,9 +17,9 @@ public class ServerData
 	private final boolean _isShowingBrackets;
 	private final boolean _isShowingClock;
 	
-	public ServerData(StatusType status, String hostName, GameServerInfo gsi)
+	public ServerData(ServerType type, String hostName, GameServerInfo gsi)
 	{
-		_status = status;
+		_type = type;
 		_hostName = hostName;
 		
 		_serverId = gsi.getId();
@@ -33,9 +33,9 @@ public class ServerData
 		_isShowingClock = gsi.isShowingClock();
 	}
 	
-	public StatusType getStatus()
+	public ServerType getType()
 	{
-		return _status;
+		return _type;
 	}
 	
 	public String getHostName()

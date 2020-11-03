@@ -98,7 +98,7 @@ public class Q031_SecretBuriedInTheSwamp extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 66) ? "31555-00a.htm" : "31555-00.htm";
+				htmltext = (player.getStatus().getLevel() < 66) ? "31555-00a.htm" : "31555-00.htm";
 				break;
 			
 			case STATE_STARTED:

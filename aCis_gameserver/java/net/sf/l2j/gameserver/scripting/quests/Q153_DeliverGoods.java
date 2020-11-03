@@ -71,7 +71,7 @@ public class Q153_DeliverGoods extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 2) ? "30041-00.htm" : "30041-01.htm";
+				htmltext = (player.getStatus().getLevel() < 2) ? "30041-00.htm" : "30041-01.htm";
 				break;
 			
 			case STATE_STARTED:

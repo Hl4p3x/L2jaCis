@@ -98,7 +98,7 @@ public final class RequestCrystallizeItem extends L2GameClientPacket
 		if (item.isEquipped())
 		{
 			InventoryUpdate iu = new InventoryUpdate();
-			for (ItemInstance items : player.getInventory().unEquipItemInSlotAndRecord(item.getLocationSlot()))
+			for (ItemInstance items : player.getInventory().unequipItemInSlotAndRecord(item.getLocationSlot()))
 				iu.addModifiedItem(items);
 			
 			player.sendPacket(iu);

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.Augmentation;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Folk;
@@ -196,7 +197,7 @@ public class MultiSellChoose extends L2GameClientPacket
 			{
 				// if this is not a list that maintains enchantment, check the count of all items that have the given id.
 				// otherwise, check only the count of items with exactly the needed enchantment level
-				if (inv.getInventoryItemCount(e.getItemId(), list.getMaintainEnchantment() ? e.getEnchantLevel() : -1, false) < ((Config.ALT_BLACKSMITH_USE_RECIPES || !e.getMaintainIngredient()) ? (e.getItemCount() * _amount) : e.getItemCount()))
+				if (inv.getInventoryItemCount(e.getItemId(), list.getMaintainEnchantment() ? e.getEnchantLevel() : -1, false) < ((Config.BLACKSMITH_USE_RECIPES || !e.getMaintainIngredient()) ? (e.getItemCount() * _amount) : e.getItemCount()))
 				{
 					player.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
 					return;
@@ -224,7 +225,7 @@ public class MultiSellChoose extends L2GameClientPacket
 					return;
 				}
 				
-				if (Config.ALT_BLACKSMITH_USE_RECIPES || !e.getMaintainIngredient())
+				if (Config.BLACKSMITH_USE_RECIPES || !e.getMaintainIngredient())
 				{
 					// if it's a stackable item, just reduce the amount from the first (only) instance that is found in the inventory
 					if (itemToTake.isStackable())
@@ -340,7 +341,7 @@ public class MultiSellChoose extends L2GameClientPacket
 		player.sendPacket(SystemMessageId.SUCCESSFULLY_TRADED_WITH_NPC);
 		
 		StatusUpdate su = new StatusUpdate(player);
-		su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
 		player.sendPacket(su);
 		
 		// finally, give the tax to the castle...

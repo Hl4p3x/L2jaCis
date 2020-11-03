@@ -5,11 +5,9 @@ import java.util.List;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.enums.ZoneId;
@@ -19,7 +17,6 @@ import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.entity.Siege;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.network.serverpackets.NpcSay;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
@@ -168,7 +165,7 @@ public class Benom extends L2AttackableAIScript
 					_benom.deleteMe();
 				}
 				
-				startQuestTimer("benom_spawn", null, null, siege.getSiegeDate().getTimeInMillis() - 8640000 - System.currentTimeMillis());
+				startQuestTimer("benom_spawn", null, null, siege.getSiegeDate().getTimeInMillis() - 86400000 - System.currentTimeMillis());
 				break;
 			
 			case REGISTRATION_OVER:
@@ -190,15 +187,12 @@ public class Benom extends L2AttackableAIScript
 			case 4996:
 				teleportTarget(player);
 				((Attackable) npc).stopHating(player);
+				
 				if (!_targets.isEmpty())
 				{
 					for (Player target : _targets)
 					{
-						final long x = player.getX() - target.getX();
-						final long y = player.getY() - target.getY();
-						final long z = player.getZ() - target.getZ();
-						final long range = 250;
-						if (((x * x) + (y * y) + (z * z)) <= (range * range))
+						if (player.isIn3DRadius(target, 250))
 						{
 							teleportTarget(target);
 							((Attackable) npc).stopHating(target);
@@ -217,14 +211,14 @@ public class Benom extends L2AttackableAIScript
 	{
 		if (attacker instanceof Playable)
 		{
-			if (Rnd.get(100) <= 25)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4995, 1), false, false), null);
-			else if ((npc.getCurrentHp() < (npc.getMaxHp() / 3)) && Rnd.get(500) < 1)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4996, 1), false, false), null);
+			if (Rnd.get(100) < 25)
+				npc.getAI().tryToCast(attacker, 4995, 1);
+			else if (npc.getStatus().getHpRatio() < 0.33 && Rnd.get(500) < 1)
+				npc.getAI().tryToCast(attacker, 4996, 1);
 			else if (!npc.isIn3DRadius(attacker, 300) && Rnd.get(100) < 1)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4993, 1), false, false), null);
+				npc.getAI().tryToCast(attacker, 4993, 1);
 			else if (Rnd.get(100) < 1)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4994, 1), false, false), null);
+				npc.getAI().tryToCast(attacker, 4994, 1);
 		}
 		return super.onAttack(npc, attacker, damage, skill);
 	}
@@ -241,8 +235,10 @@ public class Benom extends L2AttackableAIScript
 	}
 	
 	/**
-	 * Move a player by Skill. Venom has two skill related.
-	 * @param player the player targeted
+	 * Teleport the {@link Player} set as parameter using one random {@link SpawnLocation}.<br>
+	 * <br>
+	 * The heading from {@link SpawnLocation} is used as random offset, not as heading.
+	 * @param player : The {@link Player} used as target.
 	 */
 	private static void teleportTarget(Player player)
 	{

@@ -91,7 +91,7 @@ public class Q370_AnElderSowsSeeds extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 28) ? "30612-0a.htm" : "30612-0.htm";
+				htmltext = (player.getStatus().getLevel() < 28) ? "30612-0a.htm" : "30612-0.htm";
 				break;
 			
 			case STATE_STARTED:

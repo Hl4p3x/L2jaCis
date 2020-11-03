@@ -79,7 +79,7 @@ public class Q167_DwarvenKinship extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30350-02.htm" : "30350-03.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30350-02.htm" : "30350-03.htm";
 				break;
 			
 			case STATE_STARTED:

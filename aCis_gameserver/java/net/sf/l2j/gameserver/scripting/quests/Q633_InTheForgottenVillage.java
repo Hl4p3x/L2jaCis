@@ -118,7 +118,7 @@ public class Q633_InTheForgottenVillage extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 65) ? "31388-03.htm" : "31388-01.htm";
+				htmltext = (player.getStatus().getLevel() < 65) ? "31388-03.htm" : "31388-01.htm";
 				break;
 			
 			case STATE_STARTED:

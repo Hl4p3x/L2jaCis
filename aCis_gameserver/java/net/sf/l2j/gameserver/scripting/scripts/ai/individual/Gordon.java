@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.scripting.scripts.ai.individual;
 
 import net.sf.l2j.gameserver.data.sql.SpawnTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -128,12 +127,12 @@ public class Gordon extends L2AttackableAIScript
 					_currentNode = 0;
 				
 				gordon.forceWalkStance();
-				gordon.getAI().tryTo(IntentionType.MOVE_TO, LOCS[_currentNode], null);
+				gordon.getAI().tryToMoveTo(LOCS[_currentNode], null);
 			}
 			else if (gordon.getCast().isCastingNow())
 			{
 				gordon.forceWalkStance();
-				gordon.getAI().tryTo(IntentionType.MOVE_TO, LOCS[_currentNode], null);
+				gordon.getAI().tryToMoveTo(LOCS[_currentNode], null);
 			}
 			else if (!gordon.isDead() && !gordon.isMoving() && !gordon.getCast().isCastingNow())
 			{

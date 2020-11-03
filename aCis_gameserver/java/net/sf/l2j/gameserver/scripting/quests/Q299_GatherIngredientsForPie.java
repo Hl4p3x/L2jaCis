@@ -98,7 +98,7 @@ public class Q299_GatherIngredientsForPie extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 34) ? "30620-0a.htm" : "30620-0.htm";
+				htmltext = (player.getStatus().getLevel() < 34) ? "30620-0a.htm" : "30620-0.htm";
 				break;
 			
 			case STATE_STARTED:

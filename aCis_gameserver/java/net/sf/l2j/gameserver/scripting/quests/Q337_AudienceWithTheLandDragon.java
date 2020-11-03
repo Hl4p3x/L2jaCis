@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -230,7 +229,7 @@ public class Q337_AudienceWithTheLandDragon extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 50) ? "30753-02.htm" : "30753-01.htm";
+				htmltext = (player.getStatus().getLevel() < 50) ? "30753-02.htm" : "30753-01.htm";
 				break;
 			
 			case STATE_STARTED:
@@ -470,10 +469,10 @@ public class Q337_AudienceWithTheLandDragon extends Quest
 			if (npcInfo[1] != st.getInt("cond"))
 				break;
 			
-			final double percentHp = ((npc.getCurrentHp() + damage) * 100) / npc.getMaxHp();
+			final double hpRatio = (npc.getStatus().getHp() + damage) / npc.getStatus().getMaxHp();
 			
 			// reward jewel fragment
-			if (percentHp < 33)
+			if (hpRatio < 0.33)
 			{
 				if (Rnd.get(100) < 33 && st.getInt("drop" + npcInfo[2]) == 1)
 				{
@@ -486,7 +485,7 @@ public class Q337_AudienceWithTheLandDragon extends Quest
 				}
 			}
 			// spawn monsters and register spawned
-			else if (percentHp < 66)
+			else if (hpRatio < 0.66)
 			{
 				if (Rnd.get(100) < 33 && st.getInt("drop" + npcInfo[2]) == 1)
 				{
@@ -505,7 +504,7 @@ public class Q337_AudienceWithTheLandDragon extends Quest
 							Npc mob = addSpawn(npcInfo[5], npc.getX() + Rnd.get(-150, 150), npc.getY() + Rnd.get(-150, 150), npc.getZ(), npc.getHeading(), true, 60000, false);
 							mob.forceRunStance();
 							((Attackable) mob).addDamageHate(attacker, 0, 500);
-							mob.getAI().tryTo(IntentionType.ATTACK, attacker, false);
+							mob.getAI().tryToAttack(attacker);
 						}
 						
 						if (npcId == ABYSSAL_JEWEL_3)
@@ -519,7 +518,7 @@ public class Q337_AudienceWithTheLandDragon extends Quest
 				
 			}
 			// reset spawned if npc regenerated to 90% HP and more
-			else if (percentHp > 90)
+			else if (hpRatio > 0.9)
 			{
 				if (npcId == ABYSSAL_JEWEL_3)
 					_jewel3 = true;

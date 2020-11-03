@@ -56,7 +56,7 @@ public class Q122_OminousNews extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "31979-01.htm" : "31979-02.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "31979-01.htm" : "31979-02.htm";
 				break;
 			
 			case STATE_STARTED:

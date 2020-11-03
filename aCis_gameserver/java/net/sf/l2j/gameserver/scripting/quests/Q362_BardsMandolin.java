@@ -65,7 +65,7 @@ public class Q362_BardsMandolin extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30957-2.htm" : "30957-1.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30957-2.htm" : "30957-1.htm";
 				break;
 			
 			case STATE_STARTED:

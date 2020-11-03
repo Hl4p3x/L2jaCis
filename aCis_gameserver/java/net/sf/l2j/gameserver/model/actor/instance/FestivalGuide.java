@@ -177,7 +177,7 @@ public final class FestivalGuide extends Folk
 					}
 					
 					// Check to see if the party has at least 5 members.
-					if (playerParty.getMembersCount() < Config.ALT_FESTIVAL_MIN_PLAYER)
+					if (playerParty.getMembersCount() < Config.FESTIVAL_MIN_PLAYER)
 					{
 						showChatWindow(player, 2, "b", false);
 						return;
@@ -443,7 +443,7 @@ public final class FestivalGuide extends Folk
 		html.replace("%festivalType%", _festivalType.getName());
 		html.replace("%cycleMins%", FestivalOfDarknessManager.getInstance().getMinsToNextCycle());
 		if (!isDescription && "2b".equals(val + suffix))
-			html.replace("%minFestivalPartyMembers%", Config.ALT_FESTIVAL_MIN_PLAYER);
+			html.replace("%minFestivalPartyMembers%", Config.FESTIVAL_MIN_PLAYER);
 		
 		// Festival's fee
 		if (val == 1)

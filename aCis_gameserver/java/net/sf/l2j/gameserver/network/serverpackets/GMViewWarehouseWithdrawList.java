@@ -23,8 +23,8 @@ public class GMViewWarehouseWithdrawList extends L2GameServerPacket
 	
 	public GMViewWarehouseWithdrawList(Clan clan)
 	{
-		_playerName = clan.getLeaderName();
 		_items = clan.getWarehouse().getItems();
+		_playerName = clan.getLeaderName();
 		_money = clan.getWarehouse().getAdena();
 	}
 	
@@ -46,13 +46,37 @@ public class GMViewWarehouseWithdrawList extends L2GameServerPacket
 			writeD(temp.getCount());
 			writeH(item.getType2());
 			writeH(temp.getCustomType1());
-			writeD(item.getBodyPart());
-			writeH(temp.getEnchantLevel());
-			writeH(temp.isWeapon() ? ((Weapon) item).getSoulShotCount() : 0x00);
-			writeH(temp.isWeapon() ? ((Weapon) item).getSpiritShotCount() : 0x00);
-			writeD(temp.getObjectId());
-			writeD((temp.isWeapon() && temp.isAugmented()) ? 0x0000FFFF & temp.getAugmentation().getId() : 0);
-			writeD((temp.isWeapon() && temp.isAugmented()) ? temp.getAugmentation().getId() >> 16 : 0);
+			
+			if (item.isEquipable())
+			{
+				writeD(item.getBodyPart());
+				writeH(temp.getEnchantLevel());
+				
+				if (temp.isWeapon())
+				{
+					writeH(((Weapon) item).getSoulShotCount());
+					writeH(((Weapon) item).getSpiritShotCount());
+					
+					if (temp.isAugmented())
+					{
+						writeD(0x0000FFFF & temp.getAugmentation().getId());
+						writeD(temp.getAugmentation().getId() >> 16);
+					}
+					else
+					{
+						writeD(0);
+						writeD(0);
+					}
+				}
+				else
+				{
+					writeH(0);
+					writeH(0);
+					writeD(0);
+					writeD(0);
+				}
+			}
+			writeD(0);
 		}
 	}
 }

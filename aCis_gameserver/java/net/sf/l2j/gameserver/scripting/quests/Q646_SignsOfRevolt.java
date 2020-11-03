@@ -91,7 +91,7 @@ public class Q646_SignsOfRevolt extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 40) ? "32016-02.htm" : "32016-01.htm";
+				htmltext = (player.getStatus().getLevel() < 40) ? "32016-02.htm" : "32016-01.htm";
 				break;
 			
 			case STATE_STARTED:

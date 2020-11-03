@@ -57,7 +57,7 @@ public class Q320_BonesTellTheFuture extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30359-00.htm";
-				else if (player.getLevel() < 10)
+				else if (player.getStatus().getLevel() < 10)
 					htmltext = "30359-02.htm";
 				else
 					htmltext = "30359-03.htm";

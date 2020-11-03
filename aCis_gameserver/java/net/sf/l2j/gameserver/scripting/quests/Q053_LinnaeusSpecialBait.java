@@ -65,7 +65,7 @@ public class Q053_LinnaeusSpecialBait extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "31577-02.htm" : "31577-01.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "31577-02.htm" : "31577-01.htm";
 				break;
 			
 			case STATE_STARTED:

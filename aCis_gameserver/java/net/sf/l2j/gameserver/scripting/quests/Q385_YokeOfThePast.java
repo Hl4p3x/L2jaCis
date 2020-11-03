@@ -146,7 +146,7 @@ public class Q385_YokeOfThePast extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "02.htm" : "01.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "02.htm" : "01.htm";
 				break;
 			
 			case STATE_STARTED:

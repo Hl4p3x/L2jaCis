@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -61,7 +60,7 @@ public class Q022_TragedyInVonHellmannForest extends Quest
 		if (event.equalsIgnoreCase("31334-03.htm"))
 		{
 			QuestState st2 = player.getQuestState("Q021_HiddenTruth");
-			if (st2 != null && st2.isCompleted() && player.getLevel() >= 63)
+			if (st2 != null && st2.isCompleted() && player.getStatus().getLevel() >= 63)
 				htmltext = "31334-02.htm";
 		}
 		else if (event.equalsIgnoreCase("31334-04.htm"))
@@ -137,7 +136,7 @@ public class Q022_TragedyInVonHellmannForest extends Quest
 				
 				// Attack player.
 				((Attackable) _soulOfWell).addDamageHate(player, 0, 99999);
-				_soulOfWell.getAI().tryTo(IntentionType.ATTACK, player, false);
+				_soulOfWell.getAI().tryToAttack(player);
 			}
 		}
 		else if (event.equalsIgnoreCase("31328-13.htm"))
@@ -265,7 +264,7 @@ public class Q022_TragedyInVonHellmannForest extends Quest
 							htmltext = "31328-14.htm";
 						else if (cond == 16)
 						{
-							htmltext = (player.getLevel() < 64) ? "31328-23.htm" : "31328-22.htm";
+							htmltext = (player.getStatus().getLevel() < 64) ? "31328-23.htm" : "31328-22.htm";
 							st.exitQuest(false);
 							st.playSound(QuestState.SOUND_FINISH);
 						}

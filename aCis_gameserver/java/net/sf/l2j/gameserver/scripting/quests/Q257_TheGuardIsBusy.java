@@ -1,5 +1,6 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
+import net.sf.l2j.gameserver.enums.actors.ClassRace;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -15,10 +16,6 @@ public class Q257_TheGuardIsBusy extends Quest
 	private static final int ORC_AMULET = 752;
 	private static final int ORC_NECKLACE = 1085;
 	private static final int WEREWOLF_FANG = 1086;
-	
-	// Newbie Items
-	private static final int SPIRITSHOT_FOR_BEGINNERS = 5790;
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
 	
 	public Q257_TheGuardIsBusy()
 	{
@@ -68,7 +65,12 @@ public class Q257_TheGuardIsBusy extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 6) ? "30039-01.htm" : "30039-02.htm";
+				if (player.getRace() != ClassRace.HUMAN)
+					htmltext = "30039-00.htm";
+				else if (player.getStatus().getLevel() < 6)
+					htmltext = "30039-01.htm";
+				else
+					htmltext = "30039-02.htm";
 				break;
 			
 			case STATE_STARTED:
@@ -91,23 +93,7 @@ public class Q257_TheGuardIsBusy extends Quest
 						reward += 1000;
 					
 					st.rewardItems(57, reward);
-					
-					if (player.isNewbie() && st.getInt("Reward") == 0)
-					{
-						st.showQuestionMark(26);
-						st.set("Reward", "1");
-						
-						if (player.isMageClass())
-						{
-							st.playTutorialVoice("tutorial_voice_027");
-							st.giveItems(SPIRITSHOT_FOR_BEGINNERS, 3000);
-						}
-						else
-						{
-							st.playTutorialVoice("tutorial_voice_026");
-							st.giveItems(SOULSHOT_FOR_BEGINNERS, 6000);
-						}
-					}
+					st.rewardNewbieShots(6000, 3000);
 				}
 				break;
 		}

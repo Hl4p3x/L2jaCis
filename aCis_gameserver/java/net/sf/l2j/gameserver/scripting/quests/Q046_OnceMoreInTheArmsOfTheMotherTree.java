@@ -109,7 +109,7 @@ public class Q046_OnceMoreInTheArmsOfTheMotherTree extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getRace() == ClassRace.ELF && player.getLevel() >= 3)
+				if (player.getRace() == ClassRace.ELF && player.getStatus().getLevel() >= 3)
 				{
 					if (st.hasQuestItems(MARK_OF_TRAVELER))
 						htmltext = "30097-02.htm";

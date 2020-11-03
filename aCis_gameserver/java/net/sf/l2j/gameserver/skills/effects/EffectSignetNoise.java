@@ -6,7 +6,6 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.EffectPoint;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -30,7 +29,7 @@ public class EffectSignetNoise extends AbstractEffect
 	public boolean onStart()
 	{
 		_actor = (EffectPoint) getEffected();
-		_isCtrlPressed = ((SkillUseHolder) ((Player) getEffector()).getAI().getCurrentIntention().getFirstParameter()).isCtrlPressed();
+		_isCtrlPressed = ((Player) getEffector()).getAI().getCurrentIntention().isCtrlPressed();
 		return true;
 	}
 	

@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.actor.ai.type;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.CursedWeaponManager;
 import net.sf.l2j.gameserver.enums.AiEventType;
@@ -15,14 +15,12 @@ import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
-import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Boat;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
 import net.sf.l2j.gameserver.model.actor.instance.StaticObject;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.location.BoatEntrance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -30,6 +28,7 @@ import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.AutoAttackStart;
 import net.sf.l2j.gameserver.network.serverpackets.ChairSit;
 import net.sf.l2j.gameserver.network.serverpackets.MoveToLocationInVehicle;
+import net.sf.l2j.gameserver.network.serverpackets.StopMove;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.taskmanager.AttackStanceTaskManager;
@@ -45,27 +44,53 @@ public class PlayerAI extends PlayableAI
 	@Override
 	protected void onEvtArrived()
 	{
-		if (_currentIntention.getType() == IntentionType.MOVE_TO && _currentIntention.getSecondParameter() != null)
+		if (_currentIntention.getType() == IntentionType.MOVE_TO)
 		{
-			final Boat boat = (Boat) _currentIntention.getSecondParameter();
-			final BoatEntrance closestEntrance = boat.getClosestEntrance(getActor().getPosition());
-			
-			getActor().getBoatPosition().set(closestEntrance.getInnerLocation());
-			
-			// Since we're close enough to the boat we just send client onboarding packet without any movement on the server.
-			getActor().broadcastPacket(new MoveToLocationInVehicle(getActor(), boat, closestEntrance.getInnerLocation(), getActor().getPosition()));
+			final Boat boat = _currentIntention.getBoat();
+			if (boat != null)
+			{
+				final BoatEntrance closestEntrance = boat.getClosestEntrance(getActor().getPosition());
+				
+				getActor().getBoatPosition().set(closestEntrance.getInnerLocation());
+				
+				// Since we're close enough to the boat we just send client onboarding packet without any movement on the server.
+				getActor().broadcastPacket(new MoveToLocationInVehicle(getActor(), boat, closestEntrance.getInnerLocation(), getActor().getPosition()));
+			}
 		}
 		
 		super.onEvtArrived();
 	}
 	
 	@Override
+	protected void onEvtArrivedBlocked()
+	{
+		if (_currentIntention.getType() == IntentionType.INTERACT)
+		{
+			clientActionFailed();
+			
+			final WorldObject target = _currentIntention.getTarget();
+			if (getActor().getAI().canDoInteract(target))
+			{
+				getActor().broadcastPacket(new StopMove(getActor()));
+				
+				target.onInteract(getActor());
+			}
+			else
+				super.onEvtArrivedBlocked();
+			
+			doIdleIntention();
+		}
+		else
+			super.onEvtArrivedBlocked();
+	}
+	
+	@Override
 	protected void onEvtSatDown(WorldObject target)
 	{
 		if (_nextIntention.isBlank())
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 		else
-			changeCurrentIntention(_nextIntention);
+			doIntention(_nextIntention);
 	}
 	
 	@Override
@@ -81,30 +106,29 @@ public class PlayerAI extends PlayableAI
 		}
 		
 		if (_nextIntention.isBlank())
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 		else
-			changeCurrentIntention(_nextIntention);
+			doIntention(_nextIntention);
 	}
 	
 	@Override
-	protected void onEvtBowAttackReused()
+	protected void onEvtBowAttackReuse()
 	{
 		if (getActor().getAttackType() == WeaponType.BOW)
 		{
 			// Attacks can be scheduled while isAttackingNow
 			if (_nextIntention.getType() == IntentionType.ATTACK)
 			{
-				changeCurrentIntention(_nextIntention);
+				doIntention(_nextIntention);
 				return;
 			}
 			
 			if (_currentIntention.getType() == IntentionType.ATTACK)
 			{
-				final Creature target = (Creature) _currentIntention.getFirstParameter();
-				if (target.canAttackingContinueBy(getActor()))
+				if (getActor().canKeepAttacking(_currentIntention.getFinalTarget()))
 					notifyEvent(AiEventType.THINK, null, null);
 				else
-					changeCurrentIntention(IntentionType.ACTIVE, null, null);
+					doIdleIntention();
 			}
 		}
 	}
@@ -116,7 +140,7 @@ public class PlayerAI extends PlayableAI
 			getActor().getTamedBeast().getAI().notifyEvent(AiEventType.OWNER_ATTACKED, attacker, null);
 		
 		if (getActor().isSitting())
-			changeCurrentIntention(IntentionType.STAND, null, null);
+			doStandIntention();
 		
 		super.onEvtAttacked(attacker);
 	}
@@ -126,59 +150,75 @@ public class PlayerAI extends PlayableAI
 	{
 		getActor().getCast().stop();
 		getActor().getMove().cancelFollowTask();
-		changeCurrentIntention(IntentionType.ACTIVE, null, null);
+		
+		doIdleIntention();
 	}
 	
 	@Override
-	protected void onIntentionSit(WorldObject target)
+	public synchronized void doActiveIntention()
 	{
-		setCurrentIntention(IntentionType.SIT, target, null);
-		notifyEvent(AiEventType.THINK, null, null);
+		doIdleIntention();
 	}
 	
 	@Override
-	protected void onIntentionStand()
+	public synchronized void tryToActive()
 	{
-		setCurrentIntention(IntentionType.STAND, null, null);
-		notifyEvent(AiEventType.THINK, null, null);
+		tryToIdle();
 	}
 	
 	@Override
-	protected void onIntentionActive()
+	protected void thinkActive()
 	{
-		setCurrentIntention(IntentionType.IDLE, null, null);
+		thinkIdle();
 	}
 	
 	@Override
-	protected void onIntentionInteract(WorldObject object, boolean isShiftPressed)
+	protected void thinkAttack()
 	{
-		setCurrentIntention(IntentionType.INTERACT, object, isShiftPressed);
-		notifyEvent(AiEventType.THINK, null, null);
-	}
-	
-	@Override
-	protected void onIntentionUseItem(Integer objectId)
-	{
-		setCurrentIntention(IntentionType.USE_ITEM, objectId, null);
-		notifyEvent(AiEventType.THINK, null, null);
-	}
-	
-	@Override
-	protected void onIntentionFakeDeath(boolean startFakeDeath)
-	{
-		if (getActor().denyAiAction() || getActor().getMountType() != 0)
+		if (getActor().denyAiAction() || getActor().isSitting())
 		{
+			doIdleIntention();
 			clientActionFailed();
 			return;
 		}
 		
-		if (startFakeDeath)
+		final Creature target = _currentIntention.getFinalTarget();
+		if (isTargetLost(target))
 		{
-			getActor().getMove().stop();
-			getActor().startFakeDeath();
+			doIdleIntention();
+			clientActionFailed();
+			return;
 		}
-		else
-			getActor().stopFakeDeath(false);
+		
+		boolean isShiftPressed = _currentIntention.isShiftPressed();
+		if (getActor().getMove().maybeMoveToPawn(target, getActor().getStatus().getPhysicalAttackRange(), isShiftPressed))
+		{
+			if (isShiftPressed)
+			{
+				doIdleIntention();
+				clientActionFailed();
+			}
+			
+			return;
+		}
+		
+		getActor().getMove().stop();
+		
+		if ((getActor().getAttackType() == WeaponType.BOW && getActor().getAttack().isBowCoolingDown()) || getActor().getAttack().isAttackingNow())
+		{
+			setNextIntention(_currentIntention);
+			clientActionFailed();
+			return;
+		}
+		
+		if (!getActor().getAttack().canDoAttack(target))
+		{
+			doIdleIntention();
+			clientActionFailed();
+			return;
+		}
+		
+		getActor().getAttack().doAttack(target);
 	}
 	
 	@Override
@@ -186,41 +226,41 @@ public class PlayerAI extends PlayableAI
 	{
 		if (getActor().denyAiAction() || getActor().getAllSkillsDisabled() || getActor().getCast().isCastingNow())
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			clientActionFailed();
 			return;
 		}
 		
-		final SkillUseHolder skillUseHolder = (SkillUseHolder) _currentIntention.getFirstParameter();
-		final Creature target = skillUseHolder.getFinalTarget();
+		final Creature target = _currentIntention.getFinalTarget();
 		if (target == null)
 		{
 			getActor().sendPacket(SystemMessageId.INVALID_TARGET);
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
-			return;
-		}
-		if (targetLost(target))
-		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			return;
 		}
 		
-		if (!getActor().getCast().canAttemptCast(skillUseHolder))
+		final L2Skill skill = _currentIntention.getSkill();
+		if (isTargetLost(target, skill))
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			return;
 		}
 		
-		final L2Skill skill = skillUseHolder.getSkill();
-		final boolean isShiftPressed = skillUseHolder.isShiftPressed();
+		if (!getActor().getCast().canAttemptCast(target, skill))
+		{
+			doIdleIntention();
+			return;
+		}
+		
+		final boolean isShiftPressed = _currentIntention.isShiftPressed();
 		if (skill.getTargetType() == SkillTargetType.GROUND)
 		{
-			if (getActor().getMove().maybeMoveToPosition(getActor().getCurrentSkillWorldPosition(), skill.getCastRange(), isShiftPressed))
+			if (getActor().getMove().maybeMoveToLocation(getActor().getCurrentSkillWorldPosition(), skill.getCastRange(), false, isShiftPressed))
 			{
 				if (isShiftPressed)
 				{
 					getActor().sendPacket(SystemMessageId.TARGET_TOO_FAR);
-					changeCurrentIntention(IntentionType.ACTIVE, null, null);
+					doIdleIntention();
 				}
 				
 				return;
@@ -228,12 +268,12 @@ public class PlayerAI extends PlayableAI
 		}
 		else
 		{
-			if (_actor.getMove().maybeMoveToPawn(target, skill.getCastRange(), isShiftPressed))
+			if (getActor().getMove().maybeMoveToPawn(target, skill.getCastRange(), isShiftPressed))
 			{
 				if (isShiftPressed)
 				{
 					getActor().sendPacket(SystemMessageId.TARGET_TOO_FAR);
-					changeCurrentIntention(IntentionType.ACTIVE, null, null);
+					doIdleIntention();
 				}
 				
 				return;
@@ -243,16 +283,22 @@ public class PlayerAI extends PlayableAI
 		if (skill.isToggle())
 		{
 			getActor().getMove().stop();
-			getActor().getCast().doToggleCast(skillUseHolder);
+			getActor().getCast().doToggleCast(skill, target);
 		}
 		else
 		{
-			if (!getActor().getCast().canDoCast(skillUseHolder))
+			final boolean isCtrlPressed = _currentIntention.isCtrlPressed();
+			final int itemObjectId = _currentIntention.getItemObjectId();
+			
+			if (!getActor().getCast().canDoCast(target, skill, isCtrlPressed, itemObjectId))
 			{
-				if (skill.nextActionIsAttack() && skillUseHolder.getFinalTarget() instanceof Attackable)
-					changeCurrentIntention(IntentionType.ATTACK, skillUseHolder.getFinalTarget(), skillUseHolder.isShiftPressed());
+				if (skill.nextActionIsAttack() && target.isAttackableWithoutForceBy(getActor()))
+					doAttackIntention(target, isCtrlPressed, isShiftPressed);
 				else
-					changeCurrentIntention(IntentionType.ACTIVE, null, null);
+				{
+					getActor().sendPacket(new StopMove(getActor()));
+					doIdleIntention();
+				}
 				
 				return;
 			}
@@ -261,20 +307,35 @@ public class PlayerAI extends PlayableAI
 				getActor().getMove().stop();
 			
 			if (skill.getSkillType() == SkillType.FUSION || skill.getSkillType() == SkillType.SIGNET_CASTTIME)
-				getActor().getCast().doFusionCasttimeCast(skillUseHolder);
+				getActor().getCast().doFusionCasttimeCast(skill, target);
 			else
-			{
-				final ItemInstance itemInstance = (ItemInstance) _currentIntention.getSecondParameter();
-				getActor().getCast().doCast(skillUseHolder, itemInstance);
-			}
+				getActor().getCast().doCast(skill, target, _actor.getInventory().getItemByObjectId(itemObjectId));
 		}
+	}
+	
+	@Override
+	protected void thinkFakeDeath()
+	{
+		if (getActor().denyAiAction() || getActor().getMountType() != 0)
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// Start fake death hidden in isCtrlPressed.
+		if (_currentIntention.isCtrlPressed())
+		{
+			getActor().getMove().stop();
+			getActor().startFakeDeath();
+		}
+		else
+			getActor().stopFakeDeath(false);
 	}
 	
 	@Override
 	protected ItemInstance thinkPickUp()
 	{
 		final ItemInstance item = super.thinkPickUp();
-		
 		if (item == null)
 			return null;
 		
@@ -283,24 +344,15 @@ public class PlayerAI extends PlayableAI
 			if (!item.isVisible())
 				return null;
 			
-			if (!getActor().getInventory().validateWeight(item.getCount() * item.getItem().getWeight()))
-			{
-				getActor().sendPacket(SystemMessageId.WEIGHT_LIMIT_EXCEEDED);
-				clientActionFailed();
-				return null;
-			}
-			
 			if (((getActor().isInParty() && getActor().getParty().getLootRule() == LootRule.ITEM_LOOTER) || !getActor().isInParty()) && !getActor().getInventory().validateCapacity(item))
 			{
 				getActor().sendPacket(SystemMessageId.SLOTS_FULL);
-				clientActionFailed();
 				return null;
 			}
 			
 			if (getActor().getActiveTradeList() != null)
 			{
 				getActor().sendPacket(SystemMessageId.CANNOT_PICKUP_OR_USE_ITEM_WHILE_TRADING);
-				clientActionFailed();
 				return null;
 			}
 			
@@ -313,7 +365,6 @@ public class PlayerAI extends PlayableAI
 				else
 					getActor().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.FAILED_TO_PICKUP_S1).addItemName(item));
 				
-				clientActionFailed();
 				return null;
 			}
 			
@@ -361,7 +412,7 @@ public class PlayerAI extends PlayableAI
 				getActor().addItem("Pickup", item, null, true);
 		}
 		
-		ThreadPool.schedule(() -> getActor().setIsParalyzed(false), (int) (700 / getActor().getStat().getMovementSpeedMultiplier()));
+		ThreadPool.schedule(() -> getActor().setIsParalyzed(false), 200);
 		getActor().setIsParalyzed(true);
 		
 		return item;
@@ -370,49 +421,45 @@ public class PlayerAI extends PlayableAI
 	@Override
 	protected void thinkInteract()
 	{
+		clientActionFailed();
+		
 		if (getActor().denyAiAction() || getActor().isSitting() || getActor().isFlying())
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
-			clientActionFailed();
+			doIdleIntention();
 			return;
 		}
 		
-		final WorldObject target = (WorldObject) _currentIntention.getFirstParameter();
-		if (target == null || targetLost(target))
+		final WorldObject target = _currentIntention.getTarget();
+		if (isTargetLost(target))
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			return;
 		}
 		
 		if (!getActor().getAI().canAttemptInteract())
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			return;
 		}
 		
-		final boolean isShiftPressed = (boolean) _currentIntention.getSecondParameter();
-		if (getActor().getMove().maybeMoveToPawn(target, 60, isShiftPressed))
+		final boolean isShiftPressed = _currentIntention.isShiftPressed();
+		if (getActor().getMove().maybeMoveToPawn(target, 100, isShiftPressed))
 		{
 			if (isShiftPressed)
-			{
-				changeCurrentIntention(IntentionType.ACTIVE, null, null);
-				clientActionFailed();
-			}
+				doIdleIntention();
 			
 			return;
 		}
 		
 		if (!getActor().getAI().canDoInteract(target))
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			return;
 		}
 		
-		clientActionFailed();
-		getActor().getMove().stop();
-		((Creature) target).onInteract(getActor());
+		target.onInteract(getActor());
 		
-		changeCurrentIntention(IntentionType.ACTIVE, null, null);
+		doIdleIntention();
 	}
 	
 	@Override
@@ -420,7 +467,7 @@ public class PlayerAI extends PlayableAI
 	{
 		if (getActor().denyAiAction() || getActor().isSitting() || getActor().isOperating() || getActor().getMountType() != 0)
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			clientActionFailed();
 			return;
 		}
@@ -430,7 +477,7 @@ public class PlayerAI extends PlayableAI
 		// sitDown sends the ChangeWaitType packet, which MUST precede the ChairSit packet (sent in this function) in order to properly sit on the throne.
 		getActor().sitDown();
 		
-		final WorldObject target = (WorldObject) _currentIntention.getFirstParameter();
+		final WorldObject target = _currentIntention.getTarget();
 		final boolean isThrone = target instanceof StaticObject && ((StaticObject) target).getType() == 1;
 		if (isThrone && !((StaticObject) target).isBusy() && getActor().isIn3DRadius(target, Npc.INTERACTION_DISTANCE))
 		{
@@ -447,7 +494,7 @@ public class PlayerAI extends PlayableAI
 		// no need to getActor().isOperating() here, because it is included in the Player overriden denyAiAction
 		if (getActor().denyAiAction() || !getActor().isSitting() || getActor().getMountType() != 0)
 		{
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+			doIdleIntention();
 			clientActionFailed();
 			return;
 		}
@@ -461,22 +508,15 @@ public class PlayerAI extends PlayableAI
 	@Override
 	protected void thinkUseItem()
 	{
-		final Integer objectId = (Integer) _currentIntention.getFirstParameter();
-		final ItemInstance itemToTest = getActor().getInventory().getItemByObjectId(objectId);
+		final ItemInstance itemToTest = getActor().getInventory().getItemByObjectId(_currentIntention.getItemObjectId());
 		if (itemToTest == null)
 			return;
 		
+		// Equip or unequip the related ItemInstance.
 		getActor().useEquippableItem(itemToTest, false);
 		
-		// Simulate onEvtEndUseItem
-		if (_previousIntention.getType() == IntentionType.ATTACK)
-		{
-			final Creature target = (Creature) _previousIntention.getFirstParameter();
-			if (target.canAttackingContinueBy(getActor()))
-				changeCurrentIntention(_previousIntention);
-		}
-		else
-			changeCurrentIntention(IntentionType.ACTIVE, null, null);
+		// Resolve previous intention.
+		doIntention(_previousIntention);
 	}
 	
 	/**
@@ -502,31 +542,12 @@ public class PlayerAI extends PlayableAI
 	@Override
 	public boolean canDoInteract(WorldObject target)
 	{
-		// Can't interact with StaticObjects (Signs etc)
-		if (target instanceof StaticObject)
-			return false;
-		
-		// Can't interact while casting a spell.
-		if (getActor().getCast().isCastingNow())
-			return false;
-		
-		// Can't interact while dead.
-		if (getActor().isDead() || getActor().isFakeDeath())
-			return false;
-		
-		// Can't interact sitted.
-		if (getActor().isSitting())
-			return false;
-		
 		// Can't interact in shop mode, or during a transaction or a request.
 		if (getActor().isOperating() || getActor().isProcessingTransaction())
 			return false;
 		
 		// Can't interact if regular distance doesn't match.
-		if (!target.isIn3DRadius(getActor(), Npc.INTERACTION_DISTANCE))
-			return false;
-		
-		return true;
+		return target.isIn3DRadius(getActor(), Npc.INTERACTION_DISTANCE);
 	}
 	
 	@Override
@@ -555,5 +576,4 @@ public class PlayerAI extends PlayableAI
 	{
 		return (Player) _actor;
 	}
-	
 }

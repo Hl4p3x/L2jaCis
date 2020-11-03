@@ -46,13 +46,14 @@ public class EffectSignet extends AbstractEffect
 		if (_skill == null)
 			return true;
 		
-		int mpConsume = _skill.getMpConsume();
-		if (mpConsume > getEffector().getCurrentMp())
+		final int mpConsume = _skill.getMpConsume();
+		if (mpConsume > getEffector().getStatus().getMp())
 		{
 			getEffector().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP));
 			return false;
 		}
-		getEffector().reduceCurrentMp(mpConsume);
+		
+		getEffector().getStatus().reduceMp(mpConsume);
 		
 		List<Creature> targets = new ArrayList<>();
 		for (Creature cha : _actor.getKnownTypeInRadius(Creature.class, getSkill().getSkillRadius()))
@@ -63,6 +64,7 @@ public class EffectSignet extends AbstractEffect
 			
 			// there doesn't seem to be a visible effect with MagicSkillLaunched packet...
 			_actor.broadcastPacket(new MagicSkillUse(_actor, cha, _skill.getId(), _skill.getLevel(), 0, 0));
+			
 			targets.add(cha);
 		}
 		

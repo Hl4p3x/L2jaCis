@@ -1,7 +1,7 @@
 package net.sf.l2j.gameserver.model.olympiad;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.enums.SpawnType;
@@ -13,7 +13,7 @@ public final class OlympiadGameTask implements Runnable
 {
 	protected static final CLogger LOGGER = new CLogger(OlympiadGameTask.class.getName());
 	
-	protected static final long BATTLE_PERIOD = Config.ALT_OLY_BATTLE; // 6 mins
+	protected static final long BATTLE_PERIOD = Config.OLY_BATTLE; // 6 mins
 	
 	public static final int[] TELEPORT_TO_ARENA =
 	{
@@ -153,7 +153,7 @@ public final class OlympiadGameTask implements Runnable
 				case BEGIN:
 				{
 					_state = GameState.TELE_TO_ARENA;
-					_countDown = Config.ALT_OLY_WAIT_TIME;
+					_countDown = Config.OLY_WAIT_TIME;
 					break;
 				}
 				
@@ -178,7 +178,7 @@ public final class OlympiadGameTask implements Runnable
 					}
 					
 					_state = GameState.BATTLE_COUNTDOWN;
-					_countDown = Config.ALT_OLY_WAIT_BATTLE;
+					_countDown = Config.OLY_WAIT_BATTLE;
 					delay = getDelay(BATTLE_START_TIME);
 					break;
 				}
@@ -220,7 +220,7 @@ public final class OlympiadGameTask implements Runnable
 				case BATTLE_IN_PROGRESS:
 				{
 					_countDown += 1000;
-					if (checkBattle() || _countDown > Config.ALT_OLY_BATTLE)
+					if (checkBattle() || _countDown > Config.OLY_BATTLE)
 						_state = GameState.GAME_STOPPED;
 					
 					break;
@@ -230,7 +230,7 @@ public final class OlympiadGameTask implements Runnable
 				case GAME_STOPPED:
 				{
 					_state = GameState.TELE_TO_TOWN;
-					_countDown = Config.ALT_OLY_WAIT_END;
+					_countDown = Config.OLY_WAIT_END;
 					stopGame();
 					delay = getDelay(TELEPORT_TO_TOWN);
 					break;

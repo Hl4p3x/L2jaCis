@@ -7,11 +7,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.CursedWeaponManager;
 import net.sf.l2j.gameserver.model.World;
@@ -39,7 +39,7 @@ public final class ItemsOnGroundTaskManager implements Runnable
 		ThreadPool.scheduleAtFixedRate(this, 5000, 5000);
 		
 		// Load all items.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement st = con.prepareStatement(LOAD_ITEMS);
 			PreparedStatement st2 = con.prepareStatement(DELETE_ITEMS);
 			ResultSet rs = st.executeQuery())
@@ -172,7 +172,7 @@ public final class ItemsOnGroundTaskManager implements Runnable
 		}
 		
 		// Store whole items list to database.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement st = con.prepareStatement(SAVE_ITEMS))
 		{
 			// Get current time.

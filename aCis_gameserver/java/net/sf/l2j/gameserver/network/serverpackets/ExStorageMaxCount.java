@@ -14,13 +14,13 @@ public class ExStorageMaxCount extends L2GameServerPacket
 	
 	public ExStorageMaxCount(Player player)
 	{
-		_inventoryLimit = player.getInventoryLimit();
-		_warehouseLimit = player.getWareHouseLimit();
-		_freightLimit = player.getFreightLimit();
-		_privateSellLimit = player.getPrivateSellStoreLimit();
-		_privateBuyLimit = player.getPrivateBuyStoreLimit();
-		_dwarfRecipeLimit = player.getDwarfRecipeLimit();
-		_commonRecipeLimit = player.getCommonRecipeLimit();
+		_inventoryLimit = player.getStatus().getInventoryLimit();
+		_warehouseLimit = player.getStatus().getWareHouseLimit();
+		_freightLimit = player.getStatus().getFreightLimit();
+		_privateSellLimit = player.getStatus().getPrivateSellStoreLimit();
+		_privateBuyLimit = player.getStatus().getPrivateBuyStoreLimit();
+		_dwarfRecipeLimit = player.getStatus().getDwarfRecipeLimit();
+		_commonRecipeLimit = player.getStatus().getCommonRecipeLimit();
 	}
 	
 	@Override

@@ -6,13 +6,13 @@ import net.sf.l2j.gameserver.model.group.Party;
 public final class PartySmallWindowAll extends L2GameServerPacket
 {
 	private final Party _party;
-	private final Player _exclude;
+	private final Player _player;
 	private final int _dist;
 	private final int _leaderObjectId;
 	
-	public PartySmallWindowAll(Player exclude, Party party)
+	public PartySmallWindowAll(Player player, Party party)
 	{
-		_exclude = exclude;
+		_player = player;
 		_party = party;
 		_leaderObjectId = _party.getLeaderObjectId();
 		_dist = _party.getLootRule().ordinal();
@@ -26,23 +26,23 @@ public final class PartySmallWindowAll extends L2GameServerPacket
 		writeD(_dist);
 		writeD(_party.getMembersCount() - 1);
 		
-		for (Player member : _party.getMembers())
+		for (Player player : _party.getMembers())
 		{
-			if (member == _exclude)
+			if (player == _player)
 				continue;
 			
-			writeD(member.getObjectId());
-			writeS(member.getName());
-			writeD((int) member.getCurrentCp());
-			writeD(member.getMaxCp());
-			writeD((int) member.getCurrentHp());
-			writeD(member.getMaxHp());
-			writeD((int) member.getCurrentMp());
-			writeD(member.getMaxMp());
-			writeD(member.getLevel());
-			writeD(member.getClassId().getId());
+			writeD(player.getObjectId());
+			writeS(player.getName());
+			writeD((int) player.getStatus().getCp());
+			writeD(player.getStatus().getMaxCp());
+			writeD((int) player.getStatus().getHp());
+			writeD(player.getStatus().getMaxHp());
+			writeD((int) player.getStatus().getMp());
+			writeD(player.getStatus().getMaxMp());
+			writeD(player.getStatus().getLevel());
+			writeD(player.getClassId().getId());
 			writeD(0);// writeD(0x01); ??
-			writeD(member.getRace().ordinal());
+			writeD(player.getRace().ordinal());
 		}
 	}
 }

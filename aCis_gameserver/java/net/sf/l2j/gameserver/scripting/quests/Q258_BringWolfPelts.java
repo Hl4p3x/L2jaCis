@@ -63,7 +63,7 @@ public class Q258_BringWolfPelts extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 3) ? "30001-01.htm" : "30001-02.htm";
+				htmltext = (player.getStatus().getLevel() < 3) ? "30001-01.htm" : "30001-02.htm";
 				break;
 			
 			case STATE_STARTED:

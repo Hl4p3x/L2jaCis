@@ -55,8 +55,8 @@ public final class RequestOustPledgeMember extends L2GameClientPacket
 		}
 		
 		// this also updates the database
-		clan.removeClanMember(member.getObjectId(), System.currentTimeMillis() + Config.ALT_CLAN_JOIN_DAYS * 86400000L);
-		clan.setCharPenaltyExpiryTime(System.currentTimeMillis() + Config.ALT_CLAN_JOIN_DAYS * 86400000L);
+		clan.removeClanMember(member.getObjectId(), System.currentTimeMillis() + Config.CLAN_JOIN_DAYS * 86400000L);
+		clan.setCharPenaltyExpiryTime(System.currentTimeMillis() + Config.CLAN_JOIN_DAYS * 86400000L);
 		clan.updateClanInDB();
 		
 		// Remove the player from the members list.

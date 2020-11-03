@@ -13,18 +13,18 @@ public class GMViewItemList extends L2GameServerPacket
 	private final int _limit;
 	private final String _playerName;
 	
-	public GMViewItemList(Player cha)
+	public GMViewItemList(Player player)
 	{
-		_items = cha.getInventory().getItems();
-		_playerName = cha.getName();
-		_limit = cha.getInventoryLimit();
+		_items = player.getInventory().getItems();
+		_playerName = player.getName();
+		_limit = player.getStatus().getInventoryLimit();
 	}
 	
-	public GMViewItemList(Pet cha)
+	public GMViewItemList(Pet pet)
 	{
-		_items = cha.getInventory().getItems();
-		_playerName = cha.getName();
-		_limit = cha.getInventoryLimit();
+		_items = pet.getInventory().getItems();
+		_playerName = pet.getName();
+		_limit = pet.getInventoryLimit();
 	}
 	
 	@Override

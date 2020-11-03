@@ -12,9 +12,7 @@
 	<target name="dist" depends="jar">
 		<copy todir="${build.dist.login}/libs">
 			<fileset dir="${src}/../lib">
-				<include name="c3p0-0.9.5-pre5.jar" />
-				<include name="mariadb-java-client-2.5.2.jar" />
-				<include name="mchange-commons-java-0.2.6.2.jar" />
+				<include name="*.jar" />
 			</fileset>
 		</copy>
 		<copy todir="${build.dist.game}/libs">

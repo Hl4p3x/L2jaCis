@@ -60,7 +60,7 @@ public class Q159_ProtectTheWaterSource extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30154-00.htm";
-				else if (player.getLevel() < 12)
+				else if (player.getStatus().getLevel() < 12)
 					htmltext = "30154-02.htm";
 				else
 					htmltext = "30154-03.htm";

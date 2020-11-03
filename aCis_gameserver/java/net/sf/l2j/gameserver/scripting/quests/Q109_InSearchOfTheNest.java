@@ -77,7 +77,7 @@ public class Q109_InSearchOfTheNest extends Quest
 		{
 			case STATE_CREATED:
 				// Must worn one or other Golden Ram Badge in order to be accepted.
-				if (player.getLevel() >= 66 && st.hasAtLeastOneQuestItem(RECRUIT_BADGE, SOLDIER_BADGE))
+				if (player.getStatus().getLevel() >= 66 && st.hasAtLeastOneQuestItem(RECRUIT_BADGE, SOLDIER_BADGE))
 					htmltext = "31553-00.htm";
 				else
 					htmltext = "31553-00a.htm";

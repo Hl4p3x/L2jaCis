@@ -2,11 +2,10 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.enums.ZoneId;
-import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
@@ -55,8 +54,8 @@ public class ChristmasTree extends Folk
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		target.sendPacket(ActionFailed.STATIC_PACKET);
+		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
 }

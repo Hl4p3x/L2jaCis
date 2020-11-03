@@ -54,8 +54,8 @@ public final class ServerObjectInfo extends L2GameServerPacket
 		writeF(1.0); // attack speed multiplier
 		writeF(_collisionRadius);
 		writeF(_collisionHeight);
-		writeD((int) (_isAttackable ? _npc.getCurrentHp() : 0));
-		writeD(_isAttackable ? _npc.getMaxHp() : 0);
+		writeD((int) (_isAttackable ? _npc.getStatus().getHp() : 0));
+		writeD(_isAttackable ? _npc.getStatus().getMaxHp() : 0);
 		writeD(0x01); // object type
 		writeD(0x00); // special effects
 	}

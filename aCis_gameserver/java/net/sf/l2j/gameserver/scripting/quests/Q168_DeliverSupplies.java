@@ -65,7 +65,7 @@ public class Q168_DeliverSupplies extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30349-00.htm";
-				else if (player.getLevel() < 3)
+				else if (player.getStatus().getLevel() < 3)
 					htmltext = "30349-01.htm";
 				else
 					htmltext = "30349-02.htm";

@@ -66,7 +66,7 @@ public class Q341_HuntingForWildBeasts extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "30078-00.htm" : "30078-01.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "30078-00.htm" : "30078-01.htm";
 				break;
 			
 			case STATE_STARTED:

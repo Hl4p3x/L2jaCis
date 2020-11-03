@@ -185,7 +185,7 @@ public class Q232_TestOfTheLord extends SecondClassQuest
 					htmltext = "30565-01.htm";
 				else if (player.getClassId() != ClassId.ORC_SHAMAN)
 					htmltext = "30565-02.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30565-03.htm";
 				else
 					htmltext = "30565-04.htm";

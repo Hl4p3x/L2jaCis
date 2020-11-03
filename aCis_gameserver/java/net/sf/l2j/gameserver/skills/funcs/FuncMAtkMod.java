@@ -21,8 +21,8 @@ public class FuncMAtkMod extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		final double intMod = Formulas.INT_BONUS[effector.getINT()];
-		final double lvlMod = effector.getLevelMod();
+		final double intMod = Formulas.INT_BONUS[effector.getStatus().getINT()];
+		final double lvlMod = effector.getStatus().getLevelMod();
 		
 		return value * ((lvlMod * lvlMod) * (intMod * intMod));
 	}

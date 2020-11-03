@@ -91,7 +91,7 @@ public class Q379_FantasyWine extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "30074-0a.htm" : "30074-0.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "30074-0a.htm" : "30074-0.htm";
 				break;
 			
 			case STATE_STARTED:

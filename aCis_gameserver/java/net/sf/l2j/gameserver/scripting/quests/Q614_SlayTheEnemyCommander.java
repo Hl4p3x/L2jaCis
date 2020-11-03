@@ -73,7 +73,7 @@ public class Q614_SlayTheEnemyCommander extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 75)
+				if (player.getStatus().getLevel() >= 75)
 				{
 					if (player.getAllianceWithVarkaKetra() <= -4 && st.hasQuestItems(VARKA_ALLIANCE_4) && !st.hasQuestItems(FEATHER_OF_WISDOM))
 						htmltext = "31377-01.htm";

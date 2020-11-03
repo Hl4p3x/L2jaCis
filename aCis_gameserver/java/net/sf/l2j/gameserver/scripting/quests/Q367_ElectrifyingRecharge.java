@@ -2,12 +2,9 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -76,7 +73,7 @@ public class Q367_ElectrifyingRecharge extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 37) ? "30673-02.htm" : "30673-01.htm";
+				htmltext = (player.getStatus().getLevel() < 37) ? "30673-02.htm" : "30673-01.htm";
 				break;
 			
 			case STATE_STARTED:
@@ -146,7 +143,7 @@ public class Q367_ElectrifyingRecharge extends Quest
 			return null;
 		
 		// For every occured attack, the NPC tries to cast skillId 4072. The only restrictions are inherent skill restriction (mp cost, skill reuse, etc).
-		npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4072, 1), false, false), null);
+		npc.getAI().tryToCast(player, 4072, 1);
 		
 		if (!st.hasQuestItems(FINAL_TITAN_LAMP))
 		{

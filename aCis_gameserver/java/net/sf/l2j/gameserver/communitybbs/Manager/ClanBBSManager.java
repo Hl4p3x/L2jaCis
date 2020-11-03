@@ -47,7 +47,7 @@ public class ClanBBSManager extends BaseBBSManager
 				{
 					final String noticeCommand = st.nextToken();
 					if (!noticeCommand.isEmpty() && player.getClan() != null)
-						player.getClan().setNoticeEnabledAndStore(Boolean.parseBoolean(noticeCommand));
+						player.getClan().setNotice(Boolean.parseBoolean(noticeCommand));
 				}
 				sendClanNotice(player, player.getClanId());
 			}
@@ -76,7 +76,7 @@ public class ClanBBSManager extends BaseBBSManager
 			final Clan clan = player.getClan();
 			if (clan != null)
 			{
-				clan.setNoticeAndStore(ar4);
+				clan.setNotice(ar4);
 				sendClanNotice(player, player.getClanId());
 			}
 		}

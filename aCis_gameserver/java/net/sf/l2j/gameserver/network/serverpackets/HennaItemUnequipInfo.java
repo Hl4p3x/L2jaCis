@@ -13,12 +13,12 @@ public class HennaItemUnequipInfo extends L2GameServerPacket
 	{
 		_henna = henna;
 		_adena = player.getAdena();
-		_int = player.getINT();
-		_str = player.getSTR();
-		_con = player.getCON();
-		_men = player.getMEN();
-		_dex = player.getDEX();
-		_wit = player.getWIT();
+		_int = player.getStatus().getINT();
+		_str = player.getStatus().getSTR();
+		_con = player.getStatus().getCON();
+		_men = player.getStatus().getMEN();
+		_dex = player.getStatus().getDEX();
+		_wit = player.getStatus().getWIT();
 	}
 	
 	@Override

@@ -57,7 +57,7 @@ public class Q158_SeedOfEvil extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 21) ? "30031-02.htm" : "30031-03.htm";
+				htmltext = (player.getStatus().getLevel() < 21) ? "30031-02.htm" : "30031-03.htm";
 				break;
 			
 			case STATE_STARTED:

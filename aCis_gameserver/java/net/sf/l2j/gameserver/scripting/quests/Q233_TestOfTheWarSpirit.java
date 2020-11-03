@@ -167,7 +167,7 @@ public class Q233_TestOfTheWarSpirit extends SecondClassQuest
 		{
 			case STATE_CREATED:
 				if (player.getClassId() == ClassId.ORC_SHAMAN)
-					htmltext = (player.getLevel() < 39) ? "30510-03.htm" : "30510-04.htm";
+					htmltext = (player.getStatus().getLevel() < 39) ? "30510-03.htm" : "30510-04.htm";
 				else
 					htmltext = (player.getRace() == ClassRace.ORC) ? "30510-02.htm" : "30510-01.htm";
 				break;

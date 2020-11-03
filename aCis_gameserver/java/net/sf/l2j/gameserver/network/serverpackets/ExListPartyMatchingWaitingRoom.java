@@ -29,7 +29,7 @@ public class ExListPartyMatchingWaitingRoom extends L2GameServerPacket
 		{
 			writeS(member.getName());
 			writeD(member.getActiveClass());
-			writeD(member.getLevel());
+			writeD(member.getStatus().getLevel());
 		}
 	}
 }

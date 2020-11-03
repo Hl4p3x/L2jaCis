@@ -787,6 +787,7 @@
 		<set name="material" val="LIQUID" />
 		<set name="is_stackable" val="true" />
 		<set name="is_oly_restricted" val="true" />
+		<set name="handler" val="ItemSkills" />
 		<set name="item_skill" val="2136-1" />
 	</item>
 	<item id="5284" type="Weapon" name="Zweihander">

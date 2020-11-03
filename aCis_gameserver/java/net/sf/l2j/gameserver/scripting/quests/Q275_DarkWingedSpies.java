@@ -64,7 +64,7 @@ public class Q275_DarkWingedSpies extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30567-00.htm";
-				else if (player.getLevel() < 11)
+				else if (player.getStatus().getLevel() < 11)
 					htmltext = "30567-01.htm";
 				else
 					htmltext = "30567-02.htm";

@@ -76,7 +76,7 @@ public class Q417_PathToBecomeAScavenger extends Quest
 		{
 			if (player.getClassId() != ClassId.DWARVEN_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.SCAVENGER) ? "30524-02a.htm" : "30524-08.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30524-02.htm";
 			else if (st.hasQuestItems(RING_OF_RAVEN))
 				htmltext = "30524-04.htm";

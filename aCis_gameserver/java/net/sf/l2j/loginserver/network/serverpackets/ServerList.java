@@ -5,7 +5,7 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.l2j.commons.network.StatusType;
+import net.sf.l2j.commons.network.ServerType;
 
 import net.sf.l2j.loginserver.data.manager.GameServerManager;
 import net.sf.l2j.loginserver.model.Account;
@@ -24,10 +24,10 @@ public final class ServerList extends L2LoginServerPacket
 		
 		for (GameServerInfo gsi : GameServerManager.getInstance().getRegisteredGameServers().values())
 		{
-			final StatusType status = (account.getAccessLevel() < 0 || (gsi.getStatus() == StatusType.GM_ONLY && account.getAccessLevel() <= 0)) ? StatusType.DOWN : gsi.getStatus();
+			final ServerType type = (account.getAccessLevel() < 0 || (gsi.getType() == ServerType.GM_ONLY && account.getAccessLevel() <= 0)) ? ServerType.DOWN : gsi.getType();
 			final String hostName = gsi.getHostName();
 			
-			_servers.add(new ServerData(status, hostName, gsi));
+			_servers.add(new ServerData(type, hostName, gsi));
 		}
 	}
 	
@@ -64,7 +64,7 @@ public final class ServerList extends L2LoginServerPacket
 			writeC(server.isPvp() ? 0x01 : 0x00);
 			writeH(server.getCurrentPlayers());
 			writeH(server.getMaxPlayers());
-			writeC(server.getStatus() == StatusType.DOWN ? 0x00 : 0x01);
+			writeC(server.getType() == ServerType.DOWN ? 0x00 : 0x01);
 			
 			int bits = 0;
 			if (server.isTestServer())

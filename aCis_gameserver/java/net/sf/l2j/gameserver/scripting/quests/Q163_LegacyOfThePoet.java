@@ -95,7 +95,7 @@ public class Q163_LegacyOfThePoet extends Quest
 			case STATE_CREATED:
 				if (player.getRace() == ClassRace.DARK_ELF)
 					htmltext = "30220-00.htm";
-				else if (player.getLevel() < 11)
+				else if (player.getStatus().getLevel() < 11)
 					htmltext = "30220-02.htm";
 				else
 					htmltext = "30220-03.htm";

@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.boat;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.BoatManager;
 import net.sf.l2j.gameserver.enums.SayType;

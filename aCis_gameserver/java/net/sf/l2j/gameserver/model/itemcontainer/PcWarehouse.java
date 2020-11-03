@@ -1,7 +1,7 @@
 package net.sf.l2j.gameserver.model.itemcontainer;
 
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
 
 public class PcWarehouse extends ItemContainer
 {
@@ -31,8 +31,11 @@ public class PcWarehouse extends ItemContainer
 	}
 	
 	@Override
-	public boolean validateCapacity(int slots)
+	public boolean validateCapacity(int slotCount)
 	{
-		return _items.size() + slots <= _owner.getWareHouseLimit();
+		if (slotCount == 0)
+			return true;
+		
+		return _items.size() + slotCount <= _owner.getStatus().getWareHouseLimit();
 	}
 }

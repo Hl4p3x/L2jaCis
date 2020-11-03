@@ -132,7 +132,7 @@ public class Q640_TheZeroHour extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 66)
+				if (player.getStatus().getLevel() < 66)
 					htmltext = "31554-00.htm";
 				else
 				{

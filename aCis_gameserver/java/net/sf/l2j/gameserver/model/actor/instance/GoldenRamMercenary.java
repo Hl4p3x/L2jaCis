@@ -2,12 +2,9 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.MultisellData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.scripting.QuestState;
@@ -129,7 +126,7 @@ public class GoldenRamMercenary extends Folk
 				if (qs.getQuestItemsCount(GOLDEN_RAM) >= coins)
 				{
 					qs.takeItems(GOLDEN_RAM, coins);
-					getAI().tryTo(IntentionType.CAST, new SkillUseHolder(this, player, SkillTable.getInstance().getInfo(buffData[0], buffData[1]), false, false), null);
+					getAI().tryToCast(player, buffData[0], buffData[1]);
 					val = 4;
 				}
 				

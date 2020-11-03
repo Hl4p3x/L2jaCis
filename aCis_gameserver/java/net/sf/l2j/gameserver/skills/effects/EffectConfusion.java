@@ -6,7 +6,6 @@ import java.util.List;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -81,10 +80,10 @@ public class EffectConfusion extends AbstractEffect
 		
 		// Attacking the target
 		getEffected().setTarget(target);
-		getEffected().getAI().tryTo(IntentionType.ATTACK, target, false);
+		getEffected().getAI().tryToAttack(target);
 		
 		// Add aggro to that target aswell. The aggro power is random.
-		final int aggro = (5 + Rnd.get(5)) * getEffector().getLevel();
+		final int aggro = (5 + Rnd.get(5)) * getEffector().getStatus().getLevel();
 		((Attackable) getEffected()).addDamageHate(target, 0, aggro);
 		
 		return true;

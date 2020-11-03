@@ -69,7 +69,7 @@ public class Q011_SecretMeetingWithKetraOrcs extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 74) ? "31296-02.htm" : "31296-01.htm";
+				htmltext = (player.getStatus().getLevel() < 74) ? "31296-02.htm" : "31296-01.htm";
 				break;
 			
 			case STATE_STARTED:

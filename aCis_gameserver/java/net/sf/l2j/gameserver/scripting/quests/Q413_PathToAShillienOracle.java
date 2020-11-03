@@ -52,7 +52,7 @@ public class Q413_PathToAShillienOracle extends Quest
 		{
 			if (player.getClassId() != ClassId.DARK_MYSTIC)
 				htmltext = (player.getClassId() == ClassId.SHILLIEN_ORACLE) ? "30330-02a.htm" : "30330-03.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30330-02.htm";
 			else if (st.hasQuestItems(ORB_OF_ABYSS))
 				htmltext = "30330-04.htm";

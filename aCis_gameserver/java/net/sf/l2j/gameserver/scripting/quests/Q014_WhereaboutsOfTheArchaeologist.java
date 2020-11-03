@@ -63,7 +63,7 @@ public class Q014_WhereaboutsOfTheArchaeologist extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 74) ? "31263-1.htm" : "31263-0.htm";
+				htmltext = (player.getStatus().getLevel() < 74) ? "31263-1.htm" : "31263-0.htm";
 				break;
 			
 			case STATE_STARTED:

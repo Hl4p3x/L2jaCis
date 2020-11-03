@@ -63,7 +63,7 @@ public class Q291_RevengeOfTheRedbonnet extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 4) ? "30553-01.htm" : "30553-02.htm";
+				htmltext = (player.getStatus().getLevel() < 4) ? "30553-01.htm" : "30553-02.htm";
 				break;
 			
 			case STATE_STARTED:

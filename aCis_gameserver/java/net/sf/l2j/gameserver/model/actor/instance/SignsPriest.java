@@ -35,164 +35,113 @@ public class SignsPriest extends Folk
 		}
 		else if (command.startsWith("SevenSigns"))
 		{
-			String path;
+			// Create string tokenizer and get actual command.
+			final StringTokenizer st = new StringTokenizer(command.trim());
+			st.nextToken();
 			
-			CabalType cabal = CabalType.NORMAL;
-			int stoneType = 0;
-			
-			final long ancientAdenaAmount = player.getAncientAdena();
-			
-			int val = Integer.parseInt(command.substring(11, 12).trim());
-			
-			if (command.length() > 12) // SevenSigns x[x] x [x..x]
-				val = Integer.parseInt(command.substring(11, 13).trim());
-			
-			if (command.length() > 13)
+			// Get command value.
+			final int value = Integer.parseInt(st.nextToken());
+			switch (value)
 			{
-				try
-				{
-					cabal = CabalType.VALUES[Integer.parseInt(command.substring(14, 15).trim())];
-				}
-				catch (Exception e)
-				{
-					try
-					{
-						cabal = CabalType.VALUES[Integer.parseInt(command.substring(13, 14).trim())];
-					}
-					catch (Exception e2)
-					{
-						try
-						{
-							StringTokenizer st = new StringTokenizer(command.trim());
-							st.nextToken();
-							cabal = CabalType.VALUES[Integer.parseInt(st.nextToken())];
-						}
-						catch (Exception e3)
-						{
-							LOGGER.warn("Failed to retrieve cabal from bypass command. NpcId: {}, command: {}.", getNpcId(), command);
-						}
-					}
-				}
-			}
-			
-			switch (val)
-			{
-				case 2: // Purchase Record of the Seven Signs
+				case 2: // "I want to buy the Record of Seven Signs.", [SevenSigns 2]
 					if (!player.getInventory().validateCapacity(1))
 					{
 						player.sendPacket(SystemMessageId.SLOTS_FULL);
-						break;
+						return;
 					}
 					
 					if (!player.reduceAdena("SevenSigns", SevenSignsManager.RECORD_SEVEN_SIGNS_COST, this, true))
-						break;
+					{
+						showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn_no" : "dusk_no", false);
+						return;
+					}
 					
 					player.addItem("SevenSigns", SevenSignsManager.RECORD_SEVEN_SIGNS_ID, 1, player, true);
 					
-					if (this instanceof DawnPriest)
-						showChatWindow(player, val, "dawn", false);
-					else
-						showChatWindow(player, val, "dusk", false);
+					showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 					break;
 				
-				case 33: // "I want to participate" request
-					CabalType oldCabal = SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId());
+				case 33: // "I wish to participate.", "Back", [SevenSigns 33 cabal]
+					CabalType cabal = CabalType.VALUES[Integer.parseInt(st.nextToken())];
 					
-					if (oldCabal != CabalType.NORMAL)
+					// Check player's current cabal.
+					if (SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) != CabalType.NORMAL)
 					{
-						if (this instanceof DawnPriest)
-							showChatWindow(player, val, "dawn_member", false);
-						else
-							showChatWindow(player, val, "dusk_member", false);
+						showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn_member" : "dusk_member", false);
 						return;
 					}
-					else if (player.getClassId().level() == 0)
+					
+					if (!Config.SEVEN_SIGNS_BYPASS_PREREQUISITES)
 					{
-						if (this instanceof DawnPriest)
-							showChatWindow(player, val, "dawn_firstclass", false);
-						else
-							showChatWindow(player, val, "dusk_firstclass", false);
-						return;
-					}
-					else if (cabal == CabalType.DUSK && Config.ALT_GAME_CASTLE_DUSK) // dusk
-					{
-						// castle owners cannot participate with dusk side
-						if (player.getClan() != null && player.getClan().hasCastle())
+						// First check player's class.
+						final int classLevel = player.getClassId().getLevel();
+						if (classLevel == 0)
 						{
-							showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dusk_no.htm");
-							break;
+							showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn_firstclass" : "dusk_firstclass", false);
+							return;
 						}
-					}
-					else if (cabal == CabalType.DAWN && Config.ALT_GAME_CASTLE_DAWN) // dawn
-					{
-						// clans without castle need to pay participation fee
-						if (player.getClan() == null || !player.getClan().hasCastle())
+						
+						// Characters without a Second Class Transfer may freely join either the Lords of Dawn or the Revolutionary Army of Dusk.
+						if (classLevel > 1)
 						{
-							showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dawn_fee.htm");
-							break;
-						}
-					}
-					
-					if (this instanceof DawnPriest)
-						showChatWindow(player, val, "dawn", false);
-					else
-						showChatWindow(player, val, "dusk", false);
-					break;
-				
-				case 34: // Pay the participation fee request
-					ItemInstance adena = player.getInventory().getItemByItemId(PcInventory.ADENA_ID); // adena
-					ItemInstance certif = player.getInventory().getItemByItemId(6388); // Lord of the Manor's Certificate of Approval
-					boolean fee = true;
-					
-					if (player.getClassId().level() < 2 || (adena != null && adena.getCount() >= SevenSignsManager.ADENA_JOIN_DAWN_COST) || (certif != null && certif.getCount() >= 1))
-						fee = false;
-					
-					if (fee)
-						showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dawn_no.htm");
-					else
-						showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dawn.htm");
-					break;
-				
-				case 3: // Join Cabal Intro 1
-				case 8: // Festival of Darkness Intro - SevenSigns x [0]1
-					showChatWindow(player, val, cabal.getShortName(), false);
-					break;
-				
-				case 4: // Join a Cabal - SevenSigns 4 [0]1 x
-					SealType newSeal = SealType.VALUES[Integer.parseInt(command.substring(15))];
-					
-					if (player.getClassId().level() >= 2)
-					{
-						if (cabal == CabalType.DUSK && Config.ALT_GAME_CASTLE_DUSK)
-						{
-							if (player.getClan() != null && player.getClan().hasCastle()) // even if in htmls is said that ally can have castle too, but its not
+							final boolean hasCastle = player.getClan() != null && player.getClan().hasCastle();
+							
+							// Only characters who are not members of the castle-holding clans and guilds may join Dusk.
+							if (cabal == CabalType.DUSK && hasCastle)
 							{
 								showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dusk_no.htm");
 								return;
 							}
-						}
-						/*
-						 * If the player is trying to join the Lords of Dawn, check if they are carrying a Lord's certificate. If not then try to take the required amount of adena instead.
-						 */
-						if (Config.ALT_GAME_CASTLE_DAWN && cabal == CabalType.DAWN)
-						{
-							boolean allowJoinDawn = false;
 							
-							if (player.getClan() != null && player.getClan().hasCastle()) // castle owner don't need to pay anything
-								allowJoinDawn = true;
-							else if (player.destroyItemByItemId("SevenSigns", SevenSignsManager.CERTIFICATE_OF_APPROVAL_ID, 1, this, true))
-								allowJoinDawn = true;
-							else if (player.reduceAdena("SevenSigns", SevenSignsManager.ADENA_JOIN_DAWN_COST, this, true))
-								allowJoinDawn = true;
-							
-							if (!allowJoinDawn)
+							// Characters who are not members of castle-holding clans need to get an Approval Certificate from their castle's Lord to join Dawn, or pay 50,000 adena.
+							if (cabal == CabalType.DAWN && !hasCastle)
 							{
 								showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dawn_fee.htm");
 								return;
 							}
 						}
 					}
-					SevenSignsManager.getInstance().setPlayerInfo(player.getObjectId(), cabal, newSeal);
+					
+					showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
+					break;
+				
+				case 34: // "Pay the participation fee.", [SevenSigns 34 cabal] (cabal is not used, it is only for Dawn Priest)
+					final ItemInstance adena = player.getInventory().getItemByItemId(PcInventory.ADENA_ID);
+					final ItemInstance certif = player.getInventory().getItemByItemId(6388);
+					final boolean canPayFee = (adena != null && adena.getCount() >= SevenSignsManager.ADENA_JOIN_DAWN_COST) || (certif != null && certif.getCount() >= 1);
+					
+					showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + ((canPayFee) ? "signs_33_dawn.htm" : "signs_33_dawn_no.htm"));
+					break;
+				
+				case 3: // "I want to participate in the Seven Signs.", "Back", [SevenSigns 3 cabal]
+				case 8: // "I want to move to the Oracle of Dawn/Dusk.", "I wish to participate in the Festival of Darkness.", [SevenSigns 8 cabal]
+					cabal = CabalType.VALUES[Integer.parseInt(st.nextToken())];
+					showChatWindow(player, value, cabal.getShortName(), false);
+					break;
+				
+				case 4: // "I wish to fight for the Seal of Avarice/Gnosis/Strife.", [SevenSigns 4 cabal seal]
+					cabal = CabalType.VALUES[Integer.parseInt(st.nextToken())];
+					SealType seal = SealType.VALUES[Integer.parseInt(st.nextToken())];
+					
+					if (!Config.SEVEN_SIGNS_BYPASS_PREREQUISITES)
+					{
+						final boolean hasCastle = player.getClan() != null && player.getClan().hasCastle();
+						
+						if (cabal == CabalType.DUSK && hasCastle)
+						{
+							showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dusk_no.htm");
+							return;
+						}
+						
+						// Test, in the order - Castle ownership, Certificate of Lord, Adena.
+						if (cabal == CabalType.DAWN && (!hasCastle && !player.destroyItemByItemId("SevenSigns", SevenSignsManager.CERTIFICATE_OF_APPROVAL_ID, 1, this, false) && !player.reduceAdena("SevenSigns", SevenSignsManager.ADENA_JOIN_DAWN_COST, this, false)))
+						{
+							showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_33_dawn_no.htm");
+							return;
+						}
+					}
+					
+					SevenSignsManager.getInstance().setPlayerInfo(player.getObjectId(), cabal, seal);
 					
 					if (cabal == CabalType.DAWN)
 						player.sendPacket(SystemMessageId.SEVENSIGNS_PARTECIPATION_DAWN); // Joined Dawn
@@ -200,7 +149,7 @@ public class SignsPriest extends Folk
 						player.sendPacket(SystemMessageId.SEVENSIGNS_PARTECIPATION_DUSK); // Joined Dusk
 						
 					// Show a confirmation message to the user, indicating which seal they chose.
-					switch (newSeal)
+					switch (seal)
 					{
 						case AVARICE:
 							player.sendPacket(SystemMessageId.FIGHT_FOR_AVARICE);
@@ -218,25 +167,28 @@ public class SignsPriest extends Folk
 					showChatWindow(player, 4, cabal.getShortName(), false);
 					break;
 				
-				case 5:
-					if (this instanceof DawnPriest)
-					{
-						if (SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) == CabalType.NORMAL)
-							showChatWindow(player, val, "dawn_no", false);
-						else
-							showChatWindow(player, val, "dawn", false);
-					}
+				case 5: // "I want to contribute Seal Stones.", "Back", [SevenSigns 5 cabal]
+					cabal = CabalType.VALUES[Integer.parseInt(st.nextToken())];
+					
+					if (SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) == CabalType.NORMAL)
+						showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn_no" : "dusk_no", false);
 					else
-					{
-						if (SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) == CabalType.NORMAL)
-							showChatWindow(player, val, "dusk_no", false);
-						else
-							showChatWindow(player, val, "dusk", false);
-					}
+						showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 					break;
 				
-				case 21:
-					int contribStoneId = Integer.parseInt(command.substring(14, 18));
+				case 21: // Contribution of Seal Stones. [SevenSigns 21 id amount]
+					int itemId = Integer.parseInt(st.nextToken());
+					int amount = 0;
+					try
+					{
+						// Note: We must use substring, as the amount parameter (from edit HTML component) may return number with spaces inside.
+						amount = Integer.parseInt(command.substring(19).trim());
+					}
+					catch (Exception NumberFormatException)
+					{
+						showChatWindow(player, 6, (this instanceof DawnPriest) ? "dawn_failure" : "dusk_failure", false);
+						return;
+					}
 					
 					ItemInstance contribBlueStones = player.getInventory().getItemByItemId(SevenSignsManager.SEAL_STONE_BLUE_ID);
 					ItemInstance contribGreenStones = player.getInventory().getItemByItemId(SevenSignsManager.SEAL_STONE_GREEN_ID);
@@ -247,48 +199,32 @@ public class SignsPriest extends Folk
 					int contribRedStoneCount = contribRedStones == null ? 0 : contribRedStones.getCount();
 					
 					int score = SevenSignsManager.getInstance().getPlayerContribScore(player.getObjectId());
-					int contributionCount = 0;
-					
-					boolean contribStonesFound = false;
 					
 					int redContrib = 0;
 					int greenContrib = 0;
 					int blueContrib = 0;
-					
-					try
-					{
-						contributionCount = Integer.parseInt(command.substring(19).trim());
-					}
-					catch (Exception NumberFormatException)
-					{
-						if (this instanceof DawnPriest)
-							showChatWindow(player, 6, "dawn_failure", false);
-						else
-							showChatWindow(player, 6, "dusk_failure", false);
-						break;
-					}
-					
-					switch (contribStoneId)
+					switch (itemId)
 					{
 						case SevenSignsManager.SEAL_STONE_BLUE_ID:
-							blueContrib = (Config.ALT_MAXIMUM_PLAYER_CONTRIB - score) / SevenSignsManager.SEAL_STONE_BLUE_VALUE;
+							blueContrib = (Config.MAXIMUM_PLAYER_CONTRIB - score) / SevenSignsManager.SEAL_STONE_BLUE_VALUE;
 							if (blueContrib > contribBlueStoneCount)
-								blueContrib = contributionCount;
+								blueContrib = amount;
 							break;
 						
 						case SevenSignsManager.SEAL_STONE_GREEN_ID:
-							greenContrib = (Config.ALT_MAXIMUM_PLAYER_CONTRIB - score) / SevenSignsManager.SEAL_STONE_GREEN_VALUE;
+							greenContrib = (Config.MAXIMUM_PLAYER_CONTRIB - score) / SevenSignsManager.SEAL_STONE_GREEN_VALUE;
 							if (greenContrib > contribGreenStoneCount)
-								greenContrib = contributionCount;
+								greenContrib = amount;
 							break;
 						
 						case SevenSignsManager.SEAL_STONE_RED_ID:
-							redContrib = (Config.ALT_MAXIMUM_PLAYER_CONTRIB - score) / SevenSignsManager.SEAL_STONE_RED_VALUE;
+							redContrib = (Config.MAXIMUM_PLAYER_CONTRIB - score) / SevenSignsManager.SEAL_STONE_RED_VALUE;
 							if (redContrib > contribRedStoneCount)
-								redContrib = contributionCount;
+								redContrib = amount;
 							break;
 					}
 					
+					boolean contribStonesFound = false;
 					if (redContrib > 0)
 						contribStonesFound |= player.destroyItemByItemId("SevenSigns", SevenSignsManager.SEAL_STONE_RED_ID, redContrib, this, true);
 					
@@ -300,25 +236,18 @@ public class SignsPriest extends Folk
 					
 					if (!contribStonesFound)
 					{
-						if (this instanceof DawnPriest)
-							showChatWindow(player, 6, "dawn_low_stones", false);
-						else
-							showChatWindow(player, 6, "dusk_low_stones", false);
+						showChatWindow(player, 6, (this instanceof DawnPriest) ? "dawn_low_stones" : "dusk_low_stones", false);
+						return;
 					}
-					else
-					{
-						score = SevenSignsManager.getInstance().addPlayerStoneContrib(player.getObjectId(), blueContrib, greenContrib, redContrib);
-						player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CONTRIB_SCORE_INCREASED_S1).addItemNumber(score));
-						
-						if (this instanceof DawnPriest)
-							showChatWindow(player, 6, "dawn", false);
-						else
-							showChatWindow(player, 6, "dusk", false);
-					}
+					
+					score = SevenSignsManager.getInstance().addPlayerStoneContrib(player.getObjectId(), blueContrib, greenContrib, redContrib);
+					player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CONTRIB_SCORE_INCREASED_S1).addItemNumber(score));
+					
+					showChatWindow(player, 6, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 					break;
 				
-				case 6: // Contribute Seal Stones - SevenSigns 6 x
-					stoneType = Integer.parseInt(command.substring(13));
+				case 6: // "Contribute Blue/Green/Red/all of my Seal Stones.", "Receive bonuses for gathering seal stones." [SevenSigns 6 stone]
+					int stoneType = Integer.parseInt(st.nextToken());
 					
 					ItemInstance blueStones = player.getInventory().getItemByItemId(SevenSignsManager.SEAL_STONE_BLUE_ID);
 					ItemInstance greenStones = player.getInventory().getItemByItemId(SevenSignsManager.SEAL_STONE_GREEN_ID);
@@ -331,58 +260,47 @@ public class SignsPriest extends Folk
 					int contribScore = SevenSignsManager.getInstance().getPlayerContribScore(player.getObjectId());
 					boolean stonesFound = false;
 					
-					if (contribScore == Config.ALT_MAXIMUM_PLAYER_CONTRIB)
-					{
+					if (contribScore == Config.MAXIMUM_PLAYER_CONTRIB)
 						player.sendPacket(SystemMessageId.CONTRIB_SCORE_EXCEEDED);
-					}
 					else
 					{
-						int redContribCount = 0;
-						int greenContribCount = 0;
-						int blueContribCount = 0;
-						
-						String contribStoneColor = "";
-						String stoneColorContr = "";
-						
-						int stoneCountContr = 0;
-						int stoneIdContr = 0;
+						String stoneColor = "";
+						int stoneCount = 0;
+						int stoneId = 0;
 						
 						switch (stoneType)
 						{
 							case 1:
-								contribStoneColor = "Blue";
-								stoneColorContr = "blue";
-								stoneIdContr = SevenSignsManager.SEAL_STONE_BLUE_ID;
-								stoneCountContr = blueStoneCount;
+								stoneColor = "Blue";
+								stoneId = SevenSignsManager.SEAL_STONE_BLUE_ID;
+								stoneCount = blueStoneCount;
 								break;
 							
 							case 2:
-								contribStoneColor = "Green";
-								stoneColorContr = "green";
-								stoneIdContr = SevenSignsManager.SEAL_STONE_GREEN_ID;
-								stoneCountContr = greenStoneCount;
+								stoneColor = "Green";
+								stoneId = SevenSignsManager.SEAL_STONE_GREEN_ID;
+								stoneCount = greenStoneCount;
 								break;
 							
 							case 3:
-								contribStoneColor = "Red";
-								stoneColorContr = "red";
-								stoneIdContr = SevenSignsManager.SEAL_STONE_RED_ID;
-								stoneCountContr = redStoneCount;
+								stoneColor = "Red";
+								stoneId = SevenSignsManager.SEAL_STONE_RED_ID;
+								stoneCount = redStoneCount;
 								break;
 							
 							case 4:
 								int tempContribScore = contribScore;
-								redContribCount = (Config.ALT_MAXIMUM_PLAYER_CONTRIB - tempContribScore) / SevenSignsManager.SEAL_STONE_RED_VALUE;
+								int redContribCount = (Config.MAXIMUM_PLAYER_CONTRIB - tempContribScore) / SevenSignsManager.SEAL_STONE_RED_VALUE;
 								if (redContribCount > redStoneCount)
 									redContribCount = redStoneCount;
 								
 								tempContribScore += redContribCount * SevenSignsManager.SEAL_STONE_RED_VALUE;
-								greenContribCount = (Config.ALT_MAXIMUM_PLAYER_CONTRIB - tempContribScore) / SevenSignsManager.SEAL_STONE_GREEN_VALUE;
+								int greenContribCount = (Config.MAXIMUM_PLAYER_CONTRIB - tempContribScore) / SevenSignsManager.SEAL_STONE_GREEN_VALUE;
 								if (greenContribCount > greenStoneCount)
 									greenContribCount = greenStoneCount;
 								
 								tempContribScore += greenContribCount * SevenSignsManager.SEAL_STONE_GREEN_VALUE;
-								blueContribCount = (Config.ALT_MAXIMUM_PLAYER_CONTRIB - tempContribScore) / SevenSignsManager.SEAL_STONE_BLUE_VALUE;
+								int blueContribCount = (Config.MAXIMUM_PLAYER_CONTRIB - tempContribScore) / SevenSignsManager.SEAL_STONE_BLUE_VALUE;
 								if (blueContribCount > blueStoneCount)
 									blueContribCount = blueStoneCount;
 								
@@ -396,117 +314,84 @@ public class SignsPriest extends Folk
 									stonesFound |= player.destroyItemByItemId("SevenSigns", SevenSignsManager.SEAL_STONE_BLUE_ID, blueContribCount, this, true);
 								
 								if (!stonesFound)
-								{
-									if (this instanceof DawnPriest)
-										showChatWindow(player, val, "dawn_no_stones", false);
-									else
-										showChatWindow(player, val, "dusk_no_stones", false);
-								}
+									showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn_no_stones" : "dusk_no_stones", false);
 								else
 								{
 									contribScore = SevenSignsManager.getInstance().addPlayerStoneContrib(player.getObjectId(), blueContribCount, greenContribCount, redContribCount);
 									player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CONTRIB_SCORE_INCREASED_S1).addItemNumber(contribScore));
 									
-									if (this instanceof DawnPriest)
-										showChatWindow(player, 6, "dawn", false);
-									else
-										showChatWindow(player, 6, "dusk", false);
+									showChatWindow(player, 6, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 								}
 								return;
 						}
 						
-						if (this instanceof DawnPriest)
-							path = SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_6_dawn_contribute.htm";
-						else
-							path = SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_6_dusk_contribute.htm";
-						
 						final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-						html.setFile(path);
-						html.replace("%contribStoneColor%", contribStoneColor);
-						html.replace("%stoneColor%", stoneColorContr);
-						html.replace("%stoneCount%", stoneCountContr);
-						html.replace("%stoneItemId%", stoneIdContr);
+						html.setFile(SevenSignsManager.SEVEN_SIGNS_HTML_PATH + ((this instanceof DawnPriest) ? "signs_6_dawn_contribute.htm" : "signs_6_dusk_contribute.htm"));
+						html.replace("%stoneColor%", stoneColor);
+						html.replace("%stoneCount%", stoneCount);
+						html.replace("%stoneItemId%", stoneId);
 						html.replace("%objectId%", getObjectId());
 						player.sendPacket(html);
 					}
 					break;
 				
-				case 7: // Exchange Ancient Adena for Adena - SevenSigns 7 xxxxxxx
-					int ancientAdenaConvert = 0;
-					
+				case 7: // Exchange Ancient Adena for Adena at Black Marketeer of Mammon, [SevenSigns 7 adena]
+					amount = 0;
 					try
 					{
-						ancientAdenaConvert = Integer.parseInt(command.substring(13).trim());
+						// Note: We must use substring, as the amount parameter (from edit HTML component) may return number with spaces inside.
+						amount = Integer.parseInt(command.substring(13).trim());
 					}
-					catch (NumberFormatException e)
+					catch (Exception e)
 					{
 						showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "blkmrkt_3.htm");
-						break;
-					}
-					catch (StringIndexOutOfBoundsException e)
-					{
-						showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "blkmrkt_3.htm");
-						break;
+						return;
 					}
 					
-					if (ancientAdenaConvert < 1)
+					if (amount < 1)
 					{
 						showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "blkmrkt_3.htm");
-						break;
+						return;
 					}
 					
-					if (ancientAdenaAmount < ancientAdenaConvert)
+					if (player.getAncientAdena() < amount)
 					{
 						showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "blkmrkt_4.htm");
-						break;
+						return;
 					}
 					
-					player.reduceAncientAdena("SevenSigns", ancientAdenaConvert, this, true);
-					player.addAdena("SevenSigns", ancientAdenaConvert, this, true);
+					if (player.reduceAncientAdena("SevenSigns", amount, this, true))
+						player.addAdena("SevenSigns", amount, this, true);
 					
 					showChatWindow(player, SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "blkmrkt_5.htm");
 					break;
 				
-				case 9: // Receive Contribution Rewards
+				case 9: // "I want my reward for collecting Seal Stones.", [SevenSigns 9]
 					if (SevenSignsManager.getInstance().isSealValidationPeriod() && SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) == SevenSignsManager.getInstance().getWinningCabal())
 					{
-						int ancientAdenaReward = SevenSignsManager.getInstance().getAncientAdenaReward(player.getObjectId());
-						
-						if (ancientAdenaReward < 3)
+						final int reward = SevenSignsManager.getInstance().getAncientAdenaReward(player.getObjectId());
+						if (reward <= 0)
 						{
-							if (this instanceof DawnPriest)
-								showChatWindow(player, 9, "dawn_b", false);
-							else
-								showChatWindow(player, 9, "dusk_b", false);
-							break;
+							showChatWindow(player, 9, (this instanceof DawnPriest) ? "dawn_b" : "dusk_b", false);
+							return;
 						}
 						
-						player.addAncientAdena("SevenSigns", ancientAdenaReward, this, true);
+						player.addAncientAdena("SevenSigns", reward, this, true);
 						
-						if (this instanceof DawnPriest)
-							showChatWindow(player, 9, "dawn_a", false);
-						else
-							showChatWindow(player, 9, "dusk_a", false);
+						showChatWindow(player, 9, (this instanceof DawnPriest) ? "dawn_a" : "dusk_a", false);
 					}
 					break;
 				
-				case 11: // Teleport to Hunting Grounds
+				case 11: // Teleport to Hunting Grounds. [SevenSigns 11 X Y Z cost]
 					try
 					{
-						String portInfo = command.substring(14).trim();
-						StringTokenizer st = new StringTokenizer(portInfo);
+						final int x = Integer.parseInt(st.nextToken());
+						final int y = Integer.parseInt(st.nextToken());
+						final int z = Integer.parseInt(st.nextToken());
 						
-						int x = Integer.parseInt(st.nextToken());
-						int y = Integer.parseInt(st.nextToken());
-						int z = Integer.parseInt(st.nextToken());
-						
-						int ancientAdenaCost = Integer.parseInt(st.nextToken());
-						
-						if (ancientAdenaCost > 0)
-						{
-							if (!player.reduceAncientAdena("SevenSigns", ancientAdenaCost, this, true))
-								break;
-						}
+						final int ancientAdenaCost = Integer.parseInt(st.nextToken());
+						if (ancientAdenaCost > 0 && !player.reduceAncientAdena("SevenSigns", ancientAdenaCost, this, true))
+							return;
 						
 						player.teleportTo(x, y, z, 0);
 					}
@@ -516,14 +401,11 @@ public class SignsPriest extends Folk
 					}
 					break;
 				
-				case 16:
-					if (this instanceof DawnPriest)
-						showChatWindow(player, val, "dawn", false);
-					else
-						showChatWindow(player, val, "dusk", false);
+				case 16: // "I want to exchange Seal Stones for Ancient Adena.", [SevenSigns 16]
+					showChatWindow(player, value, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 					break;
 				
-				case 17: // Exchange Seal Stones for Ancient Adena (Type Choice) - SevenSigns 17 x
+				case 17: // "Exchange Blue/Green/Red/all Seal Stones.", [SevenSigns 17 stone]
 					stoneType = Integer.parseInt(command.substring(14));
 					
 					int stoneId = 0;
@@ -566,26 +448,22 @@ public class SignsPriest extends Folk
 							
 							if (ancientAdenaRewardAll == 0)
 							{
-								if (this instanceof DawnPriest)
-									showChatWindow(player, 18, "dawn_no_stones", false);
-								else
-									showChatWindow(player, 18, "dusk_no_stones", false);
+								showChatWindow(player, 18, (this instanceof DawnPriest) ? "dawn_no_stones" : "dusk_no_stones", false);
 								return;
 							}
 							
 							if (blueStoneCountAll > 0)
 								player.destroyItemByItemId("SevenSigns", SevenSignsManager.SEAL_STONE_BLUE_ID, blueStoneCountAll, this, true);
+							
 							if (greenStoneCountAll > 0)
 								player.destroyItemByItemId("SevenSigns", SevenSignsManager.SEAL_STONE_GREEN_ID, greenStoneCountAll, this, true);
+							
 							if (redStoneCountAll > 0)
 								player.destroyItemByItemId("SevenSigns", SevenSignsManager.SEAL_STONE_RED_ID, redStoneCountAll, this, true);
 							
 							player.addAncientAdena("SevenSigns", ancientAdenaRewardAll, this, true);
 							
-							if (this instanceof DawnPriest)
-								showChatWindow(player, 18, "dawn", false);
-							else
-								showChatWindow(player, 18, "dusk", false);
+							showChatWindow(player, 18, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 							return;
 					}
 					
@@ -593,13 +471,8 @@ public class SignsPriest extends Folk
 					if (stoneInstance != null)
 						stoneCount = stoneInstance.getCount();
 					
-					if (this instanceof DawnPriest)
-						path = SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_17_dawn.htm";
-					else
-						path = SevenSignsManager.SEVEN_SIGNS_HTML_PATH + "signs_17_dusk.htm";
-					
 					NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-					html.setFile(path);
+					html.setFile(SevenSignsManager.SEVEN_SIGNS_HTML_PATH + ((this instanceof DawnPriest) ? "signs_17_dawn.htm" : "signs_17_dusk.htm"));
 					html.replace("%stoneColor%", stoneColor);
 					html.replace("%stoneValue%", stoneValue);
 					html.replace("%stoneCount%", stoneCount);
@@ -608,83 +481,69 @@ public class SignsPriest extends Folk
 					player.sendPacket(html);
 					break;
 				
-				case 18: // Exchange Seal Stones for Ancient Adena - SevenSigns 18 xxxx xxxxxx
-					int convertStoneId = Integer.parseInt(command.substring(14, 18));
-					int convertCount = 0;
-					
+				case 18: // Exchange Seal Stones for Ancient Adena, [SevenSigns 18 id amount]
+					itemId = Integer.parseInt(st.nextToken());
+					amount = 0;
 					try
 					{
-						convertCount = Integer.parseInt(command.substring(19).trim());
+						// Note: We must use substring, as the amount parameter (from edit HTML component) may return number with spaces inside.
+						amount = Integer.parseInt(command.substring(19).trim());
 					}
-					catch (Exception NumberFormatException)
+					catch (Exception e)
 					{
-						if (this instanceof DawnPriest)
-							showChatWindow(player, 18, "dawn_failed", false);
-						else
-							showChatWindow(player, 18, "dusk_failed", false);
-						break;
+						showChatWindow(player, 18, (this instanceof DawnPriest) ? "dawn_failed" : "dusk_failed", false);
+						return;
 					}
 					
-					ItemInstance convertItem = player.getInventory().getItemByItemId(convertStoneId);
-					
-					if (convertItem != null)
+					// Get stone item instance and check it.
+					ItemInstance convertItem = player.getInventory().getItemByItemId(itemId);
+					if (convertItem == null)
 					{
-						int ancientAdenaReward = 0;
-						int totalCount = convertItem.getCount();
-						
-						if (convertCount <= totalCount && convertCount > 0)
-						{
-							switch (convertStoneId)
-							{
-								case SevenSignsManager.SEAL_STONE_BLUE_ID:
-									ancientAdenaReward = SevenSignsManager.calcScore(convertCount, 0, 0);
-									break;
-								case SevenSignsManager.SEAL_STONE_GREEN_ID:
-									ancientAdenaReward = SevenSignsManager.calcScore(0, convertCount, 0);
-									break;
-								case SevenSignsManager.SEAL_STONE_RED_ID:
-									ancientAdenaReward = SevenSignsManager.calcScore(0, 0, convertCount);
-									break;
-							}
-							
-							if (player.destroyItemByItemId("SevenSigns", convertStoneId, convertCount, this, true))
-							{
-								player.addAncientAdena("SevenSigns", ancientAdenaReward, this, true);
-								
-								if (this instanceof DawnPriest)
-									showChatWindow(player, 18, "dawn", false);
-								else
-									showChatWindow(player, 18, "dusk", false);
-							}
-						}
-						else
-						{
-							if (this instanceof DawnPriest)
-								showChatWindow(player, 18, "dawn_low_stones", false);
-							else
-								showChatWindow(player, 18, "dusk_low_stones", false);
+						showChatWindow(player, 18, (this instanceof DawnPriest) ? "dawn_no_stones" : "dusk_no_stones", false);
+						return;
+					}
+					
+					// Check amount.
+					if (amount <= 0 || amount > convertItem.getCount())
+					{
+						showChatWindow(player, 18, (this instanceof DawnPriest) ? "dawn_low_stones" : "dusk_low_stones", false);
+						return;
+					}
+					
+					// Calculate reward.
+					int reward = 0;
+					switch (itemId)
+					{
+						case SevenSignsManager.SEAL_STONE_BLUE_ID:
+							reward = SevenSignsManager.calcScore(amount, 0, 0);
 							break;
-						}
+						
+						case SevenSignsManager.SEAL_STONE_GREEN_ID:
+							reward = SevenSignsManager.calcScore(0, amount, 0);
+							break;
+						
+						case SevenSignsManager.SEAL_STONE_RED_ID:
+							reward = SevenSignsManager.calcScore(0, 0, amount);
+							break;
 					}
-					else
-					{
-						if (this instanceof DawnPriest)
-							showChatWindow(player, 18, "dawn_no_stones", false);
-						else
-							showChatWindow(player, 18, "dusk_no_stones", false);
-						break;
-					}
+					
+					// Destroy seal stone and add reward.
+					if (!player.destroyItemByItemId("SevenSigns", itemId, amount, this, true))
+						return;
+					
+					player.addAncientAdena("SevenSigns", reward, this, true);
+					
+					showChatWindow(player, 18, (this instanceof DawnPriest) ? "dawn" : "dusk", false);
 					break;
 				
-				case 19: // Seal Information (for when joining a cabal)
-					SealType chosenSeal = SealType.VALUES[Integer.parseInt(command.substring(16))];
+				case 19: // "Seal of Avarice/Gnosis/Strife.", [SevenSigns 19 cabal seal]
+					cabal = CabalType.VALUES[Integer.parseInt(st.nextToken())];
+					seal = SealType.VALUES[Integer.parseInt(st.nextToken())];
 					
-					String fileSuffix = chosenSeal.getShortName() + "_" + cabal.getShortName();
-					
-					showChatWindow(player, val, fileSuffix, false);
+					showChatWindow(player, value, seal.getShortName() + "_" + cabal.getShortName(), false);
 					break;
 				
-				case 20: // Seal Status (for when joining a cabal)
+				case 20: // "What is the status of the seals?", "Go back.", [SevenSigns 20 cabal] (cabal is not used)
 					final StringBuilder sb = new StringBuilder();
 					
 					if (this instanceof DawnPriest)
@@ -694,13 +553,13 @@ public class SignsPriest extends Folk
 					
 					for (Entry<SealType, CabalType> entry : SevenSignsManager.getInstance().getSealOwners().entrySet())
 					{
-						final SealType seal = entry.getKey();
-						final CabalType sealOwner = entry.getValue();
+						final SealType s = entry.getKey();
+						final CabalType so = entry.getValue();
 						
-						if (sealOwner != CabalType.NORMAL)
-							sb.append("[" + seal.getFullName() + ": " + sealOwner.getFullName() + "]<br>");
+						if (so != CabalType.NORMAL)
+							sb.append("[" + s.getFullName() + ": " + so.getFullName() + "]<br>");
 						else
-							sb.append("[" + seal.getFullName() + ": Nothingness]<br>");
+							sb.append("[" + s.getFullName() + ": Nothingness]<br>");
 					}
 					
 					sb.append("<a action=\"bypass -h npc_" + getObjectId() + "_Chat 0\">Go back.</a></body></html>");
@@ -711,7 +570,7 @@ public class SignsPriest extends Folk
 					break;
 				
 				default:
-					showChatWindow(player, val, null, false);
+					showChatWindow(player, value, null, false);
 					break;
 			}
 		}

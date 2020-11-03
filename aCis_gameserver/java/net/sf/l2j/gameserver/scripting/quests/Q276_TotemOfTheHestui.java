@@ -64,7 +64,7 @@ public class Q276_TotemOfTheHestui extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30571-00.htm";
-				else if (player.getLevel() < 15)
+				else if (player.getStatus().getLevel() < 15)
 					htmltext = "30571-01.htm";
 				else
 					htmltext = "30571-02.htm";

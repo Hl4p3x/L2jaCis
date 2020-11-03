@@ -8,8 +8,6 @@ import net.sf.l2j.gameserver.model.PetDataEntry;
 
 public final class PetTemplate extends NpcTemplate
 {
-	public static final int MAX_LOAD = 54510;
-	
 	private final int _food1;
 	private final int _food2;
 	

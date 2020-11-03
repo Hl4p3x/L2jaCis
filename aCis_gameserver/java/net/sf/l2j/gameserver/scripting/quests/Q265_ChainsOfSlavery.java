@@ -14,10 +14,6 @@ public class Q265_ChainsOfSlavery extends Quest
 	// Item
 	private static final int SHACKLE = 1368;
 	
-	// Newbie Items
-	private static final int SPIRITSHOT_FOR_BEGINNERS = 5790;
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
-	
 	public Q265_ChainsOfSlavery()
 	{
 		super(265, "Chains of Slavery");
@@ -66,7 +62,7 @@ public class Q265_ChainsOfSlavery extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30357-00.htm";
-				else if (player.getLevel() < 6)
+				else if (player.getStatus().getLevel() < 6)
 					htmltext = "30357-01.htm";
 				else
 					htmltext = "30357-02.htm";
@@ -78,30 +74,15 @@ public class Q265_ChainsOfSlavery extends Quest
 					htmltext = "30357-04.htm";
 				else
 				{
-					int reward = 12 * shackles;
-					if (shackles > 10)
-						reward += 500;
-					
 					htmltext = "30357-05.htm";
 					st.takeItems(SHACKLE, -1);
-					st.rewardItems(57, reward);
 					
-					if (player.isNewbie() && st.getInt("Reward") == 0)
-					{
-						st.showQuestionMark(26);
-						st.set("Reward", "1");
-						
-						if (player.isMageClass())
-						{
-							st.playTutorialVoice("tutorial_voice_027");
-							st.giveItems(SPIRITSHOT_FOR_BEGINNERS, 3000);
-						}
-						else
-						{
-							st.playTutorialVoice("tutorial_voice_026");
-							st.giveItems(SOULSHOT_FOR_BEGINNERS, 6000);
-						}
-					}
+					int reward = 12 * shackles;
+					if (shackles >= 10)
+						reward += 500;
+					
+					st.rewardItems(57, reward);
+					st.rewardNewbieShots(6000, 3000);
 				}
 				break;
 		}

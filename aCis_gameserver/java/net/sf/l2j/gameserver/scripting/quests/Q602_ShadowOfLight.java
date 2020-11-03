@@ -68,7 +68,7 @@ public class Q602_ShadowOfLight extends Quest
 		
 		if (event.equalsIgnoreCase("31683-02.htm"))
 		{
-			if (player.getLevel() < 68)
+			if (player.getStatus().getLevel() < 68)
 				htmltext = "31683-02a.htm";
 			else
 			{

@@ -70,7 +70,7 @@ public class Q654_JourneyToASettlement extends Quest
 		{
 			case STATE_CREATED:
 				QuestState prevSt = player.getQuestState("Q119_LastImperialPrince");
-				htmltext = (prevSt == null || !prevSt.isCompleted() || player.getLevel() < 74) ? "31453-00.htm" : "31453-01.htm";
+				htmltext = (prevSt == null || !prevSt.isCompleted() || player.getStatus().getLevel() < 74) ? "31453-00.htm" : "31453-01.htm";
 				break;
 			
 			case STATE_STARTED:

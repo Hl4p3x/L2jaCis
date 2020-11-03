@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.handler.itemhandlers;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -9,7 +8,6 @@ import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -49,7 +47,7 @@ public class ScrollsOfResurrection implements IItemHandler
 				if (targetPlayer != null)
 				{
 					// Check if the target isn't in a active siege zone.
-					if (targetPlayer.isInsideZone(ZoneId.SIEGE) && !targetPlayer.isInSiege())
+					if (targetPlayer.isInsideZone(ZoneId.SIEGE) && targetPlayer.getSiegeState() == 0)
 					{
 						playable.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANNOT_BE_RESURRECTED_DURING_SIEGE));
 						return;
@@ -107,7 +105,7 @@ public class ScrollsOfResurrection implements IItemHandler
 				continue;
 			
 			// Scroll consumption is made on skill call, not on item call.
-			playable.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(playable, target, itemSkill, false, false), null);
+			playable.getAI().tryToCast(target, itemSkill);
 		}
 	}
 }

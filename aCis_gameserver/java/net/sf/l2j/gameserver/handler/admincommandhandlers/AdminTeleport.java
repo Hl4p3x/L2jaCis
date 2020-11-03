@@ -4,7 +4,6 @@ import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -211,7 +210,7 @@ public class AdminTeleport implements IAdminCommandHandler
 			String z1 = st.nextToken();
 			int z = Integer.parseInt(z1);
 			
-			activeChar.getAI().tryTo(IntentionType.IDLE, null, null);
+			activeChar.getAI().tryToIdle();
 			activeChar.teleportTo(x, y, z, 0);
 			
 			activeChar.sendMessage("You have been teleported to " + Cords + ".");
@@ -224,7 +223,7 @@ public class AdminTeleport implements IAdminCommandHandler
 	
 	private static void teleportCharacter(Player player, int x, int y, int z)
 	{
-		player.getAI().tryTo(IntentionType.IDLE, null, null);
+		player.getAI().tryToIdle();
 		player.teleportTo(x, y, z, 0);
 		player.sendMessage("A GM is teleporting you.");
 	}
@@ -239,7 +238,7 @@ public class AdminTeleport implements IAdminCommandHandler
 			int y = target.getY();
 			int z = target.getZ();
 			
-			activeChar.getAI().tryTo(IntentionType.IDLE, null, null);
+			activeChar.getAI().tryToIdle();
 			activeChar.teleportTo(x, y, z, 0);
 			activeChar.sendMessage("You have teleported to " + target.getName() + ".");
 		}

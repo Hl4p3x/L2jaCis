@@ -2,17 +2,19 @@ package net.sf.l2j.gameserver.model.actor.attack;
 
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 /**
  * This class groups all attack data related to a {@link Creature}.
+ * @param <T> : The {@link Playable} used as actor.
  */
-public class PlayableAttack extends CreatureAttack
+public class PlayableAttack<T extends Playable> extends CreatureAttack<T>
 {
-	public PlayableAttack(Creature creature)
+	public PlayableAttack(T actor)
 	{
-		super(creature);
+		super(actor);
 	}
 	
 	@Override
@@ -21,9 +23,9 @@ public class PlayableAttack extends CreatureAttack
 		if (!super.canDoAttack(target))
 			return false;
 		
-		if (target.isInsideZone(ZoneId.PEACE) && !_creature.getActingPlayer().getAccessLevel().allowPeaceAttack())
+		if (target instanceof Playable && target.isInsideZone(ZoneId.PEACE) && !_actor.getActingPlayer().getAccessLevel().allowPeaceAttack())
 		{
-			_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_ATK_PEACEZONE));
+			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_ATK_PEACEZONE));
 			return false;
 		}
 		

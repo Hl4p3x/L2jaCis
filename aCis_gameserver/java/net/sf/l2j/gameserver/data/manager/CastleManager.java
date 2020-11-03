@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.l2j.commons.data.xml.IXmlReader;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.CabalType;
 import net.sf.l2j.gameserver.enums.SpawnType;
@@ -22,6 +22,7 @@ import net.sf.l2j.gameserver.model.item.MercenaryTicket;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.model.location.TowerSpawnLocation;
 import net.sf.l2j.gameserver.model.pledge.Clan;
+import net.sf.l2j.gameserver.model.zone.type.SiegeZone;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -40,7 +41,7 @@ public final class CastleManager implements IXmlReader
 	protected CastleManager()
 	{
 		// Generate Castle objects with dynamic data.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_CASTLES);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -146,7 +147,7 @@ public final class CastleManager implements IXmlReader
 	
 	public Castle getCastle(int x, int y, int z)
 	{
-		return _castles.values().stream().filter(c -> c.checkIfInZone(x, y, z)).findFirst().orElse(null);
+		return _castles.values().stream().filter(c -> c.getSiegeZone().isInsideZone(x, y, z)).findFirst().orElse(null);
 	}
 	
 	public Castle getCastle(WorldObject object)
@@ -180,17 +181,29 @@ public final class CastleManager implements IXmlReader
 		_castles.values().stream().filter(c -> c.getTaxPercent() > maxTax).forEach(c -> c.setTaxPercent(maxTax, true));
 	}
 	
+	/**
+	 * @param object : The {@link WorldObject} to check.
+	 * @return True if the {@link WorldObject} set as parameter is inside an ACTIVE {@link SiegeZone}, or false otherwise.
+	 */
 	public Siege getActiveSiege(WorldObject object)
 	{
 		return getActiveSiege(object.getX(), object.getY(), object.getZ());
 	}
 	
+	/**
+	 * @param x : The X coord to test.
+	 * @param y : The Y coord to test.
+	 * @param z : The Z coord to test.
+	 * @return True if coords are set inside an ACTIVE {@link SiegeZone}, or false otherwise.
+	 */
 	public Siege getActiveSiege(int x, int y, int z)
 	{
 		for (Castle castle : _castles.values())
-			if (castle.getSiege().checkIfInZone(x, y, z))
-				return castle.getSiege();
-			
+		{
+			final Siege siege = castle.getSiege();
+			if (siege.isInProgress() && castle.getSiegeZone().isInsideZone(x, y, z))
+				return siege;
+		}
 		return null;
 	}
 	
@@ -204,7 +217,7 @@ public final class CastleManager implements IXmlReader
 			castle.setLeftCertificates(300, false);
 		
 		// Update all castles with a single query.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESET_CERTIFICATES))
 		{
 			ps.executeUpdate();

@@ -12,6 +12,7 @@ import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.CabalType;
 import net.sf.l2j.gameserver.enums.SealType;
+import net.sf.l2j.gameserver.enums.actors.NpcTalkCond;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.pledge.Clan;
@@ -44,11 +45,6 @@ public class CastleChamberlain extends Merchant
 	private static final int CERTIFICATES_BUNDLE = 10;
 	private static final int CERTIFICATES_PRICE = 1000;
 	
-	protected static final int COND_ALL_FALSE = 0;
-	protected static final int COND_BUSY_BECAUSE_OF_SIEGE = 1;
-	protected static final int COND_OWNER = 2;
-	protected static final int COND_CLAN_MEMBER = 3;
-	
 	private int _preHour = 6;
 	
 	public CastleChamberlain(int objectId, NpcTemplate template)
@@ -59,11 +55,19 @@ public class CastleChamberlain extends Merchant
 	@Override
 	public void onBypassFeedback(Player player, String command)
 	{
-		final int cond = validateCondition(player);
-		if (cond < COND_OWNER)
+		final NpcTalkCond condition = getNpcTalkCond(player);
+		if (condition == NpcTalkCond.NONE)
 		{
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setFile((cond == COND_BUSY_BECAUSE_OF_SIEGE) ? "data/html/chamberlain/busy.htm" : "data/html/chamberlain/noprivs.htm");
+			html.setFile("data/html/chamberlain/noprivs.htm");
+			player.sendPacket(html);
+			return;
+		}
+		
+		if (condition == NpcTalkCond.UNDER_SIEGE)
+		{
+			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
+			html.setFile("data/html/chamberlain/busy.htm");
 			player.sendPacket(html);
 			return;
 		}
@@ -114,7 +118,7 @@ public class CastleChamberlain extends Merchant
 		}
 		else if (actualCommand.equalsIgnoreCase("receive_report"))
 		{
-			if (cond == COND_CLAN_MEMBER)
+			if (condition == NpcTalkCond.CLAN_MEMBER)
 				sendFileMessage(player, "data/html/chamberlain/noprivs.htm");
 			else
 			{
@@ -413,7 +417,7 @@ public class CastleChamberlain extends Merchant
 		{
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			
-			if (cond == COND_OWNER)
+			if (condition == NpcTalkCond.OWNER)
 			{
 				if (player.getInventory().getItemByItemId(6841) == null)
 				{
@@ -556,7 +560,7 @@ public class CastleChamberlain extends Merchant
 			if (door == null)
 				return;
 			
-			final int currentHpRatio = door.getStat().getUpgradeHpRatio();
+			final int currentHpRatio = door.getStatus().getUpgradeHpRatio();
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			
@@ -648,39 +652,38 @@ public class CastleChamberlain extends Merchant
 	public void showChatWindow(Player player)
 	{
 		player.sendPacket(ActionFailed.STATIC_PACKET);
-		String filename = "data/html/chamberlain/no.htm";
-		
-		int condition = validateCondition(player);
-		if (condition > COND_ALL_FALSE)
-		{
-			if (condition == COND_BUSY_BECAUSE_OF_SIEGE)
-				filename = "data/html/chamberlain/busy.htm";
-			else if (condition >= COND_OWNER)
-				filename = "data/html/chamberlain/chamberlain.htm";
-		}
 		
 		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-		html.setFile(filename);
+		
+		final NpcTalkCond condition = getNpcTalkCond(player);
+		if (condition == NpcTalkCond.NONE)
+			html.setFile("data/html/chamberlain/no.htm");
+		else if (condition == NpcTalkCond.UNDER_SIEGE)
+			html.setFile("data/html/chamberlain/busy.htm");
+		else
+			html.setFile("data/html/chamberlain/chamberlain.htm");
+		
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);
 	}
 	
-	protected int validateCondition(Player player)
+	@Override
+	protected NpcTalkCond getNpcTalkCond(Player player)
 	{
 		if (getCastle() != null && player.getClan() != null)
 		{
 			if (getCastle().getSiege().isInProgress())
-				return COND_BUSY_BECAUSE_OF_SIEGE;
+				return NpcTalkCond.UNDER_SIEGE;
 			
 			if (getCastle().getOwnerId() == player.getClanId())
 			{
 				if (player.isClanLeader())
-					return COND_OWNER;
+					return NpcTalkCond.OWNER;
 				
-				return COND_CLAN_MEMBER;
+				return NpcTalkCond.CLAN_MEMBER;
 			}
 		}
-		return COND_ALL_FALSE;
+		return NpcTalkCond.NONE;
 	}
 	
 	private boolean validatePrivileges(Player player, int privilege)

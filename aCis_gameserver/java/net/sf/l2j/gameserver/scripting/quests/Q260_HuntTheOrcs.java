@@ -74,24 +74,30 @@ public class Q260_HuntTheOrcs extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30221-00.htm";
-				else if (player.getLevel() < 6)
+				else if (player.getStatus().getLevel() < 6)
 					htmltext = "30221-01.htm";
 				else
 					htmltext = "30221-02.htm";
 				break;
 			
 			case STATE_STARTED:
-				int amulet = st.getQuestItemsCount(ORC_AMULET);
-				int necklace = st.getQuestItemsCount(ORC_NECKLACE);
+				final int amulets = st.getQuestItemsCount(ORC_AMULET);
+				final int necklaces = st.getQuestItemsCount(ORC_NECKLACE);
 				
-				if (amulet == 0 && necklace == 0)
+				if (amulets == 0 && necklaces == 0)
 					htmltext = "30221-04.htm";
 				else
 				{
 					htmltext = "30221-05.htm";
 					st.takeItems(ORC_AMULET, -1);
 					st.takeItems(ORC_NECKLACE, -1);
-					st.rewardItems(57, amulet * 5 + necklace * 15);
+					
+					int reward = (amulets * 12) + (necklaces * 30);
+					if (amulets + necklaces >= 10)
+						reward += 1000;
+					
+					st.rewardItems(57, reward);
+					st.rewardNewbieShots(6000, 3000);
 				}
 				break;
 		}

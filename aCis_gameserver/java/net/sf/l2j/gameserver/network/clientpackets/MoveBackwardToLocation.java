@@ -5,7 +5,6 @@ import java.nio.BufferUnderflowException;
 import net.sf.l2j.commons.math.MathUtil;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -64,6 +63,13 @@ public class MoveBackwardToLocation extends L2GameClientPacket
 			return;
 		}
 		
+		if (player.getStatus().getMoveSpeed() == 0)
+		{
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			player.sendPacket(SystemMessageId.CANT_MOVE_TOO_ENCUMBERED);
+			return;
+		}
+		
 		if (player.getActiveEnchantItem() != null)
 		{
 			player.setActiveEnchantItem(null);
@@ -94,7 +100,7 @@ public class MoveBackwardToLocation extends L2GameClientPacket
 		}
 		
 		if (!player.isInBoat())
-			player.getAI().tryTo(IntentionType.MOVE_TO, new Location(_targetX, _targetY, _targetZ), null);
+			player.getAI().tryToMoveTo(new Location(_targetX, _targetY, _targetZ), null);
 		// Player is on the boat, we don't want to schedule a real movement until he gets out of it otherwise GeoEngine will be confused.
 		else
 		{

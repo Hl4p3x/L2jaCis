@@ -54,7 +54,7 @@ public class Q303_CollectArrowheads extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 10) ? "30029-01.htm" : "30029-02.htm";
+				htmltext = (player.getStatus().getLevel() < 10) ? "30029-01.htm" : "30029-02.htm";
 				break;
 			
 			case STATE_STARTED:

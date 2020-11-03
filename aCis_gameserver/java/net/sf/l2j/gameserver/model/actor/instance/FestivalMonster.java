@@ -6,8 +6,7 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 
 /**
- * L2FestivalMonsterInstance This class manages all attackable festival NPCs, spawned during the Festival of Darkness.
- * @author Tempy
+ * This class manages all attackable festival NPCs, spawned during the Festival of Darkness.
  */
 public class FestivalMonster extends Monster
 {
@@ -18,48 +17,18 @@ public class FestivalMonster extends Monster
 		super(objectId, template);
 	}
 	
-	public void setOfferingBonus(int bonusMultiplier)
-	{
-		_bonusMultiplier = bonusMultiplier;
-	}
-	
-	/**
-	 * Return True if the attacker is not another {@link FestivalMonster}.
-	 */
-	@Override
-	public boolean isAttackableBy(Creature attacker)
-	{
-		if (!super.isAttackableBy(attacker))
-			return false;
-		
-		// TODO Necessary?
-		if (attacker instanceof FestivalMonster)
-			return false;
-		
-		return true;
-	}
-	
-	/**
-	 * All mobs in the festival are aggressive, and have high aggro range.
-	 */
 	@Override
 	public boolean isAggressive()
 	{
 		return true;
 	}
 	
-	/**
-	 * All mobs in the festival don't need random animation.
-	 */
 	@Override
 	public boolean hasRandomAnimation()
 	{
 		return false;
 	}
 	
-	/**
-	 * Add a blood offering item to the leader of the party.
-	 */
 	@Override
 	public void doItemDrop(NpcTemplate template, Creature attacker)
 	{
@@ -70,5 +39,10 @@ public class FestivalMonster extends Monster
 		player.getParty().getLeader().addItem("Sign", FestivalOfDarknessManager.FESTIVAL_OFFERING_ID, _bonusMultiplier, attacker, true);
 		
 		super.doItemDrop(template, attacker);
+	}
+	
+	public void setOfferingBonus(int bonusMultiplier)
+	{
+		_bonusMultiplier = bonusMultiplier;
 	}
 }

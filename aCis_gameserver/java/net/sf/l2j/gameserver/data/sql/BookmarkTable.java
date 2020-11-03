@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Bookmark;
 
@@ -25,7 +25,7 @@ public class BookmarkTable
 	
 	protected BookmarkTable()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("SELECT * FROM bookmarks");
 			ResultSet rs = ps.executeQuery())
 		{
@@ -89,7 +89,7 @@ public class BookmarkTable
 		
 		_bks.add(new Bookmark(name, objId, x, y, z));
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("INSERT INTO bookmarks (name, obj_Id, x, y, z) values (?,?,?,?,?)"))
 		{
 			ps.setString(1, name);
@@ -117,7 +117,7 @@ public class BookmarkTable
 		{
 			_bks.remove(bookmark);
 			
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement("DELETE FROM bookmarks WHERE name=? AND obj_Id=?"))
 			{
 				ps.setString(1, name);

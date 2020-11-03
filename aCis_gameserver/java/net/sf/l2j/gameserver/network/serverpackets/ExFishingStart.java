@@ -29,6 +29,6 @@ public class ExFishingStart extends L2GameServerPacket
 		writeD(_fishType);
 		writeLoc(_loc);
 		writeC(_isNightLure ? 0x01 : 0x00);
-		writeC(Config.ALT_FISH_CHAMPIONSHIP_ENABLED ? 0x01 : 0x00); // show fish rank result button
+		writeC(Config.ALLOW_FISH_CHAMPIONSHIP ? 0x01 : 0x00); // show fish rank result button
 	}
 }

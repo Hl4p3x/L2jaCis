@@ -2,9 +2,9 @@ package net.sf.l2j.gameserver.scripting.scripts.custom;
 
 import net.sf.l2j.commons.lang.StringUtil;
 
-import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
-import net.sf.l2j.gameserver.enums.IntentionType;
+import net.sf.l2j.gameserver.data.xml.TeleportData;
+import net.sf.l2j.gameserver.enums.TeleportType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -12,7 +12,7 @@ import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.group.Party;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
+import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.itemcontainer.PcInventory;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
@@ -67,47 +67,22 @@ public class VarkaSilenosSupport extends Quest
 		21375
 	};
 	
-	private static final int[][] BUFF =
+	private static final IntIntHolder[] BUFFS =
 	{
-		{
-			4359,
-			2
-		}, // Focus: Requires 2 Nepenthese Seeds
-		{
-			4360,
-			2
-		}, // Death Whisper: Requires 2 Nepenthese Seeds
-		{
-			4345,
-			3
-		}, // Might: Requires 3 Nepenthese Seeds
-		{
-			4355,
-			3
-		}, // Acumen: Requires 3 Nepenthese Seeds
-		{
-			4352,
-			3
-		}, // Berserker: Requires 3 Nepenthese Seeds
-		{
-			4354,
-			3
-		}, // Vampiric Rage: Requires 3 Nepenthese Seeds
-		{
-			4356,
-			6
-		}, // Empower: Requires 6 Nepenthese Seeds
-		{
-			4357,
-			6
-		}
-		// Haste: Requires 6 Nepenthese Seeds
+		new IntIntHolder(4359, 2), // Focus: Requires 2 Nepenthese Seeds
+		new IntIntHolder(4360, 2), // Death Whisper: Requires 2 Nepenthese Seeds
+		new IntIntHolder(4345, 3), // Might: Requires 3 Nepenthese Seeds
+		new IntIntHolder(4355, 3), // Acumen: Requires 3 Nepenthese Seeds
+		new IntIntHolder(4352, 3), // Berserker: Requires 3 Nepenthese Seeds
+		new IntIntHolder(4354, 3), // Vampiric Rage: Requires 3 Nepenthese Seeds
+		new IntIntHolder(4356, 6), // Empower: Requires 6 Nepenthese Seeds
+		new IntIntHolder(4357, 6) // Haste: Requires 6 Nepenthese Seeds
 	};
 	
 	/**
 	 * Names of missions which will be automatically dropped if the alliance is broken.
 	 */
-	private static final String[] varkaMissions =
+	private static final String[] VARKA_QUESTS =
 	{
 		"Q611_AllianceWithVarkaSilenos",
 		"Q612_WarWithKetraOrcs",
@@ -142,13 +117,13 @@ public class VarkaSilenosSupport extends Quest
 		
 		if (StringUtil.isDigit(event))
 		{
-			final int[] buffInfo = BUFF[Integer.parseInt(event)];
-			if (st.getQuestItemsCount(SEED) >= buffInfo[1])
+			final IntIntHolder buff = BUFFS[Integer.parseInt(event)];
+			if (st.getQuestItemsCount(SEED) >= buff.getValue())
 			{
 				htmltext = "31379-4.htm";
-				st.takeItems(SEED, buffInfo[1]);
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(buffInfo[0], 1), false, false), null);
-				npc.setCurrentHpMp(npc.getMaxHp(), npc.getMaxMp());
+				st.takeItems(SEED, buff.getValue());
+				npc.getAI().tryToCast(player, buff.getId(), 1);
+				npc.getStatus().setMaxHpMp();
 			}
 		}
 		else if (event.equals("Withdraw"))
@@ -167,11 +142,12 @@ public class VarkaSilenosSupport extends Quest
 			switch (player.getAllianceWithVarkaKetra())
 			{
 				case -4:
-					htmltext = "31383-4.htm";
-					break;
+					TeleportData.getInstance().showTeleportList(player, npc, TeleportType.STANDARD);
+					return null;
+				
 				case -5:
-					htmltext = "31383-5.htm";
-					break;
+					TeleportData.getInstance().showTeleportList(player, npc, TeleportType.ALLY);
+					return null;
 			}
 		}
 		
@@ -341,7 +317,7 @@ public class VarkaSilenosSupport extends Quest
 								final WorldObject oldTarget = npc.getTarget();
 								
 								// Curse the heretic or his pet.
-								npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, (isPet && player.getSummon() != null) ? caster.getSummon() : caster, FrequentSkill.VARKA_KETRA_PETRIFICATION.getSkill(), false, false), null);
+								npc.getAI().tryToCast((isPet && player.getSummon() != null) ? caster.getSummon() : caster, FrequentSkill.VARKA_KETRA_PETRIFICATION.getSkill());
 								
 								// Revert to old target && drop the loop.
 								npc.setTarget(oldTarget);
@@ -388,7 +364,7 @@ public class VarkaSilenosSupport extends Quest
 				}
 			}
 			
-			for (String mission : varkaMissions)
+			for (String mission : VARKA_QUESTS)
 			{
 				QuestState pst = player.getQuestState(mission);
 				if (pst != null)

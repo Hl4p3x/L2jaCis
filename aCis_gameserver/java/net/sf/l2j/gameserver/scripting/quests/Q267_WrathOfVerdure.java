@@ -65,7 +65,7 @@ public class Q267_WrathOfVerdure extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "31853-00.htm";
-				else if (player.getLevel() < 4)
+				else if (player.getStatus().getLevel() < 4)
 					htmltext = "31853-01.htm";
 				else
 					htmltext = "31853-02.htm";

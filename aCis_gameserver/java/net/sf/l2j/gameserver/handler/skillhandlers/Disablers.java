@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.handler.skillhandlers;
 
 import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
@@ -157,7 +156,7 @@ public class Disablers implements ISkillHandler
 				
 				case AGGDAMAGE:
 					if (target instanceof Attackable)
-						target.getAI().notifyEvent(AiEventType.AGGRESSION, activeChar, (int) ((150 * skill.getPower()) / (target.getLevel() + 7)));
+						target.getAI().notifyEvent(AiEventType.AGGRESSION, activeChar, (int) ((150 * skill.getPower()) / (target.getStatus().getLevel() + 7)));
 					
 					skill.getEffects(activeChar, target, shld, bsps);
 					break;
@@ -168,7 +167,7 @@ public class Disablers implements ISkillHandler
 					{
 						skill.getEffects(activeChar, target, shld, bsps);
 						
-						final double aggdiff = ((Attackable) target).getHating(activeChar) - target.calcStat(Stats.AGGRESSION, ((Attackable) target).getHating(activeChar), target, skill);
+						final double aggdiff = ((Attackable) target).getHating(activeChar) - target.getStatus().calcStat(Stats.AGGRESSION, ((Attackable) target).getHating(activeChar), target, skill);
 						
 						if (skill.getPower() > 0)
 							((Attackable) target).reduceHate(null, (int) skill.getPower());
@@ -189,7 +188,7 @@ public class Disablers implements ISkillHandler
 							{
 								((AttackableAI) targ.getAI()).setGlobalAggro(-25);
 								targ.getAggroList().clear();
-								targ.getAI().tryTo(IntentionType.ACTIVE, null, null);
+								targ.getAI().tryToActive();
 								targ.forceWalkStance();
 							}
 						}

@@ -139,7 +139,7 @@ public class Q344_1000YearsTheEndOfLamentation extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 48) ? "30754-01.htm" : "30754-02.htm";
+				htmltext = (player.getStatus().getLevel() < 48) ? "30754-01.htm" : "30754-02.htm";
 				break;
 			
 			case STATE_STARTED:

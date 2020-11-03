@@ -108,7 +108,7 @@
 		<set name="skillType" val="BUFF"/>
 		<set name="operateType" val="PASSIVE"/>
 		<for>
-			<add stat="maxLoad" val="5795"/>
+			<add stat="weightPenalty" val="5795"/>
 		</for>
 	</skill>
 	<skill id="3513" levels="1" name="Demon's Set">
@@ -187,7 +187,7 @@
 		<set name="operateType" val="PASSIVE"/>
 		<for>
 			<mul stat="mDef" val="1.0525"/>
-			<add stat="maxLoad" val="5795"/>
+			<add stat="weightPenalty" val="5795"/>
 		</for>
 	</skill>
 	<skill id="3522" levels="1" name="Tunic of Zubei Robe Set">
@@ -299,7 +299,7 @@
 		<set name="operateType" val="PASSIVE"/>
 		<for>
 			<mul stat="pAtkSpd" val="1.08"/>
-			<add stat="maxLoad" val="5759"/>
+			<add stat="weightPenalty" val="5759"/>
 			<addMul stat="poisonVuln" val="80" />
 			<addMul stat="bleedVuln" val="80" />
 			<add stat="STR" val="2"/>
@@ -404,7 +404,7 @@
 				<using kind="BOW"/>
 			</mul>
 			<add stat="maxMp" val="240"/>
-			<add stat="maxLoad" val="5759"/>
+			<add stat="weightPenalty" val="5759"/>
 			<addMul stat="stunVuln" val="50" />
 			<add stat="DEX" val="1"/>
 			<sub stat="CON" val="1"/>
@@ -563,7 +563,7 @@
 			<mul stat="pAtkSpd" val="1.04"/>
 			<mul stat="pAtk" val="1.04"/>
 			<add stat="maxMp" val="289"/>
-			<add stat="maxLoad" val="5759"/>
+			<add stat="weightPenalty" val="5759"/>
 			<add stat="DEX" val="1"/>
 			<add stat="STR" val="1"/>
 			<sub stat="CON" val="2"/>
@@ -577,7 +577,7 @@
 			<mul stat="mAtk" val="1.17"/>
 			<add stat="runSpd" val="7"/>
 			<sub stat="cancel" val="50"/>
-			<add stat="maxLoad" val="5759"/>
+			<add stat="weightPenalty" val="5759"/>
 			<add stat="WIT" val="1"/>
 			<add stat="INT" val="1"/>
 			<sub stat="MEN" val="2"/>

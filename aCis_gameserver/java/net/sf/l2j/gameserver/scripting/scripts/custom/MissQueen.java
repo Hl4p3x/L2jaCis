@@ -26,7 +26,7 @@ public class MissQueen extends Quest
 		new SpawnLocation(-14048, 123184, -3120, 32000),
 		new SpawnLocation(-44979, -113508, -199, 32000),
 		new SpawnLocation(-84119, 243254, -3730, 8000),
-		new SpawnLocation(-84336, 242156, -3730, 24500),
+		new SpawnLocation(-84356, 242176, -3730, 24500),
 		new SpawnLocation(-82032, 150160, -3127, 16500)
 	};
 	
@@ -51,7 +51,7 @@ public class MissQueen extends Quest
 		
 		if (event.equalsIgnoreCase("newbie_coupon"))
 		{
-			if (player.getClassId().level() == 0 && player.getLevel() >= 6 && player.getLevel() <= 25 && player.getPkKills() <= 0)
+			if (player.getClassId().getLevel() == 0 && player.getStatus().getLevel() >= 6 && player.getStatus().getLevel() <= 25 && player.getPkKills() <= 0)
 			{
 				if (st.getInt("reward_1") == 1)
 					htmltext = "31760-01.htm";
@@ -68,7 +68,7 @@ public class MissQueen extends Quest
 		}
 		else if (event.equalsIgnoreCase("traveller_coupon"))
 		{
-			if (player.getClassId().level() == 1 && player.getLevel() >= 6 && player.getLevel() <= 25 && player.getPkKills() <= 0)
+			if (player.getClassId().getLevel() == 1 && player.getStatus().getLevel() >= 6 && player.getStatus().getLevel() <= 25 && player.getPkKills() <= 0)
 			{
 				if (st.getInt("reward_2") == 1)
 					htmltext = "31760-04.htm";

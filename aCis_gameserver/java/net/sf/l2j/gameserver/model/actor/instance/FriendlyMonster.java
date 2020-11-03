@@ -1,9 +1,14 @@
 package net.sf.l2j.gameserver.model.actor.instance;
 
+import java.util.List;
+
+import net.sf.l2j.commons.random.Rnd;
+
+import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
-import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
+import net.sf.l2j.gameserver.scripting.Quest;
 
 /**
  * This class represents Friendly Mobs lying over the world.<br>
@@ -17,15 +22,20 @@ public class FriendlyMonster extends Attackable
 	}
 	
 	@Override
-	public boolean isAttackableBy(Creature attacker)
+	public void onInteract(Player player)
 	{
-		if (!super.isAttackableBy(attacker))
-			return false;
+		if (hasRandomAnimation())
+			onRandomAnimation(Rnd.get(8));
 		
-		if (!(attacker instanceof Player) || ((Player) attacker).getKarma() <= 0)
-			return false;
+		List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.QUEST_START);
+		if (scripts != null && !scripts.isEmpty())
+			player.setLastQuestNpcObject(getObjectId());
 		
-		return true;
+		scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
+		if (scripts != null && scripts.size() == 1)
+			scripts.get(0).notifyFirstTalk(this, player);
+		else
+			showChatWindow(player);
 	}
 	
 	@Override

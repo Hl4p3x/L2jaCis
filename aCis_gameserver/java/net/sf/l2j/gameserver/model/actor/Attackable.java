@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
@@ -43,15 +43,15 @@ public class Attackable extends Npc
 	}
 	
 	@Override
-	public void initCharStatus()
+	public AttackableStatus getStatus()
 	{
-		setStatus(new AttackableStatus(this));
+		return (AttackableStatus) _status;
 	}
 	
 	@Override
-	public AttackableStatus getStatus()
+	public void setStatus()
 	{
-		return (AttackableStatus) super.getStatus();
+		_status = new AttackableStatus(this);
 	}
 	
 	@Override
@@ -81,7 +81,7 @@ public class Attackable extends Npc
 	{
 		// If the new object is a Player and our AI was IDLE, we set it to ACTIVE.
 		if (object instanceof Player && getAI().getCurrentIntention().getType() == IntentionType.IDLE)
-			getAI().tryTo(IntentionType.ACTIVE, null, null);
+			getAI().tryToActive();
 	}
 	
 	@Override
@@ -184,7 +184,7 @@ public class Attackable extends Npc
 		
 		// Stop all AI related tasks.
 		if (hasAI())
-			getAI().tryTo(IntentionType.IDLE, null, null);
+			getAI().tryToIdle();
 	}
 	
 	/**
@@ -235,7 +235,7 @@ public class Attackable extends Npc
 		{
 			// Set the intention to the Attackable to ACTIVE
 			if (aggro > 0 && getAI().getCurrentIntention().getType() == IntentionType.IDLE)
-				getAI().tryTo(IntentionType.ACTIVE, null, null);
+				getAI().tryToActive();
 		}
 	}
 	
@@ -265,7 +265,7 @@ public class Attackable extends Npc
 			{
 				((AttackableAI) getAI()).setGlobalAggro(-25);
 				_aggroList.clear();
-				getAI().tryTo(IntentionType.ACTIVE, null, null);
+				getAI().tryToActive();
 				forceWalkStance();
 			}
 			return;
@@ -284,7 +284,7 @@ public class Attackable extends Npc
 		{
 			((AttackableAI) getAI()).setGlobalAggro(-25);
 			_aggroList.clear();
-			getAI().tryTo(IntentionType.ACTIVE, null, null);
+			getAI().tryToActive();
 			forceWalkStance();
 		}
 	}
@@ -416,7 +416,7 @@ public class Attackable extends Npc
 			cleanAllHate();
 			setIsReturningToSpawnPoint(true);
 			forceWalkStance();
-			getAI().tryTo(IntentionType.MOVE_TO, getSpawn().getLoc(), null);
+			getAI().tryToMoveTo(getSpawn().getLoc(), null);
 			return true;
 		}
 		return false;

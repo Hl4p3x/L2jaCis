@@ -172,7 +172,7 @@ public class Q242_PossessorOfAPreciousSoul extends Quest
 			case STATE_CREATED:
 				if (st.hasQuestItems(VIRGIL_LETTER))
 				{
-					if (!player.isSubClassActive() || player.getLevel() < 60)
+					if (!player.isSubClassActive() || player.getStatus().getLevel() < 60)
 						htmltext = "31742-02.htm";
 					else
 					{

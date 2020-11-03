@@ -4,15 +4,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.sf.l2j.gameserver.data.manager.HeroManager;
+import net.sf.l2j.gameserver.data.xml.ItemData;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.ShortcutType;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
+import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.itemcontainer.listeners.ArmorSetListener;
 import net.sf.l2j.gameserver.model.itemcontainer.listeners.BowRodListener;
 import net.sf.l2j.gameserver.model.itemcontainer.listeners.ItemPassiveSkillsListener;
+import net.sf.l2j.gameserver.model.itemcontainer.listeners.OnEquipListener;
 import net.sf.l2j.gameserver.model.trade.BuyProcessItem;
 import net.sf.l2j.gameserver.model.trade.SellProcessItem;
 import net.sf.l2j.gameserver.model.trade.TradeItem;
@@ -57,6 +64,45 @@ public class PcInventory extends Inventory
 	protected ItemLocation getEquipLocation()
 	{
 		return ItemLocation.PAPERDOLL;
+	}
+	
+	@Override
+	public void equipItem(ItemInstance item)
+	{
+		// Can't equip item if you are in shop mod or hero item and you're not hero.
+		if (getOwner().isOperating() || (item.isHeroItem() && !HeroManager.getInstance().isActiveHero(getOwnerId())))
+			return;
+		
+		// Check if player wears formal wear.
+		if (getOwner().isWearingFormalWear())
+		{
+			switch (item.getItem().getBodyPart())
+			{
+				case Item.SLOT_LR_HAND:
+				case Item.SLOT_L_HAND:
+				case Item.SLOT_R_HAND:
+					unequipItemInBodySlotAndRecord(Item.SLOT_ALLDRESS);
+					break;
+				
+				case Item.SLOT_LEGS:
+				case Item.SLOT_FEET:
+				case Item.SLOT_GLOVES:
+				case Item.SLOT_HEAD:
+					return;
+			}
+		}
+		
+		super.equipItem(item);
+	}
+	
+	@Override
+	public void equipPetItem(ItemInstance item)
+	{
+		// Can't equip item if you are in shop mod.
+		if (getOwner().isOperating())
+			return;
+		
+		super.equipPetItem(item);
 	}
 	
 	public ItemInstance getAdenaInstance()
@@ -427,7 +473,7 @@ public class PcInventory extends Inventory
 			
 			// Update current load as well
 			StatusUpdate su = new StatusUpdate(actor);
-			su.addAttribute(StatusUpdate.CUR_LOAD, actor.getCurrentLoad());
+			su.addAttribute(StatusType.CUR_LOAD, actor.getCurrentWeight());
 			actor.sendPacket(su);
 		}
 		
@@ -577,8 +623,7 @@ public class PcInventory extends Inventory
 	}
 	
 	/**
-	 * <b>Overloaded</b>, when removes item from inventory, remove also owner shortcuts.
-	 * @param item : ItemInstance to be removed from inventory
+	 * Delete all existing shortcuts refering to this {@link ItemInstance}, aswell as active enchants.
 	 */
 	@Override
 	protected boolean removeItem(ItemInstance item)
@@ -598,20 +643,14 @@ public class PcInventory extends Inventory
 		return super.removeItem(item);
 	}
 	
-	/**
-	 * Refresh the weight of equipment loaded
-	 */
 	@Override
 	public void refreshWeight()
 	{
 		super.refreshWeight();
 		
-		getOwner().refreshOverloaded();
+		getOwner().refreshWeightPenalty();
 	}
 	
-	/**
-	 * Get back items in inventory from database
-	 */
 	@Override
 	public void restore()
 	{
@@ -621,37 +660,67 @@ public class PcInventory extends Inventory
 		_ancientAdena = getItemByItemId(ANCIENT_ADENA_ID);
 	}
 	
+	@Override
+	public ItemInstance unequipItemInBodySlot(int slot)
+	{
+		final ItemInstance old = super.unequipItemInBodySlot(slot);
+		if (old != null)
+			getOwner().refreshExpertisePenalty();
+		
+		return old;
+	}
+	
 	public boolean validateCapacity(ItemInstance item)
 	{
 		int slots = 0;
-		
 		if (!(item.isStackable() && getItemByItemId(item.getItemId()) != null) && item.getItemType() != EtcItemType.HERB)
 			slots++;
 		
 		return validateCapacity(slots);
 	}
 	
-	public boolean validateCapacityByItemId(int ItemId)
+	public boolean validateCapacityByItemId(IntIntHolder holder)
+	{
+		return validateCapacityByItemId(holder.getId(), holder.getValue());
+	}
+	
+	public boolean validateCapacityByItemId(int itemId, int itemCount)
+	{
+		return validateCapacity(calculateUsedSlots(itemId, itemCount));
+	}
+	
+	public boolean validateCapacityByItemIds(List<IntIntHolder> holders)
 	{
 		int slots = 0;
-		
-		ItemInstance invItem = getItemByItemId(ItemId);
-		if (!(invItem != null && invItem.isStackable()))
-			slots++;
+		for (IntIntHolder holder : holders)
+			slots += calculateUsedSlots(holder.getId(), holder.getValue());
 		
 		return validateCapacity(slots);
 	}
 	
-	@Override
-	public boolean validateCapacity(int slots)
+	private int calculateUsedSlots(int itemId, int itemCount)
 	{
-		return (_items.size() + slots <= _owner.getInventoryLimit());
+		final ItemInstance item = getItemByItemId(itemId);
+		if (item != null)
+			return (item.isStackable()) ? 0 : itemCount;
+		
+		final Item i = ItemData.getInstance().getTemplate(itemId);
+		return (i.isStackable()) ? 1 : itemCount;
+	}
+	
+	@Override
+	public boolean validateCapacity(int slotCount)
+	{
+		if (slotCount == 0)
+			return true;
+		
+		return (_items.size() + slotCount <= _owner.getStatus().getInventoryLimit());
 	}
 	
 	@Override
 	public boolean validateWeight(int weight)
 	{
-		return (_totalWeight + weight <= _owner.getMaxLoad());
+		return _totalWeight + weight <= _owner.getWeightLimit();
 	}
 	
 	@Override
@@ -694,5 +763,22 @@ public class PcInventory extends Inventory
 				return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * Re-notify to paperdoll listeners every equipped item
+	 */
+	public void reloadEquippedItems()
+	{
+		for (ItemInstance item : getPaperdollItems())
+		{
+			final Paperdoll slot = Paperdoll.getEnumById(item.getLocationSlot());
+			
+			for (OnEquipListener listener : _paperdollListeners)
+			{
+				listener.onUnequip(slot, item, getOwner());
+				listener.onEquip(slot, item, getOwner());
+			}
+		}
 	}
 }

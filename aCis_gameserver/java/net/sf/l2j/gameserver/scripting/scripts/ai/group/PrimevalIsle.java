@@ -11,7 +11,6 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -84,7 +83,7 @@ public class PrimevalIsle extends L2AttackableAIScript
 				return null;
 			}
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, (npc.getNpcId() == 18345) ? ANESTHESIA : POISON, false, false), null);
+			npc.getAI().tryToCast(npc, (npc.getNpcId() == 18345) ? ANESTHESIA : POISON);
 		}
 		return null;
 	}
@@ -95,7 +94,7 @@ public class PrimevalIsle extends L2AttackableAIScript
 		if (player == null)
 			return null;
 		
-		npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, (npc.getNpcId() == 18345) ? ANESTHESIA : POISON, false, false), null);
+		npc.getAI().tryToCast(npc, (npc.getNpcId() == 18345) ? ANESTHESIA : POISON);
 		
 		// Launch a task every 15sec.
 		startQuestTimerAtFixedRate("skill", npc, null, 15000);

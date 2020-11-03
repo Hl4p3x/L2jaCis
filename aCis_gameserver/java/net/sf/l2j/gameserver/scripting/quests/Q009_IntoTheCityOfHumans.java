@@ -68,7 +68,7 @@ public class Q009_IntoTheCityOfHumans extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 3 && player.getRace() == ClassRace.ORC)
+				if (player.getStatus().getLevel() >= 3 && player.getRace() == ClassRace.ORC)
 					htmltext = "30583-00.htm";
 				else
 					htmltext = "30583-00a.htm";

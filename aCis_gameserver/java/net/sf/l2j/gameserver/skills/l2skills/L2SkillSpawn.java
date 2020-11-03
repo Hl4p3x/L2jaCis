@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import java.util.logging.Level;
-
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.StatsSet;
 
@@ -34,12 +32,6 @@ public class L2SkillSpawn extends L2Skill
 		if (caster.isAlikeDead())
 			return;
 		
-		if (_npcId == 0)
-		{
-			_log.warning("NPC ID not defined for skill ID: " + getId());
-			return;
-		}
-		
 		try
 		{
 			final Spawn spawn = new Spawn(_npcId);
@@ -54,14 +46,14 @@ public class L2SkillSpawn extends L2Skill
 			spawn.setLoc(x, y, caster.getZ() + 20, caster.getHeading());
 			
 			spawn.setRespawnState(false);
-			Npc npc = spawn.doSpawn(_summonSpawn);
 			
+			final Npc npc = spawn.doSpawn(_summonSpawn);
 			if (_despawnDelay > 0)
 				npc.scheduleDespawn(_despawnDelay);
 		}
 		catch (Exception e)
 		{
-			_log.log(Level.WARNING, "Exception while spawning NPC ID: " + _npcId + ", skill ID: " + getId() + ", exception: " + e.getMessage(), e);
+			LOGGER.error("Failed to initialize a spawn.", e);
 		}
 	}
 }

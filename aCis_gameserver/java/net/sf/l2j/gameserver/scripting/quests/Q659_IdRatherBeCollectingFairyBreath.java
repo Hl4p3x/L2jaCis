@@ -76,7 +76,7 @@ public class Q659_IdRatherBeCollectingFairyBreath extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 26) ? "30634-01.htm" : "30634-02.htm";
+				htmltext = (player.getStatus().getLevel() < 26) ? "30634-01.htm" : "30634-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -63,7 +63,7 @@ public class Q013_ParcelDelivery extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 74) ? "31274-1.htm" : "31274-0.htm";
+				htmltext = (player.getStatus().getLevel() < 74) ? "31274-1.htm" : "31274-0.htm";
 				break;
 			
 			case STATE_STARTED:

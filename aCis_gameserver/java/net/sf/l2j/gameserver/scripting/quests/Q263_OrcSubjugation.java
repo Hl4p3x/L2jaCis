@@ -63,7 +63,7 @@ public class Q263_OrcSubjugation extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30346-00.htm";
-				else if (player.getLevel() < 8)
+				else if (player.getStatus().getLevel() < 8)
 					htmltext = "30346-01.htm";
 				else
 					htmltext = "30346-02.htm";

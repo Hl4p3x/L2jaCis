@@ -8,16 +8,19 @@ import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetCorpseAlly implements ITargetHandler
 {
 	@Override
-	public Creature[] getTargetList(SkillUseHolder skillUseHolder)
+	public SkillTargetType getTargetType()
 	{
-		final L2Skill skill = skillUseHolder.getSkill();
-		final Creature caster = skillUseHolder.getCaster();
+		return SkillTargetType.CORPSE_ALLY;
+	}
+	
+	@Override
+	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
+	{
 		final Player player = caster.getActingPlayer();
 		if (player.isInOlympiadMode())
 			return new Creature[]
@@ -50,7 +53,7 @@ public class TargetCorpseAlly implements ITargetHandler
 				}
 				
 				// Siege battlefield resurrect has been made possible for participants
-				if (obj.isInsideZone(ZoneId.SIEGE) && !obj.isInSiege())
+				if (obj.isInsideZone(ZoneId.SIEGE) && obj.getSiegeState() == 0)
 					continue;
 				
 				// Check if both caster and target are in a boss zone.
@@ -65,13 +68,7 @@ public class TargetCorpseAlly implements ITargetHandler
 	}
 	
 	@Override
-	public SkillTargetType getTargetType()
-	{
-		return SkillTargetType.CORPSE_ALLY;
-	}
-	
-	@Override
-	public Creature getFinalTarget(Creature target, Creature caster, L2Skill skill, boolean isCtrlPressed)
+	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		final Player player = caster.getActingPlayer();
 		if (player == null)

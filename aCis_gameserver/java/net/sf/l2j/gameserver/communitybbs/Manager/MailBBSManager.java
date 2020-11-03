@@ -12,13 +12,13 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
+import net.sf.l2j.gameserver.enums.MailType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ExMailArrived;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
@@ -26,35 +26,6 @@ import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class MailBBSManager extends BaseBBSManager
 {
-	private static enum MailType
-	{
-		INBOX("Inbox", "<a action=\"bypass _bbsmail\">Inbox</a>"),
-		SENTBOX("Sent Box", "<a action=\"bypass _bbsmail;sentbox\">Sent Box</a>"),
-		ARCHIVE("Mail Archive", "<a action=\"bypass _bbsmail;archive\">Mail Archive</a>"),
-		TEMPARCHIVE("Temporary Mail Archive", "<a action=\"bypass _bbsmail;temp_archive\">Temporary Mail Archive</a>");
-		
-		private final String _description;
-		private final String _bypass;
-		
-		private MailType(String description, String bypass)
-		{
-			_description = description;
-			_bypass = bypass;
-		}
-		
-		public String getDescription()
-		{
-			return _description;
-		}
-		
-		public String getBypass()
-		{
-			return _bypass;
-		}
-		
-		public static final MailType[] VALUES = values();
-	}
-	
 	private static final String SELECT_CHAR_MAILS = "SELECT * FROM character_mail WHERE charId = ? ORDER BY letterId ASC";
 	private static final String INSERT_NEW_MAIL = "INSERT INTO character_mail (charId, letterId, senderId, location, recipientNames, subject, message, sentDate, unread) VALUES (?,?,?,?,?,?,?,?,?)";
 	private static final String DELETE_MAIL = "DELETE FROM character_mail WHERE letterId = ?";
@@ -65,7 +36,7 @@ public class MailBBSManager extends BaseBBSManager
 	
 	private final Map<Integer, Set<Mail>> _mails = new ConcurrentHashMap<>();
 	
-	private int _lastid = 0;
+	private int _lastId = 0;
 	
 	public class Mail
 	{
@@ -83,7 +54,21 @@ public class MailBBSManager extends BaseBBSManager
 	
 	protected MailBBSManager()
 	{
-		initId();
+		// Retrieve last used id.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(SELECT_LAST_ID);
+			ResultSet rs = ps.executeQuery())
+		{
+			while (rs.next())
+			{
+				if (rs.getInt(1) > _lastId)
+					_lastId = rs.getInt(1);
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Couldn't find the last mail id.", e);
+		}
 	}
 	
 	@Override
@@ -161,29 +146,9 @@ public class MailBBSManager extends BaseBBSManager
 			super.parseWrite(ar1, ar2, ar3, ar4, ar5, player);
 	}
 	
-	private void initId()
-	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
-			PreparedStatement ps = con.prepareStatement(SELECT_LAST_ID))
-		{
-			try (ResultSet rs = ps.executeQuery())
-			{
-				while (rs.next())
-				{
-					if (rs.getInt(1) > _lastid)
-						_lastid = rs.getInt(1);
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Couldn't find the last mail id.", e);
-		}
-	}
-	
 	private synchronized int getNewMailId()
 	{
-		return ++_lastid;
+		return ++_lastId;
 	}
 	
 	private Set<Mail> getPlayerMails(int objectId)
@@ -193,7 +158,7 @@ public class MailBBSManager extends BaseBBSManager
 		{
 			mails = ConcurrentHashMap.newKeySet();
 			
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(SELECT_CHAR_MAILS))
 			{
 				ps.setInt(1, objectId);
@@ -231,14 +196,9 @@ public class MailBBSManager extends BaseBBSManager
 		return getPlayerMails(player.getObjectId()).stream().filter(l -> l.mailId == mailId).findFirst().orElse(null);
 	}
 	
-	private static String abbreviate(String s, int maxWidth)
+	public boolean checkIfUnreadMail(Player player)
 	{
-		return (s.length() > maxWidth) ? s.substring(0, maxWidth) : s;
-	}
-	
-	public int checkUnreadMail(Player player)
-	{
-		return (int) getPlayerMails(player.getObjectId()).stream().filter(l -> l.unread).count();
+		return getPlayerMails(player.getObjectId()).stream().anyMatch(l -> l.unread);
 	}
 	
 	private void showMailList(Player player, int page, MailType type)
@@ -310,7 +270,7 @@ public class MailBBSManager extends BaseBBSManager
 				if (mail.unread)
 					sb.append("<font color=\"LEVEL\">");
 				
-				sb.append(abbreviate(mail.subject, 51));
+				sb.append(StringUtil.trim(mail.subject, 30)).append((mail.subject.length() > 30) ? "..." : "");
 				
 				if (mail.unread)
 					sb.append("</font>");
@@ -452,23 +412,23 @@ public class MailBBSManager extends BaseBBSManager
 			return;
 		}
 		
-		// Edit subject, if none.
-		if (subject == null || subject.isEmpty())
-			subject = "(no subject)";
+		// Edit subject.
+		subject = StringUtil.trim(subject, 128, "(no subject)");
 		
 		// Edit message.
 		message = message.replaceAll("\n", "<br1>");
 		
 		// Get the current time under timestamp format.
 		final Timestamp time = new Timestamp(currentDate);
+		final String formattedTime = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(time);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_NEW_MAIL))
 		{
 			ps.setInt(3, player.getObjectId());
 			ps.setString(4, "inbox");
 			ps.setString(5, recipients);
-			ps.setString(6, abbreviate(subject, 128));
+			ps.setString(6, subject);
 			ps.setString(7, message);
 			ps.setTimestamp(8, time);
 			ps.setInt(9, 1);
@@ -495,10 +455,19 @@ public class MailBBSManager extends BaseBBSManager
 					}
 					
 					// The recipient is on block mode.
-					if (isBlocked(player, recipientId))
+					if (recipientPlayer != null)
 					{
-						player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_YOU_CANNOT_MAIL).addString(recipientName));
-						continue;
+						if (recipientPlayer.getBlockList().isBlockingAll())
+						{
+							player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addString(recipientName));
+							continue;
+						}
+						
+						if (recipientPlayer.getBlockList().isInBlockList(player))
+						{
+							player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_YOU_CANNOT_MAIL).addString(recipientName));
+							continue;
+						}
 					}
 					
 					// The recipient box is already full.
@@ -524,10 +493,10 @@ public class MailBBSManager extends BaseBBSManager
 				mail.senderId = player.getObjectId();
 				mail.location = MailType.INBOX;
 				mail.recipientNames = recipients;
-				mail.subject = abbreviate(subject, 128);
+				mail.subject = subject;
 				mail.message = message;
 				mail.sentDate = time;
-				mail.sentDateString = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(mail.sentDate);
+				mail.sentDateString = formattedTime;
 				mail.unread = true;
 				
 				getPlayerMails(recipientId).add(mail);
@@ -548,7 +517,12 @@ public class MailBBSManager extends BaseBBSManager
 				
 				ps.setInt(1, player.getObjectId());
 				ps.setInt(2, id);
+				ps.setInt(3, player.getObjectId());
 				ps.setString(4, "sentbox");
+				ps.setString(5, recipients);
+				ps.setString(6, subject);
+				ps.setString(7, message);
+				ps.setTimestamp(8, time);
 				ps.setInt(9, 0);
 				ps.execute();
 				
@@ -558,10 +532,10 @@ public class MailBBSManager extends BaseBBSManager
 				mail.senderId = player.getObjectId();
 				mail.location = MailType.SENTBOX;
 				mail.recipientNames = recipients;
-				mail.subject = abbreviate(subject, 128);
+				mail.subject = subject;
 				mail.message = message;
 				mail.sentDate = time;
-				mail.sentDateString = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(mail.sentDate);
+				mail.sentDateString = formattedTime;
 				mail.unread = false;
 				
 				getPlayerMails(player.getObjectId()).add(mail);
@@ -607,28 +581,13 @@ public class MailBBSManager extends BaseBBSManager
 		return count;
 	}
 	
-	private static boolean isBlocked(Player player, int objectId)
-	{
-		for (Player playerToTest : World.getInstance().getPlayers())
-		{
-			if (playerToTest.getObjectId() == objectId)
-				return BlockList.isInBlockList(playerToTest, player);
-		}
-		return false;
-	}
-	
 	private void deleteMail(Player player, int mailId)
 	{
-		for (Mail mail : getPlayerMails(player.getObjectId()))
-		{
-			if (mail.mailId == mailId)
-			{
-				getPlayerMails(player.getObjectId()).remove(mail);
-				break;
-			}
-		}
+		// Cleanup memory.
+		getPlayerMails(player.getObjectId()).removeIf(m -> m.mailId == mailId);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		// Cleanup database.
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_MAIL))
 		{
 			ps.setInt(1, mailId);
@@ -642,9 +601,11 @@ public class MailBBSManager extends BaseBBSManager
 	
 	private void setMailToRead(Player player, int mailId)
 	{
-		getMail(player, mailId).unread = false;
+		final Mail mail = getMail(player, mailId);
+		if (mail != null)
+			mail.unread = false;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(MARK_MAIL_READ))
 		{
 			ps.setInt(1, mailId);
@@ -658,9 +619,11 @@ public class MailBBSManager extends BaseBBSManager
 	
 	private void setMailLocation(Player player, int mailId, MailType location)
 	{
-		getMail(player, mailId).location = location;
+		final Mail mail = getMail(player, mailId);
+		if (mail != null)
+			mail.location = location;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SET_MAIL_LOC))
 		{
 			ps.setString(1, location.toString().toLowerCase());
@@ -683,7 +646,7 @@ public class MailBBSManager extends BaseBBSManager
 	{
 		boolean isGM = false;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(GET_GM_STATUS))
 		{
 			ps.setInt(1, objectId);

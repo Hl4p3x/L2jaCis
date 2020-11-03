@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Location;
@@ -64,7 +63,7 @@ public class Q652_AnAgedExAdventurer extends Quest
 				st.playSound(QuestState.SOUND_ACCEPT);
 				st.takeItems(SOULSHOT_C, 100);
 				
-				npc.getAI().tryTo(IntentionType.MOVE_TO, new Location(85326, 7869, -3620), null);
+				npc.getAI().tryToMoveTo(new Location(85326, 7869, -3620), null);
 				startQuestTimer("apparition_npc", npc, null, 6000);
 			}
 			else
@@ -109,7 +108,7 @@ public class Q652_AnAgedExAdventurer extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 46) ? "32012-00.htm" : "32012-01.htm";
+				htmltext = (player.getStatus().getLevel() < 46) ? "32012-00.htm" : "32012-01.htm";
 				break;
 			
 			case STATE_STARTED:

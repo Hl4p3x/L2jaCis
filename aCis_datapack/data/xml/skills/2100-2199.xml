@@ -41,7 +41,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -54,7 +54,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -67,7 +67,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -80,7 +80,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -93,7 +93,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -106,7 +106,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -119,7 +119,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -132,7 +132,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -145,7 +145,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -158,7 +158,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -171,7 +171,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -184,7 +184,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -197,7 +197,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -210,7 +210,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -223,7 +223,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -236,7 +236,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -249,7 +249,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -262,7 +262,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -684,7 +684,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -699,7 +699,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -714,7 +714,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -731,7 +731,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -746,7 +746,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -764,7 +764,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -885,7 +885,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -908,7 +908,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -931,7 +931,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -954,7 +954,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -977,7 +977,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -1000,7 +1000,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -1023,7 +1023,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -1046,7 +1046,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -1069,7 +1069,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -1086,7 +1086,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>

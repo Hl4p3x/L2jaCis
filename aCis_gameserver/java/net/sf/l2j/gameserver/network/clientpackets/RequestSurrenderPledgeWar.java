@@ -44,7 +44,7 @@ public final class RequestSurrenderPledgeWar extends L2GameClientPacket
 			return;
 		}
 		
-		player.deathPenalty(false, false, false);
+		player.applyDeathPenalty(false, false);
 		player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_HAVE_SURRENDERED_TO_THE_S1_CLAN).addString(_pledgeName));
 		ClanTable.getInstance().deleteClansWars(playerClan.getClanId(), clan.getClanId());
 	}

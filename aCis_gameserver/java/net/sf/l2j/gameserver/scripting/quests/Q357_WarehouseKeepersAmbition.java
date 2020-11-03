@@ -92,7 +92,7 @@ public class Q357_WarehouseKeepersAmbition extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 47) ? "30686-0a.htm" : "30686-0.htm";
+				htmltext = (player.getStatus().getLevel() < 47) ? "30686-0a.htm" : "30686-0.htm";
 				break;
 			
 			case STATE_STARTED:

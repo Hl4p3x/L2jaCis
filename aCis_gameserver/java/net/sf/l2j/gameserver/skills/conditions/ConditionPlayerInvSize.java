@@ -20,7 +20,7 @@ public class ConditionPlayerInvSize extends Condition
 		if (effector instanceof Player)
 		{
 			final Player player = (Player) effector;
-			return player.getInventory().getSize() <= (player.getInventoryLimit() - _size);
+			return player.getInventory().getSize() <= (player.getStatus().getInventoryLimit() - _size);
 		}
 		return true;
 	}

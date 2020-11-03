@@ -65,7 +65,7 @@ public class Q382_KailsMagicCoin extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 55 || !st.hasQuestItems(ROYAL_MEMBERSHIP)) ? "30687-01.htm" : "30687-02.htm";
+				htmltext = (player.getStatus().getLevel() < 55 || !st.hasQuestItems(ROYAL_MEMBERSHIP)) ? "30687-01.htm" : "30687-02.htm";
 				break;
 			
 			case STATE_STARTED:

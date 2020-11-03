@@ -4,10 +4,8 @@ import java.util.StringTokenizer;
 
 import net.sf.l2j.gameserver.data.cache.HtmCache;
 import net.sf.l2j.gameserver.data.xml.DoorData;
-import net.sf.l2j.gameserver.data.xml.TeleportLocationData;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
-import net.sf.l2j.gameserver.model.location.TeleportLocation;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
@@ -55,11 +53,6 @@ public class Doorman extends Folk
 					closeDoors(player, command);
 			}
 		}
-		else if (command.startsWith("tele"))
-		{
-			if (isOwnerClan(player))
-				doTeleport(player, command);
-		}
 		else
 			super.onBypassFeedback(player, command);
 	}
@@ -73,6 +66,12 @@ public class Doorman extends Folk
 		player.sendPacket(html);
 		
 		player.sendPacket(ActionFailed.STATIC_PACKET);
+	}
+	
+	@Override
+	protected boolean isTeleportAllowed(Player player)
+	{
+		return isOwnerClan(player);
 	}
 	
 	protected void openDoors(Player player, String command)
@@ -102,15 +101,6 @@ public class Doorman extends Folk
 		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		html.setFile(path);
 		player.sendPacket(html);
-		
-		player.sendPacket(ActionFailed.STATIC_PACKET);
-	}
-	
-	protected void doTeleport(Player player, String command)
-	{
-		final TeleportLocation list = TeleportLocationData.getInstance().getTeleportLocation(Integer.parseInt(command.substring(5).trim()));
-		if (list != null && !player.isAlikeDead())
-			player.teleportTo(list, 0);
 		
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}

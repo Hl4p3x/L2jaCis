@@ -6,7 +6,6 @@ import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.AugmentationData;
 import net.sf.l2j.gameserver.data.xml.AugmentationData.AugStat;
 import net.sf.l2j.gameserver.enums.skills.Stats;
-import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.holder.Timestamp;
 import net.sf.l2j.gameserver.network.serverpackets.SkillCoolTime;
@@ -139,7 +138,7 @@ public final class Augmentation
 				return;
 			
 			for (int i = 0; i < _stats.length; i++)
-				((Creature) player).addStatFunc(new FuncAdd(this, _stats[i], _values[i], null));
+				player.addStatFunc(new FuncAdd(this, _stats[i], _values[i], null));
 			
 			_active = true;
 		}
@@ -150,7 +149,7 @@ public final class Augmentation
 			if (!_active)
 				return;
 			
-			((Creature) player).removeStatsByOwner(this);
+			player.removeStatsByOwner(this);
 			
 			_active = false;
 		}

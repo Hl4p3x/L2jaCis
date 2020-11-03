@@ -8,8 +8,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -32,7 +32,7 @@ public class CoupleManager
 	
 	protected CoupleManager()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_COUPLES);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -109,7 +109,7 @@ public class CoupleManager
 	 */
 	public void save()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(DELETE_COUPLES))
 			{

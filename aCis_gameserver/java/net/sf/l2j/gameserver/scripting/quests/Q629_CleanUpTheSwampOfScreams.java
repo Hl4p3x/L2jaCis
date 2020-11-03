@@ -58,7 +58,7 @@ public class Q629_CleanUpTheSwampOfScreams extends Quest
 		
 		if (event.equalsIgnoreCase("31553-1.htm"))
 		{
-			if (player.getLevel() >= 66)
+			if (player.getStatus().getLevel() >= 66)
 			{
 				st.setState(STATE_STARTED);
 				st.set("cond", "1");
@@ -103,7 +103,7 @@ public class Q629_CleanUpTheSwampOfScreams extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 66) ? "31553-0a.htm" : "31553-0.htm";
+				htmltext = (player.getStatus().getLevel() < 66) ? "31553-0a.htm" : "31553-0.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -100,7 +100,7 @@ public class Q347_GoGetTheCalculator extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 12) ? "30526-00.htm" : "30526-01.htm";
+				htmltext = (player.getStatus().getLevel() < 12) ? "30526-00.htm" : "30526-01.htm";
 				break;
 			
 			case STATE_STARTED:

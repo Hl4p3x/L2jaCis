@@ -59,7 +59,7 @@ public class Q151_CureForFeverDisease extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30050-01.htm" : "30050-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30050-01.htm" : "30050-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -73,7 +73,7 @@ public class Q607_ProveYourCourage extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 75)
+				if (player.getStatus().getLevel() < 75)
 					htmltext = "31370-03.htm";
 				else if (player.getAllianceWithVarkaKetra() >= 3 && st.hasQuestItems(KETRA_ALLIANCE_3) && !st.hasQuestItems(TOTEM_OF_VALOR))
 					htmltext = "31370-01.htm";

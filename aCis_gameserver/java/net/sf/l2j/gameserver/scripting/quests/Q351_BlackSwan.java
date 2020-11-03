@@ -104,7 +104,7 @@ public class Q351_BlackSwan extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 32) ? "30916-00.htm" : "30916-01.htm";
+				htmltext = (player.getStatus().getLevel() < 32) ? "30916-00.htm" : "30916-01.htm";
 				break;
 			
 			case STATE_STARTED:

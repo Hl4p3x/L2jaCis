@@ -1,9 +1,11 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
+import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public final class RequestBlock extends L2GameClientPacket
 {
@@ -44,6 +46,18 @@ public final class RequestBlock extends L2GameClientPacket
 					return;
 				}
 				
+				// L2OFF GF strange behavior with sending message for all.
+				if (player.getBlockList().getBlockList().contains(targetId) && _type == BLOCK)
+				{
+					player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_WAS_ADDED_TO_YOUR_IGNORE_LIST).addString(_targetName));
+					
+					final Player targetPlayer = World.getInstance().getPlayer(targetId);
+					if (targetPlayer != null)
+						targetPlayer.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_ADDED_YOU_TO_IGNORE_LIST).addString(player.getName()));
+					
+					return;
+				}
+				
 				// Can't block a GM character.
 				if (PlayerInfoTable.getInstance().getPlayerAccessLevel(targetId) > 0)
 				{
@@ -63,12 +77,12 @@ public final class RequestBlock extends L2GameClientPacket
 			
 			case ALLBLOCK:
 				player.sendPacket(SystemMessageId.BLOCKING_ALL);
-				BlockList.setBlockAll(player, true);
+				player.getBlockList().setInBlockingAll(true);
 				break;
 			
 			case ALLUNBLOCK:
 				player.sendPacket(SystemMessageId.NOT_BLOCKING_ALL);
-				BlockList.setBlockAll(player, false);
+				player.getBlockList().setInBlockingAll(false);
 				break;
 			
 			default:

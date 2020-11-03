@@ -5,9 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 
 /**
  * A datatype used to store character selection screen informations.
@@ -191,14 +191,14 @@ public class CharSelectSlot
 		_hairStyle = hairStyle;
 	}
 	
-	public int getPaperdollObjectId(int slot)
+	public int getPaperdollObjectId(Paperdoll slot)
 	{
-		return _paperdoll[slot][0];
+		return _paperdoll[slot.getId()][0];
 	}
 	
-	public int getPaperdollItemId(int slot)
+	public int getPaperdollItemId(Paperdoll slot)
 	{
-		return _paperdoll[slot][1];
+		return _paperdoll[slot.getId()][1];
 	}
 	
 	public int getLevel()
@@ -268,7 +268,7 @@ public class CharSelectSlot
 	
 	public int getEnchantEffect()
 	{
-		return _paperdoll[Inventory.PAPERDOLL_RHAND][2];
+		return _paperdoll[Paperdoll.RHAND.getId()][2];
 	}
 	
 	public int getKarma()
@@ -345,7 +345,7 @@ public class CharSelectSlot
 	{
 		int[][] paperdoll = new int[0x12][3];
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_PAPERDOLLS))
 		{
 			ps.setInt(1, objectId);

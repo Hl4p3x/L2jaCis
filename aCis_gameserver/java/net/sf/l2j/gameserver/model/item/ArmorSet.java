@@ -2,9 +2,9 @@ package net.sf.l2j.gameserver.model.item;
 
 import net.sf.l2j.commons.util.StatsSet;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 
 public final class ArmorSet
 {
@@ -66,41 +66,37 @@ public final class ArmorSet
 	}
 	
 	/**
-	 * Checks if player have equipped all items from set (not checking shield)
-	 * @param player whose inventory is being checked
-	 * @return True if player equips whole set
+	 * @param player : The {@link Player} to test.
+	 * @return True if the {@link Player} equipped the basic {@link ArmorSet} (without shield).
 	 */
-	public boolean containAll(Player player)
+	public boolean containsAll(Player player)
 	{
-		final Inventory inv = player.getInventory();
-		
 		int legs = 0;
-		int head = 0;
-		int gloves = 0;
-		int feet = 0;
-		
-		final ItemInstance legsItem = inv.getPaperdollItem(Inventory.PAPERDOLL_LEGS);
+		final ItemInstance legsItem = player.getInventory().getItemFrom(Paperdoll.LEGS);
 		if (legsItem != null)
 			legs = legsItem.getItemId();
 		
 		if (_set[1] != 0 && _set[1] != legs)
 			return false;
 		
-		final ItemInstance headItem = inv.getPaperdollItem(Inventory.PAPERDOLL_HEAD);
+		int head = 0;
+		final ItemInstance headItem = player.getInventory().getItemFrom(Paperdoll.HEAD);
 		if (headItem != null)
 			head = headItem.getItemId();
 		
 		if (_set[2] != 0 && _set[2] != head)
 			return false;
 		
-		final ItemInstance glovesItem = inv.getPaperdollItem(Inventory.PAPERDOLL_GLOVES);
+		int gloves = 0;
+		final ItemInstance glovesItem = player.getInventory().getItemFrom(Paperdoll.GLOVES);
 		if (glovesItem != null)
 			gloves = glovesItem.getItemId();
 		
 		if (_set[3] != 0 && _set[3] != gloves)
 			return false;
 		
-		final ItemInstance feetItem = inv.getPaperdollItem(Inventory.PAPERDOLL_FEET);
+		int feet = 0;
+		final ItemInstance feetItem = player.getInventory().getItemFrom(Paperdoll.FEET);
 		if (feetItem != null)
 			feet = feetItem.getItemId();
 		
@@ -110,23 +106,23 @@ public final class ArmorSet
 		return true;
 	}
 	
-	public boolean containItem(int slot, int itemId)
+	public boolean containsItem(Paperdoll slot, int itemId)
 	{
 		switch (slot)
 		{
-			case Inventory.PAPERDOLL_CHEST:
+			case CHEST:
 				return _set[0] == itemId;
 			
-			case Inventory.PAPERDOLL_LEGS:
+			case LEGS:
 				return _set[1] == itemId;
 			
-			case Inventory.PAPERDOLL_HEAD:
+			case HEAD:
 				return _set[2] == itemId;
 			
-			case Inventory.PAPERDOLL_GLOVES:
+			case GLOVES:
 				return _set[3] == itemId;
 			
-			case Inventory.PAPERDOLL_FEET:
+			case FEET:
 				return _set[4] == itemId;
 			
 			default:
@@ -134,63 +130,53 @@ public final class ArmorSet
 		}
 	}
 	
-	public boolean containShield(Player player)
+	public boolean containsShield(Player player)
 	{
-		final ItemInstance shieldItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND);
-		if (shieldItem != null && shieldItem.getItemId() == _shield)
-			return true;
-		
-		return false;
+		final ItemInstance item = player.getSecondaryWeaponInstance();
+		return item != null && item.getItemId() == _shield;
 	}
 	
-	public boolean containShield(int shieldId)
+	public boolean containsShield(int shieldId)
 	{
-		if (_shield == 0)
-			return false;
-		
-		return _shield == shieldId;
+		return _shield != 0 && _shield == shieldId;
 	}
 	
 	/**
-	 * Checks if all parts of set are enchanted to +6 or more
-	 * @param player
-	 * @return
+	 * @param player : The {@link Player} to test.
+	 * @return True if all parts of this {@link ArmorSet} are enchanted to +6 or more.
 	 */
 	public boolean isEnchanted6(Player player)
 	{
-		final Inventory inv = player.getInventory();
-		
-		final ItemInstance chestItem = inv.getPaperdollItem(Inventory.PAPERDOLL_CHEST);
+		final ItemInstance chestItem = player.getInventory().getItemFrom(Paperdoll.CHEST);
 		if (chestItem.getEnchantLevel() < 6)
 			return false;
 		
 		int legs = 0;
-		int head = 0;
-		int gloves = 0;
-		int feet = 0;
-		
-		final ItemInstance legsItem = inv.getPaperdollItem(Inventory.PAPERDOLL_LEGS);
+		final ItemInstance legsItem = player.getInventory().getItemFrom(Paperdoll.LEGS);
 		if (legsItem != null && legsItem.getEnchantLevel() > 5)
 			legs = legsItem.getItemId();
 		
 		if (_set[1] != 0 && _set[1] != legs)
 			return false;
 		
-		final ItemInstance headItem = inv.getPaperdollItem(Inventory.PAPERDOLL_HEAD);
+		int head = 0;
+		final ItemInstance headItem = player.getInventory().getItemFrom(Paperdoll.HEAD);
 		if (headItem != null && headItem.getEnchantLevel() > 5)
 			head = headItem.getItemId();
 		
 		if (_set[2] != 0 && _set[2] != head)
 			return false;
 		
-		final ItemInstance glovesItem = inv.getPaperdollItem(Inventory.PAPERDOLL_GLOVES);
+		int gloves = 0;
+		final ItemInstance glovesItem = player.getInventory().getItemFrom(Paperdoll.GLOVES);
 		if (glovesItem != null && glovesItem.getEnchantLevel() > 5)
 			gloves = glovesItem.getItemId();
 		
 		if (_set[3] != 0 && _set[3] != gloves)
 			return false;
 		
-		final ItemInstance feetItem = inv.getPaperdollItem(Inventory.PAPERDOLL_FEET);
+		int feet = 0;
+		final ItemInstance feetItem = player.getInventory().getItemFrom(Paperdoll.FEET);
 		if (feetItem != null && feetItem.getEnchantLevel() > 5)
 			feet = feetItem.getItemId();
 		

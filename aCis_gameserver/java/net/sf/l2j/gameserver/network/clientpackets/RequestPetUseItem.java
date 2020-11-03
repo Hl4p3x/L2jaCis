@@ -65,7 +65,7 @@ public final class RequestPetUseItem extends L2GameClientPacket
 			
 			if (item.isEquipped())
 			{
-				pet.getInventory().unEquipItemInSlot(item.getLocationSlot());
+				pet.getInventory().unequipItemInSlot(item.getLocationSlot());
 				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.PET_TOOK_OFF_S1).addItemName(item));
 			}
 			else

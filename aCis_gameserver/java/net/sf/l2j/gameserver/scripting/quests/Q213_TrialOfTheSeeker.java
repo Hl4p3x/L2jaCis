@@ -122,7 +122,7 @@ public class Q213_TrialOfTheSeeker extends SecondClassQuest
 		}
 		else if (event.equalsIgnoreCase("30064-18.htm"))
 		{
-			if (player.getLevel() < 36)
+			if (player.getStatus().getLevel() < 36)
 			{
 				htmltext = "30064-17.htm";
 				st.playSound(QuestState.SOUND_ITEMGET);
@@ -196,7 +196,7 @@ public class Q213_TrialOfTheSeeker extends SecondClassQuest
 		{
 			case STATE_CREATED:
 				if (player.getClassId() == ClassId.ROGUE || player.getClassId() == ClassId.ELVEN_SCOUT || player.getClassId() == ClassId.ASSASSIN)
-					htmltext = (player.getLevel() < 35) ? "30106-02.htm" : "30106-03.htm";
+					htmltext = (player.getStatus().getLevel() < 35) ? "30106-02.htm" : "30106-03.htm";
 				else
 					htmltext = "30106-00.htm";
 				break;
@@ -254,7 +254,7 @@ public class Q213_TrialOfTheSeeker extends SecondClassQuest
 						{
 							if (!st.hasQuestItems(TERRY_ORDER_3))
 								htmltext = "30064-15.htm";
-							else if (player.getLevel() < 36)
+							else if (player.getStatus().getLevel() < 36)
 								htmltext = "30064-20.htm";
 							else
 							{

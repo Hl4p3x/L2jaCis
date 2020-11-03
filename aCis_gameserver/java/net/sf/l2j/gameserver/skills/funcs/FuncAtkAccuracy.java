@@ -22,9 +22,9 @@ public class FuncAtkAccuracy extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		final int level = effector.getLevel();
+		final int level = effector.getStatus().getLevel();
 		
-		value += Formulas.BASE_EVASION_ACCURACY[effector.getDEX()] + level;
+		value += Formulas.BASE_EVASION_ACCURACY[effector.getStatus().getDEX()] + level;
 		if (effector instanceof Summon)
 			value += (level < 60) ? 4 : 5;
 		

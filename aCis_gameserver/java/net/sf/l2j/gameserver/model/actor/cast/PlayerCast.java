@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.actor.cast;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
@@ -15,20 +15,20 @@ import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.ISkillHandler;
 import net.sf.l2j.gameserver.handler.SkillHandler;
+import net.sf.l2j.gameserver.handler.skillhandlers.StriderSiegeAssault;
+import net.sf.l2j.gameserver.handler.skillhandlers.SummonFriend;
+import net.sf.l2j.gameserver.handler.skillhandlers.TakeCastle;
 import net.sf.l2j.gameserver.model.WorldRegion;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.entity.Siege;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillLaunched;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.SetupGauge;
-import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.Formulas;
@@ -39,57 +39,36 @@ import net.sf.l2j.gameserver.skills.l2skills.L2SkillSummon;
 /**
  * This class groups all cast data related to a {@link Player}.
  */
-public class PlayerCast extends PlayableCast
+public class PlayerCast extends PlayableCast<Player>
 {
-	public PlayerCast(Creature creature)
+	public PlayerCast(Player actor)
 	{
-		super(creature);
+		super(actor);
 	}
 	
 	@Override
-	public void doCast(SkillUseHolder skillUseHolder, ItemInstance itemInstance)
+	public void doFusionCasttimeCast(L2Skill skill, Creature target)
 	{
-		super.doCast(skillUseHolder, itemInstance);
-		
-		if (skillUseHolder.getSkill().getItemConsumeId() > 0)
-			((Player) _creature).destroyItemByItemId("Consume", skillUseHolder.getSkill().getItemConsumeId(), skillUseHolder.getSkill().getItemConsume(), null, true);
-		
-		((Player) _creature).clearRecentFakeDeath();
-	}
-	
-	@Override
-	public void doFusionCasttimeCast(SkillUseHolder skillUseHolder)
-	{
-		final L2Skill skill = skillUseHolder.getSkill();
 		final int reuseDelay = skill.getReuseDelay();
-		final boolean skillMastery = Formulas.calcSkillMastery(_creature, skill);
+		
+		final boolean skillMastery = Formulas.calcSkillMastery(_actor, skill);
 		if (skillMastery)
-		{
-			if (_creature.getActingPlayer() != null)
-				_creature.getActingPlayer().sendPacket(SystemMessageId.SKILL_READY_TO_USE_AGAIN);
-		}
+			_actor.sendPacket(SystemMessageId.SKILL_READY_TO_USE_AGAIN);
 		else
 		{
 			if (reuseDelay > 30000)
-				_creature.addTimeStamp(skill, reuseDelay);
+				_actor.addTimeStamp(skill, reuseDelay);
 			
 			if (reuseDelay > 10)
-				_creature.disableSkill(skill, reuseDelay);
+				_actor.disableSkill(skill, reuseDelay);
 		}
 		
-		final int initMpConsume = _creature.getStat().getMpInitialConsume(skill);
+		final int initMpConsume = _actor.getStatus().getMpInitialConsume(skill);
 		if (initMpConsume > 0)
-		{
-			_creature.getStatus().reduceMp(initMpConsume);
-			
-			final StatusUpdate su = new StatusUpdate(_creature);
-			su.addAttribute(StatusUpdate.CUR_MP, (int) _creature.getCurrentMp());
-			_creature.sendPacket(su);
-		}
+			_actor.getStatus().reduceMp(initMpConsume);
 		
-		final Creature target = skillUseHolder.getFinalTarget();
-		if (target != _creature)
-			_creature.getPosition().setHeadingTo(target);
+		if (target != _actor)
+			_actor.getPosition().setHeadingTo(target);
 		
 		_targets = new Creature[]
 		{
@@ -99,208 +78,190 @@ public class PlayerCast extends PlayableCast
 		final int hitTime = skill.getHitTime();
 		final int coolTime = skill.getCoolTime();
 		final long castInterruptTime = System.currentTimeMillis() + hitTime - 200;
-		setCastTask(skillUseHolder, hitTime, coolTime, castInterruptTime);
+		
+		setCastTask(skill, target, hitTime, coolTime, castInterruptTime);
 		
 		if (skill.getSkillType() == SkillType.FUSION)
 		{
-			_creature.startFusionSkill(target, skill);
-			target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(_skillUseHolder.getSkill()));
+			_actor.startFusionSkill(target, skill);
+			target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(skill));
 		}
 		else
 			callSkill(skill, _targets);
 		
-		_creature.broadcastPacket(new MagicSkillUse(_creature, target, skill.getId(), skill.getLevel(), hitTime, reuseDelay, false));
-		_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.USE_S1).addSkillName(skill));
-		_creature.sendPacket(new SetupGauge(GaugeColor.BLUE, _hitTime));
+		_actor.broadcastPacket(new MagicSkillUse(_actor, target, skill.getId(), skill.getLevel(), hitTime, reuseDelay, false));
+		_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.USE_S1).addSkillName(skill));
+		_actor.sendPacket(new SetupGauge(GaugeColor.BLUE, _hitTime));
 		
 		_castTask = ThreadPool.schedule(() -> onMagicEffectHitTimer(), hitTime > 410 ? hitTime - 400 : 0);
 	}
 	
-	public void onMagicEffectHitTimer()
+	@Override
+	public void doInstantCast(L2Skill skill, ItemInstance item)
 	{
-		_targets = _skillUseHolder.getSkill().isSingleTarget() ? new Creature[]
+		if (!item.isHerb() && !_actor.destroyItem("Consume", item.getObjectId(), (skill.getItemConsumeId() == 0 && skill.getItemConsume() > 0) ? skill.getItemConsume() : 1, null, false))
 		{
-			_skillUseHolder.getFinalTarget()
-		} : _skillUseHolder.getTargetList();
-		
-		if (_creature.getFusionSkill() != null)
-		{
-			_creature.getFusionSkill().onCastAbort();
-			_creature.notifyQuestEventSkillFinished(_skillUseHolder.getSkill(), _targets[0]);
-			clearCastTask();
+			_actor.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
 			return;
 		}
 		
-		_creature.broadcastPacket(new MagicSkillLaunched(_creature, _skillUseHolder.getSkill().getId(), _skillUseHolder.getSkill().getLevel(), _targets));
+		int reuseDelay = skill.getReuseDelay();
+		if (reuseDelay > 10)
+			_actor.disableSkill(skill, reuseDelay);
 		
-		_creature.rechargeShots(_skillUseHolder.getSkill().useSoulShot(), _skillUseHolder.getSkill().useSpiritShot());
+		_actor.broadcastPacket(new MagicSkillUse(_actor, _actor, skill.getId(), skill.getLevel(), 0, 0));
 		
-		final StatusUpdate su = new StatusUpdate(_creature);
-		final double mpConsume = _creature.getStat().getMpConsume(_skillUseHolder.getSkill());
-		if (mpConsume > 0)
+		_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.USE_S1).addSkillName(skill));
+		
+		if (skill.getNumCharges() > 0)
 		{
-			if (mpConsume > _creature.getCurrentMp())
-			{
-				_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_ENOUGH_MP));
-				stop();
-				return;
-			}
-			
-			_creature.getStatus().reduceMp(mpConsume);
-			su.addAttribute(StatusUpdate.CUR_MP, (int) _creature.getCurrentMp());
-			_creature.sendPacket(su);
+			if (skill.getMaxCharges() > 0)
+				_actor.increaseCharges(skill.getNumCharges(), skill.getMaxCharges());
+			else
+				_actor.decreaseCharges(skill.getNumCharges());
 		}
 		
-		_castTask = ThreadPool.schedule(() -> onMagicEffectFinalizer(), 400);
-	}
-	
-	/*
-	 * Runs after skill hitTime+coolTime
-	 */
-	public void onMagicEffectFinalizer()
-	{
-		_creature.rechargeShots(_skillUseHolder.getSkill().useSoulShot(), _skillUseHolder.getSkill().useSpiritShot());
+		callSkill(skill, new Creature[]
+		{
+			_actor
+		});
 		
-		if (_skillUseHolder.getSkill().isOffensive() && _targets.length != 0)
-			_creature.getAI().startAttackStance();
-		
-		final Creature target = _targets.length > 0 ? _targets[0] : _skillUseHolder.getFinalTarget();
-		_creature.notifyQuestEventSkillFinished(_skillUseHolder.getSkill(), target);
-		
-		clearCastTask();
-		_creature.getAI().notifyEvent(AiEventType.FINISHED_CASTING, null, null);
+		_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(skill));
 	}
 	
 	@Override
-	public void doToggleCast(SkillUseHolder skillUseHolder)
+	public void doToggleCast(L2Skill skill, Creature target)
 	{
-		setCastTask(skillUseHolder, 0, 0, 0);
+		setCastTask(skill, target, 0, 0, 0);
 		
-		_creature.broadcastPacket(new MagicSkillUse(_creature, _creature, _skillUseHolder.getSkill().getId(), _skillUseHolder.getSkill().getLevel(), 0, 0));
+		_actor.broadcastPacket(new MagicSkillUse(_actor, _actor, _skill.getId(), _skill.getLevel(), 0, 0));
 		
 		_targets = new Creature[]
 		{
-			_skillUseHolder.getFinalTarget()
+			_target
 		};
 		
 		// If the toggle is already active, we don't need to do anything else besides stopping it.
-		final AbstractEffect effect = _creature.getFirstEffect(_skillUseHolder.getSkill().getId());
+		final AbstractEffect effect = _actor.getFirstEffect(_skill.getId());
 		if (effect != null)
 			effect.exit();
 		else
 		{
-			final StatusUpdate su = new StatusUpdate(_creature);
-			final double mpConsume = _creature.getStat().getMpConsume(_skillUseHolder.getSkill());
+			final double mpConsume = _actor.getStatus().getMpConsume(_skill);
 			if (mpConsume > 0)
 			{
-				if (mpConsume > _creature.getCurrentMp())
+				if (mpConsume > _actor.getStatus().getMp())
 				{
-					_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_ENOUGH_MP));
+					_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_ENOUGH_MP));
 					stop();
 					return;
 				}
 				
-				_creature.getStatus().reduceMp(mpConsume);
-				su.addAttribute(StatusUpdate.CUR_MP, (int) _creature.getCurrentMp());
+				_actor.getStatus().reduceMp(mpConsume);
 			}
 			
-			final double hpConsume = _skillUseHolder.getSkill().getHpConsume();
+			final double hpConsume = _skill.getHpConsume();
 			if (hpConsume > 0)
 			{
-				if (hpConsume > _creature.getCurrentHp())
+				if (hpConsume > _actor.getStatus().getHp())
 				{
-					_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_ENOUGH_HP));
+					_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_ENOUGH_HP));
 					stop();
 					return;
 				}
 				
-				_creature.getStatus().reduceHp(hpConsume, _creature, true);
-				su.addAttribute(StatusUpdate.CUR_HP, (int) _creature.getCurrentHp());
+				_actor.getStatus().reduceHp(hpConsume, _actor, true);
 			}
 			
-			if (mpConsume > 0 || hpConsume > 0)
-				_creature.sendPacket(su);
-			
-			final ISkillHandler handler = SkillHandler.getInstance().getHandler(_skillUseHolder.getSkill().getSkillType());
+			final ISkillHandler handler = SkillHandler.getInstance().getHandler(_skill.getSkillType());
 			if (handler != null)
-				handler.useSkill(_creature, _skillUseHolder.getSkill(), _targets);
+				handler.useSkill(_actor, _skill, _targets);
 			else
-				_skillUseHolder.getSkill().useSkill(_creature, _targets);
+				_skill.useSkill(_actor, _targets);
 		}
 		
 		_castTask = ThreadPool.schedule(() -> onMagicFinalizer(), 0);
 	}
 	
 	@Override
-	public boolean canAttemptCast(SkillUseHolder skillUseHolder)
+	public void doCast(L2Skill skill, Creature target, ItemInstance itemInstance)
 	{
-		if (!super.canAttemptCast(skillUseHolder))
+		super.doCast(skill, target, itemInstance);
+		
+		if (skill.getItemConsumeId() > 0)
+			_actor.destroyItemByItemId("Consume", skill.getItemConsumeId(), skill.getItemConsume(), null, true);
+		
+		_actor.clearRecentFakeDeath();
+	}
+	
+	@Override
+	public boolean canAttemptCast(Creature target, L2Skill skill)
+	{
+		if (!super.canAttemptCast(target, skill))
 			return false;
 		
-		final Player player = (Player) _creature;
-		final L2Skill skill = skillUseHolder.getSkill();
-		if (player.isWearingFormalWear())
+		if (_actor.isWearingFormalWear())
 		{
-			player.sendPacket(SystemMessageId.CANNOT_USE_ITEMS_SKILLS_WITH_FORMALWEAR);
+			_actor.sendPacket(SystemMessageId.CANNOT_USE_ITEMS_SKILLS_WITH_FORMALWEAR);
 			return false;
 		}
 		
 		final SkillType skillType = skill.getSkillType();
-		if (player.isFishing() && (skillType != SkillType.PUMPING && skillType != SkillType.REELING && skillType != SkillType.FISHING))
+		if (_actor.isFishing() && (skillType != SkillType.PUMPING && skillType != SkillType.REELING && skillType != SkillType.FISHING))
 		{
-			player.sendPacket(SystemMessageId.ONLY_FISHING_SKILLS_NOW);
+			_actor.sendPacket(SystemMessageId.ONLY_FISHING_SKILLS_NOW);
 			return false;
 		}
 		
-		if (player.isInObserverMode())
+		if (_actor.isInObserverMode())
 		{
-			player.sendPacket(SystemMessageId.OBSERVERS_CANNOT_PARTICIPATE);
+			_actor.sendPacket(SystemMessageId.OBSERVERS_CANNOT_PARTICIPATE);
 			return false;
 		}
 		
-		if (player.isSitting() && !player.isFakeDeath())
+		if (_actor.isSitting() && !_actor.isFakeDeath())
 		{
-			player.sendPacket(SystemMessageId.CANT_MOVE_SITTING);
+			_actor.sendPacket(SystemMessageId.CANT_MOVE_SITTING);
 			return false;
 		}
 		
-		if (player.isFakeDeath() && skill.getId() != 60)
+		if (_actor.isFakeDeath() && skill.getId() != 60)
 		{
-			player.sendPacket(SystemMessageId.CANT_MOVE_SITTING);
+			_actor.sendPacket(SystemMessageId.CANT_MOVE_SITTING);
 			return false;
 		}
 		
-		final SkillTargetType skillTargetType = skill.getTargetType();
-		final Location worldPosition = player.getCurrentSkillWorldPosition();
-		if (skillTargetType == SkillTargetType.GROUND && worldPosition == null)
+		if (skill.getTargetType() == SkillTargetType.GROUND && _actor.getCurrentSkillWorldPosition() == null)
 			return false;
 		
-		final Creature target = skillUseHolder.getFinalTarget();
-		if (player.isInDuel())
+		if (_actor.isInDuel())
 		{
-			if (target instanceof Playable)
+			final Player targetPlayer = target.getActingPlayer();
+			if (targetPlayer != null && targetPlayer.getDuelId() != _actor.getDuelId())
 			{
-				final Player cha = target.getActingPlayer();
-				if (cha.getDuelId() != player.getDuelId())
-				{
-					player.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
+				_actor.sendPacket(SystemMessageId.INVALID_TARGET);
+				return false;
 			}
 		}
 		
 		if (skill.isSiegeSummonSkill())
 		{
-			final Siege siege = CastleManager.getInstance().getActiveSiege(player);
-			if (siege == null || !siege.checkSide(player.getClan(), SiegeSide.ATTACKER) || (player.isInSiege() && player.isInsideZone(ZoneId.CASTLE)))
+			final Siege siege = CastleManager.getInstance().getActiveSiege(_actor);
+			if (siege == null || !siege.checkSide(_actor.getClan(), SiegeSide.ATTACKER))
 			{
-				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_CALL_PET_FROM_THIS_LOCATION));
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
 				return false;
 			}
 			
-			if (SevenSignsManager.getInstance().isSealValidationPeriod() && SevenSignsManager.getInstance().getSealOwner(SealType.STRIFE) == CabalType.DAWN && SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) == CabalType.DUSK)
+			if (_actor.isInsideZone(ZoneId.CASTLE))
 			{
-				player.sendPacket(SystemMessageId.SEAL_OF_STRIFE_FORBIDS_SUMMONING);
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_CALL_PET_FROM_THIS_LOCATION));
+				return false;
+			}
+			
+			if (SevenSignsManager.getInstance().isSealValidationPeriod() && SevenSignsManager.getInstance().getSealOwner(SealType.STRIFE) == CabalType.DAWN && SevenSignsManager.getInstance().getPlayerCabal(_actor.getObjectId()) == CabalType.DUSK)
+			{
+				_actor.sendPacket(SystemMessageId.SEAL_OF_STRIFE_FORBIDS_SUMMONING);
 				return false;
 			}
 		}
@@ -309,69 +270,63 @@ public class PlayerCast extends PlayableCast
 	}
 	
 	@Override
-	public boolean canDoCast(SkillUseHolder skillUseHolder)
+	public boolean canDoCast(Creature target, L2Skill skill, boolean isCtrlPressed, int itemObjectId)
 	{
-		if (!super.canDoCast(skillUseHolder))
+		if (!super.canDoCast(target, skill, isCtrlPressed, itemObjectId))
 			return false;
 		
-		final Player player = (Player) _creature;
-		final Creature target = skillUseHolder.getFinalTarget();
-		final L2Skill skill = skillUseHolder.getSkill();
-		if (!skill.checkCondition(player, target, false))
+		if (!skill.checkCondition(_actor, target, false))
 			return false;
 		
 		final SkillTargetType skillTargetType = skill.getTargetType();
-		final Location worldPosition = player.getCurrentSkillWorldPosition();
-		if (skillTargetType == SkillTargetType.GROUND)
+		final Location worldPosition = _actor.getCurrentSkillWorldPosition();
+		if (skillTargetType == SkillTargetType.GROUND && !GeoEngine.getInstance().canSeeLocation(_actor, worldPosition))
 		{
-			if (!GeoEngine.getInstance().canSeeLocation(player, worldPosition))
-			{
-				player.sendPacket(SystemMessageId.CANT_SEE_TARGET);
-				return false;
-			}
+			_actor.sendPacket(SystemMessageId.CANT_SEE_TARGET);
+			return false;
 		}
 		
 		final SkillType skillType = skill.getSkillType();
 		switch (skillType)
 		{
 			case SUMMON:
-				if (!((L2SkillSummon) skill).isCubic() && (player.getSummon() != null || player.isMounted()))
+				if (!((L2SkillSummon) skill).isCubic() && (_actor.getSummon() != null || _actor.isMounted()))
 				{
-					player.sendPacket(SystemMessageId.SUMMON_ONLY_ONE);
+					_actor.sendPacket(SystemMessageId.SUMMON_ONLY_ONE);
 					return false;
 				}
 				break;
 			
 			case RESURRECT:
-				final Siege siege = CastleManager.getInstance().getActiveSiege(player);
+				final Siege siege = CastleManager.getInstance().getActiveSiege(_actor);
 				if (siege != null)
 				{
-					if (player.getClan() == null)
+					if (_actor.getClan() == null)
 					{
-						player.sendPacket(SystemMessageId.CANNOT_BE_RESURRECTED_DURING_SIEGE);
+						_actor.sendPacket(SystemMessageId.CANNOT_BE_RESURRECTED_DURING_SIEGE);
 						return false;
 					}
 					
-					final SiegeSide side = siege.getSide(player.getClan());
+					final SiegeSide side = siege.getSide(_actor.getClan());
 					if (side == SiegeSide.DEFENDER || side == SiegeSide.OWNER)
 					{
 						if (siege.getControlTowerCount() == 0)
 						{
-							player.sendPacket(SystemMessageId.TOWER_DESTROYED_NO_RESURRECTION);
+							_actor.sendPacket(SystemMessageId.TOWER_DESTROYED_NO_RESURRECTION);
 							return false;
 						}
 					}
 					else if (side == SiegeSide.ATTACKER)
 					{
-						if (player.getClan().getFlag() == null)
+						if (_actor.getClan().getFlag() == null)
 						{
-							player.sendPacket(SystemMessageId.NO_RESURRECTION_WITHOUT_BASE_CAMP);
+							_actor.sendPacket(SystemMessageId.NO_RESURRECTION_WITHOUT_BASE_CAMP);
 							return false;
 						}
 					}
 					else
 					{
-						player.sendPacket(SystemMessageId.CANNOT_BE_RESURRECTED_DURING_SIEGE);
+						_actor.sendPacket(SystemMessageId.CANNOT_BE_RESURRECTED_DURING_SIEGE);
 						return false;
 					}
 				}
@@ -379,13 +334,13 @@ public class PlayerCast extends PlayableCast
 			
 			case SIGNET:
 			case SIGNET_CASTTIME:
-				final WorldRegion region = player.getRegion();
+				final WorldRegion region = _actor.getRegion();
 				if (region == null)
 					return false;
 				
-				if (!region.checkEffectRangeInsidePeaceZone(skill, skillTargetType == SkillTargetType.GROUND ? player.getCurrentSkillWorldPosition() : player.getPosition()))
+				if (!region.checkEffectRangeInsidePeaceZone(skill, skillTargetType == SkillTargetType.GROUND ? worldPosition : _actor.getPosition()))
 				{
-					player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
+					_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
 					return false;
 				}
 				break;
@@ -393,7 +348,7 @@ public class PlayerCast extends PlayableCast
 			case SPOIL:
 				if (!(target instanceof Monster))
 				{
-					player.sendPacket(SystemMessageId.INVALID_TARGET);
+					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 					return false;
 				}
 				break;
@@ -402,13 +357,13 @@ public class PlayerCast extends PlayableCast
 				final int spoilerId = ((Monster) target).getSpoilState().getSpoilerId();
 				if (spoilerId == 0)
 				{
-					player.sendPacket(SystemMessageId.SWEEPER_FAILED_TARGET_NOT_SPOILED);
+					_actor.sendPacket(SystemMessageId.SWEEPER_FAILED_TARGET_NOT_SPOILED);
 					return false;
 				}
 				
-				if (!player.isLooterOrInLooterParty(spoilerId))
+				if (!_actor.isLooterOrInLooterParty(spoilerId))
 				{
-					player.sendPacket(SystemMessageId.SWEEP_NOT_ALLOWED);
+					_actor.sendPacket(SystemMessageId.SWEEP_NOT_ALLOWED);
 					return false;
 				}
 				break;
@@ -416,52 +371,105 @@ public class PlayerCast extends PlayableCast
 			case DRAIN_SOUL:
 				if (!(target instanceof Monster))
 				{
-					player.sendPacket(SystemMessageId.INVALID_TARGET);
+					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 					return false;
 				}
 				break;
 			
-			case TAKECASTLE:
-				if (!player.checkIfOkToCastSealOfRule(CastleManager.getInstance().getCastle(player), false, skill, target))
+			case TAKE_CASTLE:
+				if (TakeCastle.check(_actor, target, skill, true) == null)
 					return false;
 				
 				break;
 			
-			case SIEGEFLAG:
-				if (!L2SkillSiegeFlag.checkIfOkToPlaceFlag(player, false))
+			case SIEGE_FLAG:
+				if (!L2SkillSiegeFlag.check(_actor, false))
 					return false;
 				
 				break;
 			
-			case STRSIEGEASSAULT:
-				if (!player.checkIfOkToUseStriderSiegeAssault(skill))
+			case STRIDER_SIEGE_ASSAULT:
+				if (!StriderSiegeAssault.check(_actor, target, skill))
 					return false;
 				
 				break;
 			
 			case SUMMON_FRIEND:
-				if (!(player.checkSummonerStatus() && player.checkSummonTargetStatus(target)))
+				if (!(SummonFriend.checkSummoner(_actor) && SummonFriend.checkSummoned(_actor, target)))
 					return false;
 				
 				break;
 		}
 		
-		if (player.isInOlympiadMode() && (skill.isHeroSkill() || skillType == SkillType.RESURRECT))
+		if (_actor.isInOlympiadMode() && (skill.isHeroSkill() || skillType == SkillType.RESURRECT))
 		{
-			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.THIS_SKILL_IS_NOT_AVAILABLE_FOR_THE_OLYMPIAD_EVENT));
+			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.THIS_SKILL_IS_NOT_AVAILABLE_FOR_THE_OLYMPIAD_EVENT));
 			return false;
 		}
 		
 		if (skill.getItemConsumeId() > 0)
 		{
-			final ItemInstance requiredItems = player.getInventory().getItemByItemId(skill.getItemConsumeId());
+			final ItemInstance requiredItems = _actor.getInventory().getItemByItemId(skill.getItemConsumeId());
 			if (requiredItems == null || requiredItems.getCount() < skill.getItemConsume())
 			{
-				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
 				return false;
 			}
 		}
 		
 		return true;
+	}
+	
+	/**
+	 * Used by {@link #doFusionCasttimeCast(L2Skill, Creature)}
+	 */
+	public void onMagicEffectHitTimer()
+	{
+		_targets = _skill.isSingleTarget() ? new Creature[]
+		{
+			_target
+		} : _skill.getTargetList(_actor, _target);
+		
+		if (_actor.getFusionSkill() != null)
+		{
+			_actor.getFusionSkill().onCastAbort();
+			
+			clearCastTask();
+			return;
+		}
+		
+		_actor.broadcastPacket(new MagicSkillLaunched(_actor, _skill, _targets));
+		
+		_actor.rechargeShots(_skill.useSoulShot(), _skill.useSpiritShot());
+		
+		final double mpConsume = _actor.getStatus().getMpConsume(_skill);
+		if (mpConsume > 0)
+		{
+			if (mpConsume > _actor.getStatus().getMp())
+			{
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.NOT_ENOUGH_MP));
+				stop();
+				return;
+			}
+			
+			_actor.getStatus().reduceMp(mpConsume);
+		}
+		
+		_castTask = ThreadPool.schedule(() -> onMagicEffectFinalizer(), 400);
+	}
+	
+	/**
+	 * Used by {@link #doFusionCasttimeCast(L2Skill, Creature)}
+	 */
+	public void onMagicEffectFinalizer()
+	{
+		_actor.rechargeShots(_skill.useSoulShot(), _skill.useSpiritShot());
+		
+		if (_skill.isOffensive() && _targets.length != 0)
+			_actor.getAI().startAttackStance();
+		
+		clearCastTask();
+		
+		_actor.getAI().notifyEvent(AiEventType.FINISHED_CASTING, null, null);
 	}
 }

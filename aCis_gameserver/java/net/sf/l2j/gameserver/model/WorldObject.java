@@ -48,11 +48,6 @@ public abstract class WorldObject
 		_objectId = objectId;
 	}
 	
-	public boolean canAttackingContinueBy(Creature attacker)
-	{
-		return false;
-	}
-	
 	public boolean isAttackableBy(Creature attacker)
 	{
 		return false;
@@ -69,9 +64,9 @@ public abstract class WorldObject
 		return (getClass().getSimpleName() + ":" + getName() + "[" + getObjectId() + "]");
 	}
 	
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		target.sendPacket(ActionFailed.STATIC_PACKET);
+		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
 	
 	public void onSpawn()
@@ -393,7 +388,7 @@ public abstract class WorldObject
 	}
 	
 	/**
-	 * Update current and surrounding {@link WorldRegion}s, based on both current region and region setted as parameter.
+	 * Update current and surrounding {@link WorldRegion}s, based on both current region and region set as parameter.
 	 * @param newRegion : null to remove the {@link WorldObject}, or the new region.
 	 */
 	public void setRegion(WorldRegion newRegion)
@@ -773,6 +768,34 @@ public abstract class WorldObject
 	public final double distance2D(Location loc)
 	{
 		return _position.distance2D(loc);
+	}
+	
+	/**
+	 * @param target : The {@link WorldObject} target to check.
+	 * @return True if this {@link WorldObject} is behind the {@link WorldObject} target.
+	 */
+	public final boolean isBehind(WorldObject target)
+	{
+		return _position.isBehind(target);
+	}
+	
+	/**
+	 * @param target : The {@link WorldObject} target to check.
+	 * @return True if this {@link WorldObject} is in front of the {@link WorldObject} target.
+	 */
+	public final boolean isInFrontOf(WorldObject target)
+	{
+		return _position.isInFrontOf(target);
+	}
+	
+	/**
+	 * @param target : The {@link WorldObject} target to check.
+	 * @param maxAngle : The angle to check.
+	 * @return True if this {@link WorldObject} is facing the {@link WorldObject} target.
+	 */
+	public final boolean isFacing(WorldObject target, int maxAngle)
+	{
+		return _position.isFacing(target, maxAngle);
 	}
 	
 	/**

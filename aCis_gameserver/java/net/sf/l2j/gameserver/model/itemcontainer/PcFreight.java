@@ -5,9 +5,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
 
 public class PcFreight extends ItemContainer
 {
@@ -97,9 +97,12 @@ public class PcFreight extends ItemContainer
 	}
 	
 	@Override
-	public boolean validateCapacity(int slots)
+	public boolean validateCapacity(int slotCount)
 	{
-		return getSize() + slots <= ((_owner == null) ? Config.FREIGHT_SLOTS : _owner.getFreightLimit());
+		if (slotCount == 0)
+			return true;
+		
+		return getSize() + slotCount <= ((_owner == null) ? Config.FREIGHT_SLOTS : _owner.getStatus().getFreightLimit());
 	}
 	
 	@Override

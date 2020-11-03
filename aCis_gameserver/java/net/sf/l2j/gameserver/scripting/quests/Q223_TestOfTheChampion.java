@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -150,7 +149,7 @@ public class Q223_TestOfTheChampion extends SecondClassQuest
 				final ClassId classId = player.getClassId();
 				if (classId != ClassId.WARRIOR && classId != ClassId.ORC_RAIDER)
 					htmltext = "30624-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30624-02.htm";
 				else
 					htmltext = (classId == ClassId.WARRIOR) ? "30624-03.htm" : "30624-04.htm";
@@ -284,7 +283,7 @@ public class Q223_TestOfTheChampion extends SecondClassQuest
 						
 						collector.forceRunStance();
 						collector.addDamageHate(attacker, 0, 999);
-						collector.getAI().tryTo(IntentionType.ATTACK, attacker, false);
+						collector.getAI().tryToAttack(attacker);
 					}
 					npc.setScriptValue(1);
 				}
@@ -300,7 +299,7 @@ public class Q223_TestOfTheChampion extends SecondClassQuest
 						
 						collector.forceRunStance();
 						collector.addDamageHate(attacker, 0, 999);
-						collector.getAI().tryTo(IntentionType.ATTACK, attacker, false);
+						collector.getAI().tryToAttack(attacker);
 					}
 					npc.setScriptValue(1);
 				}

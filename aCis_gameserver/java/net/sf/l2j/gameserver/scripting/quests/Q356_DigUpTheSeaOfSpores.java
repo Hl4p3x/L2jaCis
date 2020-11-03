@@ -85,7 +85,7 @@ public class Q356_DigUpTheSeaOfSpores extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 43) ? "30717-01.htm" : "30717-02.htm";
+				htmltext = (player.getStatus().getLevel() < 43) ? "30717-01.htm" : "30717-02.htm";
 				break;
 			
 			case STATE_STARTED:

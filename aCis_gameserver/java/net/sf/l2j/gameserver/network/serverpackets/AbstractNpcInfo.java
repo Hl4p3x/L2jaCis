@@ -32,10 +32,10 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 		_y = cha.getY();
 		_z = cha.getZ();
 		_heading = cha.getHeading();
-		_mAtkSpd = cha.getMAtkSpd();
-		_pAtkSpd = cha.getPAtkSpd();
-		_runSpd = cha.getStat().getBaseRunSpeed();
-		_walkSpd = cha.getStat().getBaseWalkSpeed();
+		_mAtkSpd = cha.getStatus().getMAtkSpd();
+		_pAtkSpd = cha.getStatus().getPAtkSpd();
+		_runSpd = cha.getStatus().getBaseRunSpeed();
+		_walkSpd = cha.getStatus().getBaseWalkSpeed();
 	}
 	
 	/**
@@ -74,13 +74,11 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			if (_npc.getTemplate().isUsingServerSideName())
 				_name = _npc.getName();
 			
-			if (_npc.isChampion())
-				_title = "Champion";
-			else if (_npc.getTemplate().isUsingServerSideTitle())
+			if (_npc.getTemplate().isUsingServerSideTitle())
 				_title = _npc.getTitle();
 			
 			if (Config.SHOW_NPC_LVL && _npc instanceof Monster)
-				_title = "Lv " + _npc.getLevel() + (_npc.getTemplate().getAggroRange() > 0 ? "* " : " ") + _title;
+				_title = "Lv " + _npc.getStatus().getLevel() + (_npc.getTemplate().getAggroRange() > 0 ? "* " : " ") + _title;
 			
 			// NPC crest system
 			if (Config.SHOW_NPC_CREST && _npc.getCastle() != null && _npc.getCastle().getOwnerId() != 0)
@@ -120,8 +118,8 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			writeD(_runSpd);
 			writeD(_walkSpd);
 			
-			writeF(_npc.getStat().getMovementSpeedMultiplier());
-			writeF(_npc.getStat().getAttackSpeedMultiplier());
+			writeF(_npc.getStatus().getMovementSpeedMultiplier());
+			writeF(_npc.getStatus().getAttackSpeedMultiplier());
 			
 			writeF(_collisionRadius);
 			writeF(_collisionHeight);
@@ -232,8 +230,8 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			writeD(_runSpd);
 			writeD(_walkSpd);
 			
-			writeF(_summon.getStat().getMovementSpeedMultiplier());
-			writeF(_summon.getStat().getAttackSpeedMultiplier());
+			writeF(_summon.getStatus().getMovementSpeedMultiplier());
+			writeF(_summon.getStatus().getAttackSpeedMultiplier());
 			
 			writeF(_collisionRadius);
 			writeF(_collisionHeight);
@@ -288,7 +286,7 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			_pc = cha;
 			_template = template;
 			
-			_swimSpd = cha.getStat().getBaseSwimSpeed();
+			_swimSpd = cha.getStatus().getBaseSwimSpeed();
 			
 			_rhand = _template.getRightHand();
 			_lhand = _template.getLeftHand();
@@ -326,8 +324,8 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			writeD(_runSpd);
 			writeD(_walkSpd);
 			
-			writeF(_pc.getStat().getMovementSpeedMultiplier());
-			writeF(_pc.getStat().getAttackSpeedMultiplier());
+			writeF(_pc.getStatus().getMovementSpeedMultiplier());
+			writeF(_pc.getStatus().getAttackSpeedMultiplier());
 			
 			writeF(_collisionRadius);
 			writeF(_collisionHeight);

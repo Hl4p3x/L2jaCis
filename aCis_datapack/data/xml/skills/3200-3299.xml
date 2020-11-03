@@ -3,8 +3,8 @@
 	<skill id="3200" levels="3" name="Item Skill: Spell Refresh">
 		<table name="#mpInitialConsume"> 11 13 14 </table>
 		<table name="#mpConsume"> 43 49 55 </table>
-		<table name="#magicLvl"> 55 64 75 </table>
-		<table name="#mReuse"> 0.9 0.85 0.8 </table>
+		<table name="#magicLvl"> 58 66 74 </table>
+		<table name="#mReuse"> 0.90 0.80 0.70 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="mpInitialConsume" val="#mpInitialConsume" />
 		<set name="mpConsume" val="#mpConsume" />
@@ -24,8 +24,8 @@
 	<skill id="3201" levels="3" name="Item Skill: Music Refresh">
 		<table name="#mpInitialConsume"> 11 13 14 </table>
 		<table name="#mpConsume"> 43 49 55 </table>
-		<table name="#magicLvl"> 55 64 75 </table>
-		<table name="#pReuse"> 0.9 0.85 0.8 </table>
+		<table name="#magicLvl"> 58 66 74 </table>
+		<table name="#pReuse"> 0.90 0.80 0.70 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="mpInitialConsume" val="#mpInitialConsume" />
 		<set name="mpConsume" val="#mpConsume" />
@@ -45,8 +45,8 @@
 	<skill id="3202" levels="3" name="Item Skill: Refresh">
 		<table name="#mpInitialConsume"> 11 13 14 </table>
 		<table name="#mpConsume"> 43 49 55 </table>
-		<table name="#magicLvl"> 55 64 75 </table>
-		<table name="#reUse"> 0.9 0.85 0.8 </table>
+		<table name="#magicLvl"> 58 66 74 </table>
+		<table name="#reUse"> 0.95 0.90 0.85 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="mpInitialConsume" val="#mpInitialConsume" />
 		<set name="mpConsume" val="#mpConsume" />
@@ -67,32 +67,32 @@
 	<skill id="3203" levels="1" name="Item Skill: Mystery Skill">
 		<set name="mpConsume" val="10" />
 		<set name="magicLvl" val="1" />
-		<set name="reuseDelay" val="1800000" />
+		<set name="reuseDelay" val="300000" />
 		<set name="staticReuse" val="true" />
 		<set name="operateType" val="ACTIVE" />
 		<set name="skillType" val="BUFF" />
 		<set name="target" val="SELF" />
 		<for>
-			<effect name="BigHead" time="300" val="0" abnormal="bighead" stackOrder="120" stackType="big_head" />
+			<effect name="BigHead" time="120" val="0" abnormal="bighead" stackOrder="120" stackType="big_head" />
 		</for>
 	</skill>
 	<skill id="3204" levels="3" name="Item Skill: Reflect Damage">
 		<table name="#mpInitialConsume"> 5 6 7 </table>
 		<table name="#mpConsume"> 20 24 28 </table>
-		<table name="#reflectDam"> 10 15 20 </table>
-		<table name="#magicLvl"> 55 64 75 </table>
+		<table name="#reflectDam"> 5 7 10 </table>
+		<table name="#magicLvl"> 40 46 52 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="mpInitialConsume" val="#mpInitialConsume" />
 		<set name="mpConsume" val="#mpConsume" />
 		<set name="target" val="SELF" />
-		<set name="reuseDelay" val="6000" />
+		<set name="reuseDelay" val="300000" />
 		<set name="hitTime" val="4000" />
 		<set name="staticReuse" val="true" />
 		<set name="skillType" val="REFLECT" />
 		<set name="isMagic" val="true" />
 		<set name="operateType" val="ACTIVE" />
 		<for>
-			<effect name="Buff" time="300" val="0" stackOrder="1" stackType="abnormal_item">
+			<effect name="Buff" time="120" val="0" stackOrder="1" stackType="abnormal_item">
 				<add stat="reflectDam" val="#reflectDam" />
 			</effect>
 		</for>
@@ -467,22 +467,24 @@
 	</skill>
 	<skill id="3238" levels="10" name="Item Skill: Prayer">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#gainHp"> 1.10 1.11 1.12 1.13 1.14 1.15 1.16 1.17 1.18 1.19 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<mul stat="gainHp" val="1.01" />
+			<mul stat="gainHp" val="#gainHp" />
 		</for>
 	</skill>
 	<skill id="3239" levels="10" name="Item Skill: Mana Gain">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#gainMp"> 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<mul stat="gainMp" val="1.01" />
+			<mul stat="gainMp" val="#gainMp" />
 		</for>
 	</skill>
 	<skill id="3240" levels="10" name="Item Skill: Might">
@@ -543,7 +545,7 @@
 	</skill>
 	<skill id="3246" levels="10" name="Item Skill: Heal Empower">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
-		<table name="#giveHp"> 10 11 12 13 14 16 17 18 19 20 </table>
+		<table name="#giveHp"> 10 11 12 13 14 15 16 17 18 19 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
@@ -554,62 +556,68 @@
 	</skill>
 	<skill id="3247" levels="10" name="Item Skill: Agility">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#rEvas"> 0.4 0.8 1.2 1.6 2.0 2.4 2.8 3.2 3.6 4.0 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<add stat="rEvas" val="2" />
+			<add stat="rEvas" val="#rEvas" />
 		</for>
 	</skill>
 	<skill id="3248" levels="10" name="Item Skill: Guidance">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#accCombat"> 0.4 0.8 1.2 1.6 2.0 2.4 2.8 3.2 3.6 4.0 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<add stat="accCombat" val="2" />
+			<add stat="accCombat" val="#accCombat" />
 		</for>
 	</skill>
 	<skill id="3249" levels="10" name="Item Skill: Focus">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#rCrit"> 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<basemul stat="rCrit" val="0.2" />
+			<mul stat="rCrit" val="#rCrit" />
 		</for>
 	</skill>
 	<skill id="3250" levels="10" name="Item Skill: Wild Magic">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#mCritRate"> 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<basemul stat="mCritRate" val="0.04" />
+			<mul stat="mCritRate" val="#mCritRate" />
 		</for>
 	</skill>
 	<skill id="3251" levels="10" name="Item Skill: Weight Limit">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#weightLimit"> 1.05 1.10 1.15 1.20 1.25 1.30 1.35 1.40 1.45 1.50 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<mul stat="maxLoad" val="2" />
+			<mul stat="weightLimit" val="#weightLimit" />
 		</for>
 	</skill>
 	<skill id="3252" levels="10" name="Item Skill: Kiss of Eva">
 		<table name="#magicLvl"> 46 49 52 55 58 61 64 67 70 75 </table>
+		<table name="#breath"> 1.05 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80 2.0 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<mul stat="breath" val="6" />
+			<mul stat="breath" val="#breath" />
 		</for>
 	</skill>
 	<skill id="3253" levels="10" name="Item Skill: Acrobatics">
@@ -628,7 +636,7 @@
 	</skill>
 	<skill id="3255" levels="3" name="Item Skill: Skill Clarity">
 		<table name="#magicLvl"> 55 64 75 </table>
-		<table name="#PhysicalMpConsumeRate"> 0.96 0.93 0.9 </table>
+		<table name="#PhysicalMpConsumeRate"> 0.9 0.85 0.8 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
@@ -650,7 +658,7 @@
 	</skill>
 	<skill id="3257" levels="3" name="Item Skill: Music Clarity">
 		<table name="#magicLvl"> 55 64 75 </table>
-		<table name="#DanceMpConsumeRate"> 0.96 0.93 0.9 </table>
+		<table name="#DanceMpConsumeRate"> 0.9 0.85 0.8 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
@@ -675,7 +683,7 @@
 	</skill>
 	<skill id="3259" levels="3" name="Item Skill: Reflect Damage">
 		<table name="#magicLvl"> 55 64 75 </table>
-		<table name="#reflectDam"> 10 15 20 </table>
+		<table name="#reflectDam"> 5 10 15 </table>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />

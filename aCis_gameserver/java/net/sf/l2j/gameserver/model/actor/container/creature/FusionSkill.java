@@ -2,8 +2,8 @@ package net.sf.l2j.gameserver.model.actor.container.creature;
 
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.enums.AiEventType;

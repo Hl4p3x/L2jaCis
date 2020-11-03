@@ -63,7 +63,7 @@ public class Q113_StatusOfTheBeaconTower extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 40) ? "31979-00.htm" : "31979-01.htm";
+				htmltext = (player.getStatus().getLevel() < 40) ? "31979-00.htm" : "31979-01.htm";
 				break;
 			
 			case STATE_STARTED:

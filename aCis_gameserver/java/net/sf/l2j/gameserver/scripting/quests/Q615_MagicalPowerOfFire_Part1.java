@@ -91,7 +91,7 @@ public class Q615_MagicalPowerOfFire_Part1 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() >= 74 && player.getAllianceWithVarkaKetra() <= -2) ? "31378-01.htm" : "31378-02.htm";
+				htmltext = (player.getStatus().getLevel() >= 74 && player.getAllianceWithVarkaKetra() <= -2) ? "31378-01.htm" : "31378-02.htm";
 				break;
 			
 			case STATE_STARTED:

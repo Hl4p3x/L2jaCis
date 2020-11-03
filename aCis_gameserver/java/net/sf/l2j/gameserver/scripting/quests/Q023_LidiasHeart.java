@@ -172,7 +172,7 @@ public class Q023_LidiasHeart extends Quest
 				QuestState st2 = player.getQuestState("Q022_TragedyInVonHellmannForest");
 				if (st2 != null && st2.isCompleted())
 				{
-					if (player.getLevel() >= 64)
+					if (player.getStatus().getLevel() >= 64)
 						htmltext = "31328-01.htm";
 					else
 						htmltext = "31328-00a.htm";

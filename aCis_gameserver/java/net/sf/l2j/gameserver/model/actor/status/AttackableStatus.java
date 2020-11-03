@@ -4,11 +4,11 @@ import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 
-public class AttackableStatus extends NpcStatus
+public class AttackableStatus extends NpcStatus<Attackable>
 {
-	public AttackableStatus(Attackable activeChar)
+	public AttackableStatus(Attackable actor)
 	{
-		super(activeChar);
+		super(actor);
 	}
 	
 	@Override
@@ -20,18 +20,12 @@ public class AttackableStatus extends NpcStatus
 	@Override
 	public final void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHpConsumption)
 	{
-		if (getActiveChar().isDead())
+		if (_actor.isDead())
 			return;
 		
-		if (getActiveChar() instanceof Monster)
-			((Monster) getActiveChar()).getOverhitState().test(attacker, value);
+		if (_actor instanceof Monster)
+			((Monster) _actor).getOverhitState().test(attacker, value);
 		
 		super.reduceHp(value, attacker, awake, isDOT, isHpConsumption);
-	}
-	
-	@Override
-	public Attackable getActiveChar()
-	{
-		return (Attackable) super.getActiveChar();
 	}
 }

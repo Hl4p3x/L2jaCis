@@ -11,10 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
@@ -22,13 +20,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.LoginServerThread;
 import net.sf.l2j.gameserver.communitybbs.BB.Forum;
 import net.sf.l2j.gameserver.communitybbs.Manager.ForumsBBSManager;
@@ -38,7 +36,6 @@ import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.CoupleManager;
 import net.sf.l2j.gameserver.data.manager.CursedWeaponManager;
 import net.sf.l2j.gameserver.data.manager.DimensionalRiftManager;
-import net.sf.l2j.gameserver.data.manager.DuelManager;
 import net.sf.l2j.gameserver.data.manager.FestivalOfDarknessManager;
 import net.sf.l2j.gameserver.data.manager.HeroManager;
 import net.sf.l2j.gameserver.data.manager.PartyMatchRoomManager;
@@ -57,15 +54,15 @@ import net.sf.l2j.gameserver.data.xml.ScriptData;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.CabalType;
 import net.sf.l2j.gameserver.enums.GaugeColor;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.LootRule;
 import net.sf.l2j.gameserver.enums.MessageType;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.PolyType;
 import net.sf.l2j.gameserver.enums.PunishmentType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.enums.ShortcutType;
-import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.enums.SpawnType;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.enums.TeamType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
@@ -75,8 +72,9 @@ import net.sf.l2j.gameserver.enums.actors.MoveType;
 import net.sf.l2j.gameserver.enums.actors.OperateType;
 import net.sf.l2j.gameserver.enums.actors.Sex;
 import net.sf.l2j.gameserver.enums.items.ActionType;
-import net.sf.l2j.gameserver.enums.items.ArmorType;
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
+import net.sf.l2j.gameserver.enums.items.ItemState;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
@@ -85,7 +83,7 @@ import net.sf.l2j.gameserver.enums.skills.Stats;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
-import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminEditChar;
+import net.sf.l2j.gameserver.handler.skillhandlers.SummonFriend;
 import net.sf.l2j.gameserver.model.AccessLevel;
 import net.sf.l2j.gameserver.model.PetDataEntry;
 import net.sf.l2j.gameserver.model.World;
@@ -97,6 +95,7 @@ import net.sf.l2j.gameserver.model.actor.cast.PlayerCast;
 import net.sf.l2j.gameserver.model.actor.container.npc.RewardInfo;
 import net.sf.l2j.gameserver.model.actor.container.player.Appearance;
 import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
+import net.sf.l2j.gameserver.model.actor.container.player.CubicList;
 import net.sf.l2j.gameserver.model.actor.container.player.FishingStance;
 import net.sf.l2j.gameserver.model.actor.container.player.HennaList;
 import net.sf.l2j.gameserver.model.actor.container.player.MacroList;
@@ -106,34 +105,27 @@ import net.sf.l2j.gameserver.model.actor.container.player.RecipeBook;
 import net.sf.l2j.gameserver.model.actor.container.player.Request;
 import net.sf.l2j.gameserver.model.actor.container.player.ShortcutList;
 import net.sf.l2j.gameserver.model.actor.container.player.SubClass;
-import net.sf.l2j.gameserver.model.actor.instance.Cubic;
 import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.FestivalMonster;
 import net.sf.l2j.gameserver.model.actor.instance.Folk;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.actor.instance.Servitor;
-import net.sf.l2j.gameserver.model.actor.instance.SiegeGuard;
 import net.sf.l2j.gameserver.model.actor.instance.StaticObject;
 import net.sf.l2j.gameserver.model.actor.instance.TamedBeast;
 import net.sf.l2j.gameserver.model.actor.instance.WeddingManagerNpc;
 import net.sf.l2j.gameserver.model.actor.move.PlayerMove;
-import net.sf.l2j.gameserver.model.actor.stat.PlayerStat;
 import net.sf.l2j.gameserver.model.actor.status.PlayerStatus;
 import net.sf.l2j.gameserver.model.actor.template.PetTemplate;
 import net.sf.l2j.gameserver.model.actor.template.PlayerTemplate;
 import net.sf.l2j.gameserver.model.craft.ManufactureList;
 import net.sf.l2j.gameserver.model.entity.Castle;
 import net.sf.l2j.gameserver.model.entity.Duel.DuelState;
-import net.sf.l2j.gameserver.model.entity.Siege;
 import net.sf.l2j.gameserver.model.group.CommandChannel;
 import net.sf.l2j.gameserver.model.group.Party;
 import net.sf.l2j.gameserver.model.group.PartyMatchRoom;
-import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.holder.Timestamp;
 import net.sf.l2j.gameserver.model.holder.skillnode.GeneralSkillNode;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemState;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
 import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
@@ -165,16 +157,15 @@ import net.sf.l2j.gameserver.network.serverpackets.ConfirmDlg;
 import net.sf.l2j.gameserver.network.serverpackets.DeleteObject;
 import net.sf.l2j.gameserver.network.serverpackets.EtcStatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.ExAutoSoulShot;
-import net.sf.l2j.gameserver.network.serverpackets.ExDuelUpdateUserInfo;
 import net.sf.l2j.gameserver.network.serverpackets.ExOlympiadMode;
 import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
 import net.sf.l2j.gameserver.network.serverpackets.ExSetCompassZoneCode;
 import net.sf.l2j.gameserver.network.serverpackets.ExStorageMaxCount;
-import net.sf.l2j.gameserver.network.serverpackets.FriendList;
 import net.sf.l2j.gameserver.network.serverpackets.GetOnVehicle;
 import net.sf.l2j.gameserver.network.serverpackets.HennaInfo;
 import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.ItemList;
+import net.sf.l2j.gameserver.network.serverpackets.L2FriendStatus;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.LeaveWorld;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
@@ -225,7 +216,6 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.skills.effects.EffectTemplate;
 import net.sf.l2j.gameserver.skills.funcs.FuncHenna;
 import net.sf.l2j.gameserver.skills.funcs.FuncMaxCpMul;
-import net.sf.l2j.gameserver.skills.l2skills.L2SkillSummon;
 import net.sf.l2j.gameserver.taskmanager.AttackStanceTaskManager;
 import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
 import net.sf.l2j.gameserver.taskmanager.PvpFlagTaskManager;
@@ -297,8 +287,8 @@ public final class Player extends Playable
 	private int _pvpKills;
 	private int _pkKills;
 	private byte _pvpFlag;
-	private byte _siegeState;
-	private int _curWeightPenalty;
+	private int _siegeState;
+	private int _weightPenalty;
 	
 	private int _lastCompassZone; // the last compass zone update send to the client
 	
@@ -377,16 +367,16 @@ public final class Player extends Playable
 	
 	private final PlayerMemo _vars = new PlayerMemo(getObjectId());
 	
+	private final FishingStance _fishingStance = new FishingStance(this);
 	private final ShortcutList _shortcutList = new ShortcutList(this);
-	
 	private final MacroList _macroList = new MacroList(this);
-	
 	private final HennaList _hennaList = new HennaList(this);
+	private final RadarList _radarList = new RadarList(this);
+	private final CubicList _cubicList = new CubicList(this);
+	private final BlockList _blockList = new BlockList(this);
 	
 	private Summon _summon;
 	private TamedBeast _tamedBeast;
-	
-	private final RadarList _radarList = new RadarList(this);
 	
 	private int _partyRoom;
 	
@@ -416,10 +406,6 @@ public final class Player extends Playable
 	private Location _enterWorld;
 	private final Map<String, ExServerPrimitive> _debug = new HashMap<>();
 	
-	private boolean _messageRefusal; // message refusal mode
-	private boolean _tradeRefusal; // Trade refusal
-	private boolean _exchangeRefusal; // Exchange refusal
-	
 	private Party _party;
 	private LootRule _lootRule;
 	
@@ -439,27 +425,20 @@ public final class Player extends Playable
 	
 	protected boolean _inventoryDisable;
 	
-	private final Queue<Cubic> _cubics = new ConcurrentLinkedQueue<>();
-	
 	private final Set<Integer> _activeSoulShots = ConcurrentHashMap.newKeySet(1);
 	
 	private final int _loto[] = new int[5];
 	private final int _race[] = new int[2];
 	
-	private final BlockList _blockList = new BlockList(this);
-	
 	private TeamType _team = TeamType.NONE;
 	
 	private int _alliedVarkaKetra; // lvl of alliance with ketra orcs or varka silenos, used in quests and aggro checks [-5,-1] varka, 0 neutral, [1,5] ketra
-	
-	private final FishingStance _fishingStance = new FishingStance(this);
 	
 	private final List<String> _validBypass = new ArrayList<>();
 	private final List<String> _validBypass2 = new ArrayList<>();
 	
 	private Forum _forumMemo;
 	
-	private boolean _isInSiege;
 	private boolean _isInSiegableHallSiege;
 	
 	private final Map<Integer, L2Skill> _skills = new ConcurrentSkipListMap<>();
@@ -469,17 +448,6 @@ public final class Player extends Playable
 	private int _reviveRequested;
 	private double _revivePower = .0;
 	private boolean _revivePet;
-	
-	private double _cpUpdateIncCheck = .0;
-	private double _cpUpdateDecCheck = .0;
-	private double _cpUpdateInterval = .0;
-	private double _mpUpdateIncCheck = .0;
-	private double _mpUpdateDecCheck = .0;
-	private double _mpUpdateInterval = .0;
-	
-	private int _clientX;
-	private int _clientY;
-	private int _clientZ;
 	
 	private int _mailPosition;
 	
@@ -518,7 +486,7 @@ public final class Player extends Playable
 	{
 		super(objectId, template);
 		
-		initCharStatusUpdateValues();
+		getStatus().initializeValues();
 		
 		_accountName = accountName;
 		_appearance = app;
@@ -568,25 +536,25 @@ public final class Player extends Playable
 		player.setBaseClass(player.getClassId());
 		
 		// Add the player in the characters table of the database
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_CHARACTER))
 		{
 			ps.setString(1, accountName);
 			ps.setInt(2, player.getObjectId());
 			ps.setString(3, player.getName());
-			ps.setInt(4, player.getLevel());
-			ps.setInt(5, player.getMaxHp());
-			ps.setDouble(6, player.getCurrentHp());
-			ps.setInt(7, player.getMaxCp());
-			ps.setDouble(8, player.getCurrentCp());
-			ps.setInt(9, player.getMaxMp());
-			ps.setDouble(10, player.getCurrentMp());
+			ps.setInt(4, player.getStatus().getLevel());
+			ps.setInt(5, player.getStatus().getMaxHp());
+			ps.setDouble(6, player.getStatus().getHp());
+			ps.setInt(7, player.getStatus().getMaxCp());
+			ps.setDouble(8, player.getStatus().getCp());
+			ps.setInt(9, player.getStatus().getMaxMp());
+			ps.setDouble(10, player.getStatus().getMp());
 			ps.setInt(11, player.getAppearance().getFace());
 			ps.setInt(12, player.getAppearance().getHairStyle());
 			ps.setInt(13, player.getAppearance().getHairColor());
 			ps.setInt(14, player.getAppearance().getSex().ordinal());
-			ps.setLong(15, player.getExp());
-			ps.setInt(16, player.getSp());
+			ps.setLong(15, player.getStatus().getExp());
+			ps.setInt(16, player.getStatus().getSp());
 			ps.setInt(17, player.getKarma());
 			ps.setInt(18, player.getPvpKills());
 			ps.setInt(19, player.getPkKills());
@@ -632,40 +600,15 @@ public final class Player extends Playable
 	}
 	
 	@Override
-	protected void initCharStatusUpdateValues()
+	public PlayerStatus getStatus()
 	{
-		super.initCharStatusUpdateValues();
-		
-		_cpUpdateInterval = getMaxCp() / 352.0;
-		_cpUpdateIncCheck = getMaxCp();
-		_cpUpdateDecCheck = getMaxCp() - _cpUpdateInterval;
-		_mpUpdateInterval = getMaxMp() / 352.0;
-		_mpUpdateIncCheck = getMaxMp();
-		_mpUpdateDecCheck = getMaxMp() - _mpUpdateInterval;
+		return (PlayerStatus) _status;
 	}
 	
 	@Override
-	public void initCharStat()
+	public void setStatus()
 	{
-		setStat(new PlayerStat(this));
-	}
-	
-	@Override
-	public final PlayerStat getStat()
-	{
-		return (PlayerStat) super.getStat();
-	}
-	
-	@Override
-	public void initCharStatus()
-	{
-		setStatus(new PlayerStatus(this));
-	}
-	
-	@Override
-	public final PlayerStatus getStatus()
-	{
-		return (PlayerStatus) super.getStatus();
+		_status = new PlayerStatus(this);
 	}
 	
 	public final Appearance getAppearance()
@@ -726,9 +669,21 @@ public final class Player extends Playable
 	}
 	
 	@Override
+	public PlayerMove getMove()
+	{
+		return (PlayerMove) _move;
+	}
+	
+	@Override
 	public void setMove()
 	{
 		_move = new PlayerMove(this);
+	}
+	
+	@Override
+	public PlayerAttack getAttack()
+	{
+		return (PlayerAttack) _attack;
 	}
 	
 	@Override
@@ -738,25 +693,27 @@ public final class Player extends Playable
 	}
 	
 	@Override
+	public PlayerCast getCast()
+	{
+		return (PlayerCast) _cast;
+	}
+	
+	@Override
 	public void setCast()
 	{
 		_cast = new PlayerCast(this);
 	}
 	
-	@Override
-	public final int getLevel()
-	{
-		return getStat().getLevel();
-	}
-	
 	/**
-	 * A newbie is a player reaching level 6. He isn't considered newbie at lvl 25.<br>
-	 * Since IL newbie isn't anymore the first character of an account reaching that state, but any.
-	 * @return True if newbie.
+	 * A newbie is a {@link Player} between level 6 and 25 which didn't yet acquired first occupation change.<br>
+	 * <br>
+	 * <b>Since IL, Newbie statut isn't anymore the first character of an account reaching that state, but any.</b>
+	 * @param checkLowLevel : If true, check also low level requirement.
+	 * @return True if this {@link Player} can be considered a Newbie.
 	 */
-	public boolean isNewbie()
+	public boolean isNewbie(boolean checkLowLevel)
 	{
-		return getClassId().level() <= 1 && getLevel() >= 6 && getLevel() <= 25;
+		return (checkLowLevel) ? (getClassId().getLevel() <= 1 && getStatus().getLevel() >= 6 && getStatus().getLevel() <= 25) : (getClassId().getLevel() <= 1 && getStatus().getLevel() <= 25);
 	}
 	
 	public void setBaseClass(int baseClass)
@@ -944,20 +901,21 @@ public final class Player extends Playable
 	}
 	
 	/**
-	 * Set the siege state of the Player.
-	 * @param siegeState 1 = attacker, 2 = defender, 0 = not involved
+	 * 0 = not involved, 1 = attacker, 2 = defender
+	 * @return The siege state of the {@link Player}.
 	 */
-	public void setSiegeState(byte siegeState)
+	public int getSiegeState()
 	{
-		_siegeState = siegeState;
+		return _siegeState;
 	}
 	
 	/**
-	 * @return the siege state of the Player.
+	 * Set the siege state of the {@link Player}.
+	 * @param siegeState : The new value to set.
 	 */
-	public byte getSiegeState()
+	public void setSiegeState(int siegeState)
 	{
-		return _siegeState;
+		_siegeState = siegeState;
 	}
 	
 	/**
@@ -1120,7 +1078,7 @@ public final class Player extends Playable
 	/**
 	 * @return The current weight of the Player.
 	 */
-	public int getCurrentLoad()
+	public int getCurrentWeight()
 	{
 		return _inventory.getTotalWeight();
 	}
@@ -1189,7 +1147,7 @@ public final class Player extends Playable
 		
 		_recomChars.add(target.getObjectId());
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(ADD_CHAR_RECOM))
 			{
@@ -1269,20 +1227,12 @@ public final class Player extends Playable
 	}
 	
 	/**
-	 * Weight Limit = (CON Modifier*69000)*Skills
-	 * @return The max weight that the Player can load.
+	 * Note: Base weight limit value is 69000.
 	 */
-	public int getMaxLoad()
+	@Override
+	public int getWeightLimit()
 	{
-		final int con = getCON();
-		if (con < 1)
-			return 31000;
-		
-		if (con > 59)
-			return 176000;
-		
-		final double baseLoad = Math.pow(1.029993928, con) * 30495.627366;
-		return (int) calcStat(Stats.MAX_LOAD, baseLoad * Config.ALT_WEIGHT_LIMIT, this, null);
+		return (int) getStatus().calcStat(Stats.WEIGHT_LIMIT, 69000 * Formulas.CON_BONUS[getStatus().getCON()] * Config.WEIGHT_LIMIT, this, null);
 	}
 	
 	public int getExpertiseArmorPenalty()
@@ -1297,50 +1247,44 @@ public final class Player extends Playable
 	
 	public int getWeightPenalty()
 	{
-		return _curWeightPenalty;
+		return _weightPenalty;
 	}
 	
 	/**
 	 * Update the overloaded status of the Player.
 	 */
-	public void refreshOverloaded()
+	public void refreshWeightPenalty()
 	{
-		final int maxLoad = getMaxLoad();
-		if (maxLoad > 0)
+		final int weightLimit = getWeightLimit();
+		if (weightLimit <= 0)
+			return;
+		
+		final double ratio = (getCurrentWeight() - getStatus().calcStat(Stats.WEIGHT_PENALTY, 0, this, null)) / weightLimit;
+		
+		int newWeightPenalty;
+		if (ratio < 0.5)
+			newWeightPenalty = 0;
+		else if (ratio < 0.666)
+			newWeightPenalty = 1;
+		else if (ratio < 0.8)
+			newWeightPenalty = 2;
+		else if (ratio < 1)
+			newWeightPenalty = 3;
+		else
+			newWeightPenalty = 4;
+		
+		if (_weightPenalty != newWeightPenalty)
 		{
-			final int weightproc = getCurrentLoad() * 1000 / maxLoad;
-			int newWeightPenalty;
+			_weightPenalty = newWeightPenalty;
 			
-			if (weightproc < 500)
-				newWeightPenalty = 0;
-			else if (weightproc < 666)
-				newWeightPenalty = 1;
-			else if (weightproc < 800)
-				newWeightPenalty = 2;
-			else if (weightproc < 1000)
-				newWeightPenalty = 3;
+			if (newWeightPenalty > 0)
+				addSkill(SkillTable.getInstance().getInfo(4270, newWeightPenalty), false);
 			else
-				newWeightPenalty = 4;
+				removeSkill(4270, false);
 			
-			if (_curWeightPenalty != newWeightPenalty)
-			{
-				_curWeightPenalty = newWeightPenalty;
-				
-				if (newWeightPenalty > 0)
-				{
-					addSkill(SkillTable.getInstance().getInfo(4270, newWeightPenalty), false);
-					setIsOverloaded(getCurrentLoad() > maxLoad);
-				}
-				else
-				{
-					removeSkill(4270, false);
-					setIsOverloaded(false);
-				}
-				
-				sendPacket(new UserInfo(this));
-				sendPacket(new EtcStatusUpdate(this));
-				broadcastCharInfo();
-			}
+			sendPacket(new UserInfo(this));
+			sendPacket(new EtcStatusUpdate(this));
+			broadcastCharInfo();
 		}
 	}
 	
@@ -1382,13 +1326,14 @@ public final class Player extends Playable
 			sendSkillList();
 			sendPacket(new EtcStatusUpdate(this));
 			
-			final ItemInstance weapon = getInventory().getPaperdollItem(Inventory.PAPERDOLL_RHAND);
-			if (weapon != null)
+			// Activate / desactivate weapon effects.
+			final ItemInstance item = getActiveWeaponInstance();
+			if (item != null)
 			{
 				if (_expertiseWeaponPenalty)
-					ItemPassiveSkillsListener.getInstance().onUnequip(0, weapon, this);
+					ItemPassiveSkillsListener.getInstance().onUnequip(Paperdoll.NULL, item, this);
 				else
-					ItemPassiveSkillsListener.getInstance().onEquip(0, weapon, this);
+					ItemPassiveSkillsListener.getInstance().onEquip(Paperdoll.NULL, item, this);
 			}
 		}
 	}
@@ -1406,7 +1351,7 @@ public final class Player extends Playable
 	{
 		ItemInstance[] items = null;
 		final boolean isEquipped = item.isEquipped();
-		final int oldInvLimit = getInventoryLimit();
+		final int oldInvLimit = getStatus().getInventoryLimit();
 		
 		if (item.getItem() instanceof Weapon)
 			item.unChargeAllShots();
@@ -1418,7 +1363,7 @@ public final class Player extends Playable
 			else
 				sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_DISARMED).addItemName(item));
 			
-			items = getInventory().unEquipItemInBodySlotAndRecord(item);
+			items = getInventory().unequipItemInBodySlotAndRecord(item);
 		}
 		else
 		{
@@ -1447,7 +1392,7 @@ public final class Player extends Playable
 		if (abortAttack)
 			getAttack().stop();
 		
-		if (getInventoryLimit() != oldInvLimit)
+		if (getStatus().getInventoryLimit() != oldInvLimit)
 			sendPacket(new ExStorageMaxCount(this));
 	}
 	
@@ -1487,7 +1432,7 @@ public final class Player extends Playable
 		
 		try
 		{
-			if (getLvlJoinedAcademy() != 0 && _clan != null && ClassId.VALUES[Id].level() == 2)
+			if (getLvlJoinedAcademy() != 0 && _clan != null && ClassId.VALUES[Id].getLevel() == 2)
 			{
 				if (getLvlJoinedAcademy() <= 16)
 					_clan.addReputationScore(400);
@@ -1513,7 +1458,7 @@ public final class Player extends Playable
 			broadcastPacket(new MagicSkillUse(this, this, 5103, 1, 1000, 0));
 			setClassTemplate(Id);
 			
-			if (getClassId().level() == 3)
+			if (getClassId().getLevel() == 3)
 				sendPacket(SystemMessageId.THIRD_CLASS_TRANSFER);
 			else
 				sendPacket(SystemMessageId.CLASS_TRANSFER);
@@ -1532,14 +1477,6 @@ public final class Player extends Playable
 		{
 			_subclassLock.unlock();
 		}
-	}
-	
-	/**
-	 * @return the Experience of the Player.
-	 */
-	public long getExp()
-	{
-		return getStat().getExp();
 	}
 	
 	public void setActiveEnchantItem(ItemInstance scroll)
@@ -1565,12 +1502,9 @@ public final class Player extends Playable
 		return _radarList;
 	}
 	
-	/**
-	 * @return the SP amount of the Player.
-	 */
-	public int getSp()
+	public CubicList getCubicList()
 	{
-		return getStat().getSp();
+		return _cubicList;
 	}
 	
 	/**
@@ -1695,6 +1629,12 @@ public final class Player extends Playable
 		
 		// Broadcast the packet.
 		broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_SITTING));
+		
+		// Tutorial
+		final QuestState qs = getQuestState("Tutorial");
+		if (qs != null)
+			qs.getQuest().notifyEvent("CE8388608", null, this);
+		
 		return true;
 	}
 	
@@ -1969,14 +1909,14 @@ public final class Player extends Playable
 			
 			// Update current load as well
 			final StatusUpdate su = new StatusUpdate(this);
-			su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
+			su.addAttribute(StatusType.CUR_LOAD, getCurrentWeight());
 			sendPacket(su);
 			
 			// Cursed Weapon
 			if (CursedWeaponManager.getInstance().isCursed(newitem.getItemId()))
 				CursedWeaponManager.getInstance().activate(this, newitem);
 			// If you pickup arrows and a bow is equipped, try to equip them if no arrows is currently equipped.
-			else if (item.getItem().getItemType() == EtcItemType.ARROW && getAttackType() == WeaponType.BOW && getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND) == null)
+			else if (item.getItem().getItemType() == EtcItemType.ARROW && getAttackType() == WeaponType.BOW && !getInventory().hasItemIn(Paperdoll.LHAND))
 				checkAndEquipArrows();
 		}
 	}
@@ -2037,7 +1977,7 @@ public final class Player extends Playable
 				if (CursedWeaponManager.getInstance().isCursed(createdItem.getItemId()))
 					CursedWeaponManager.getInstance().activate(this, createdItem);
 				// If you pickup arrows and a bow is equipped, try to equip them if no arrows is currently equipped.
-				else if (item.getItemType() == EtcItemType.ARROW && getAttackType() == WeaponType.BOW && getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND) == null)
+				else if (item.getItemType() == EtcItemType.ARROW && getAttackType() == WeaponType.BOW && !getInventory().hasItemIn(Paperdoll.LHAND))
 					checkAndEquipArrows();
 				
 				return createdItem;
@@ -2089,7 +2029,7 @@ public final class Player extends Playable
 		
 		// Update current load as well
 		final StatusUpdate su = new StatusUpdate(this);
-		su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, getCurrentWeight());
 		sendPacket(su);
 		
 		// Sends message to client if requested
@@ -2183,7 +2123,7 @@ public final class Player extends Playable
 		
 		// Update current load as well
 		final StatusUpdate su = new StatusUpdate(this);
-		su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, getCurrentWeight());
 		sendPacket(su);
 		
 		// Sends message to client if requested
@@ -2228,7 +2168,7 @@ public final class Player extends Playable
 		
 		// Update current load as well
 		StatusUpdate playerSU = new StatusUpdate(this);
-		playerSU.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
+		playerSU.addAttribute(StatusType.CUR_LOAD, getCurrentWeight());
 		sendPacket(playerSU);
 		
 		// Send target update packet
@@ -2245,7 +2185,7 @@ public final class Player extends Playable
 			
 			// Update current load as well
 			playerSU = new StatusUpdate(targetPlayer);
-			playerSU.addAttribute(StatusUpdate.CUR_LOAD, targetPlayer.getCurrentLoad());
+			playerSU.addAttribute(StatusType.CUR_LOAD, targetPlayer.getCurrentWeight());
 			targetPlayer.sendPacket(playerSU);
 		}
 		else if (target instanceof PetInventory)
@@ -2289,7 +2229,7 @@ public final class Player extends Playable
 		
 		// Update current load as well
 		final StatusUpdate su = new StatusUpdate(this);
-		su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, getCurrentWeight());
 		sendPacket(su);
 		
 		// Sends message to client if requested
@@ -2333,7 +2273,7 @@ public final class Player extends Playable
 		
 		// Update current load as well
 		final StatusUpdate su = new StatusUpdate(this);
-		su.addAttribute(StatusUpdate.CUR_LOAD, getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, getCurrentWeight());
 		sendPacket(su);
 		
 		// Sends message to client if requested
@@ -2491,141 +2431,18 @@ public final class Player extends Playable
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		final Player player = (Player) target;
-		// GMs lack the normal shift + action behaviour of regular players
-		if (player.isGM() && isShiftPressed)
-		{
-			AdminEditChar.gatherCharacterInfo(player, this);
-			return;
-		}
-		
 		if (player.getTarget() != this)
 			player.setTarget(this);
 		else
 		{
-			if (isAttackableWithoutForceBy(player))
-				player.getAI().tryTo(IntentionType.ATTACK, this, isShiftPressed);
+			if (isAttackableWithoutForceBy(player) || (isCtrlPressed && isAttackableBy(player)))
+				player.getAI().tryToAttack(this, isCtrlPressed, isShiftPressed);
+			else if (isOperating())
+				player.getAI().tryToInteract(this, isCtrlPressed, isShiftPressed);
 			else
-			{
-				if (isAttackableBy(player) && isCtrlPressed)
-					player.getAI().tryTo(IntentionType.ATTACK, this, isShiftPressed);
-				else
-				{
-					if (isOperating())
-						player.getAI().tryTo(IntentionType.INTERACT, this, isShiftPressed);
-					else
-						player.getAI().tryTo(IntentionType.FOLLOW, this, isShiftPressed);
-				}
-			}
-		}
-	}
-	
-	/**
-	 * @param barPixels
-	 * @return true if cp update should be done, false if not
-	 */
-	private boolean needCpUpdate(int barPixels)
-	{
-		final double currentCp = getCurrentCp();
-		
-		if (currentCp <= 1.0 || getMaxCp() < barPixels)
-			return true;
-		
-		if (currentCp <= _cpUpdateDecCheck || currentCp >= _cpUpdateIncCheck)
-		{
-			if (currentCp == getMaxCp())
-			{
-				_cpUpdateIncCheck = currentCp + 1;
-				_cpUpdateDecCheck = currentCp - _cpUpdateInterval;
-			}
-			else
-			{
-				final double doubleMulti = currentCp / _cpUpdateInterval;
-				int intMulti = (int) doubleMulti;
-				
-				_cpUpdateDecCheck = _cpUpdateInterval * (doubleMulti < intMulti ? intMulti-- : intMulti);
-				_cpUpdateIncCheck = _cpUpdateDecCheck + _cpUpdateInterval;
-			}
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * @param barPixels
-	 * @return true if mp update should be done, false if not
-	 */
-	private boolean needMpUpdate(int barPixels)
-	{
-		final double currentMp = getCurrentMp();
-		
-		if (currentMp <= 1.0 || getMaxMp() < barPixels)
-			return true;
-		
-		if (currentMp <= _mpUpdateDecCheck || currentMp >= _mpUpdateIncCheck)
-		{
-			if (currentMp == getMaxMp())
-			{
-				_mpUpdateIncCheck = currentMp + 1;
-				_mpUpdateDecCheck = currentMp - _mpUpdateInterval;
-			}
-			else
-			{
-				final double doubleMulti = currentMp / _mpUpdateInterval;
-				int intMulti = (int) doubleMulti;
-				
-				_mpUpdateDecCheck = _mpUpdateInterval * (doubleMulti < intMulti ? intMulti-- : intMulti);
-				_mpUpdateIncCheck = _mpUpdateDecCheck + _mpUpdateInterval;
-			}
-			
-			return true;
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Send packet StatusUpdate with current HP,MP and CP to the Player and only current HP, MP and Level to all other Player of the Party.
-	 * <ul>
-	 * <li>Send StatusUpdate with current HP, MP and CP to this Player</li>
-	 * <li>Send PartySmallWindowUpdate with current HP, MP and Level to all other Player of the Party</li>
-	 * </ul>
-	 * <FONT COLOR=#FF0000><B> <U>Caution</U> : This method DOESN'T SEND current HP and MP to all Player of the _statusListener</B></FONT>
-	 */
-	@Override
-	public void broadcastStatusUpdate()
-	{
-		// Send StatusUpdate with current HP, MP and CP to this Player
-		final StatusUpdate su = new StatusUpdate(this);
-		su.addAttribute(StatusUpdate.CUR_HP, (int) getCurrentHp());
-		su.addAttribute(StatusUpdate.CUR_MP, (int) getCurrentMp());
-		su.addAttribute(StatusUpdate.CUR_CP, (int) getCurrentCp());
-		su.addAttribute(StatusUpdate.MAX_CP, getMaxCp());
-		sendPacket(su);
-		
-		final boolean needCpUpdate = needCpUpdate(352);
-		final boolean needHpUpdate = needHpUpdate(352);
-		
-		// Check if a party is in progress and party window update is needed.
-		if (_party != null && (needCpUpdate || needHpUpdate || needMpUpdate(352)))
-			_party.broadcastToPartyMembers(this, new PartySmallWindowUpdate(this));
-		
-		if (isInOlympiadMode() && isOlympiadStart() && (needCpUpdate || needHpUpdate))
-		{
-			final OlympiadGameTask game = OlympiadGameManager.getInstance().getOlympiadTask(getOlympiadGameId());
-			if (game != null && game.isBattleStarted())
-				game.getZone().broadcastStatusUpdate(this);
-		}
-		
-		// In duel, MP updated only with CP or HP
-		if (isInDuel() && (needCpUpdate || needHpUpdate))
-		{
-			final ExDuelUpdateUserInfo update = new ExDuelUpdateUserInfo(this);
-			DuelManager.getInstance().broadcastToOppositeTeam(this, update);
+				player.getAI().tryToFollow(this, isShiftPressed);
 		}
 	}
 	
@@ -2729,28 +2546,6 @@ public final class Player extends Playable
 	public void sendPacket(SystemMessageId id)
 	{
 		sendPacket(SystemMessage.getSystemMessage(id));
-	}
-	
-	/**
-	 * Manage AutoLoot Task.
-	 * <ul>
-	 * <li>Send a System Message to the Player : YOU_PICKED_UP_S1_ADENA or YOU_PICKED_UP_S1_S2</li>
-	 * <li>Add the Item to the Player inventory</li>
-	 * <li>Send InventoryUpdate to this Player with NewItem (use a new slot) or ModifiedItem (increase amount)</li>
-	 * <li>Send StatusUpdate to this Player with current weight</li>
-	 * </ul>
-	 * <FONT COLOR=#FF0000><B> <U>Caution</U> : If a Party is in progress, distribute Items between party members</B></FONT>
-	 * @param target The reference Object.
-	 * @param item The dropped ItemHolder.
-	 */
-	public void doAutoLoot(Attackable target, IntIntHolder item)
-	{
-		if (isInParty())
-			getParty().distributeItem(this, item, false, target);
-		else if (item.getId() == 57)
-			addAdena("Loot", item.getValue(), target, true);
-		else
-			addItem("Loot", item.getId(), item.getValue(), target, true);
 	}
 	
 	/**
@@ -2899,12 +2694,13 @@ public final class Player extends Playable
 		
 		if (oldTarget != null)
 		{
-			if (oldTarget.equals(newTarget))
-				return; // no target change
-				
-			// Remove the Player from the _statusListener of the old target if it was a Creature
+			// No target change, return.
+			if (oldTarget == newTarget)
+				return;
+			
+			// Remove the Player from the _statusListener of the old target if it was a Creature.
 			if (oldTarget instanceof Creature)
-				((Creature) oldTarget).removeStatusListener(this);
+				((Creature) oldTarget).getStatus().removeStatusListener(this);
 		}
 		
 		// Verify if it's a static object.
@@ -2923,14 +2719,14 @@ public final class Player extends Playable
 				sendPacket(new ValidateLocation(target));
 			
 			// Show the client his new target.
-			sendPacket(new MyTargetSelected(target.getObjectId(), (target.isAttackableBy(this) || target instanceof Summon) ? getLevel() - target.getLevel() : 0));
+			sendPacket(new MyTargetSelected(target.getObjectId(), (target.isAttackableBy(this) || target instanceof Summon) ? getStatus().getLevel() - target.getStatus().getLevel() : 0));
 			
-			target.addStatusListener(this);
+			target.getStatus().addStatusListener(this);
 			
 			// Send max/current hp.
 			final StatusUpdate su = new StatusUpdate(target);
-			su.addAttribute(StatusUpdate.MAX_HP, target.getMaxHp());
-			su.addAttribute(StatusUpdate.CUR_HP, (int) target.getCurrentHp());
+			su.addAttribute(StatusType.MAX_HP, target.getStatus().getMaxHp());
+			su.addAttribute(StatusType.CUR_HP, (int) target.getStatus().getHp());
 			sendPacket(su);
 			
 			broadcastPacket(new TargetSelected(getObjectId(), newTarget.getObjectId(), getX(), getY(), getZ()), false);
@@ -2953,47 +2749,36 @@ public final class Player extends Playable
 		super.setTarget(newTarget);
 	}
 	
-	/**
-	 * Return the active weapon instance (always equipped in the right hand).
-	 */
 	@Override
 	public ItemInstance getActiveWeaponInstance()
 	{
-		return getInventory().getPaperdollItem(Inventory.PAPERDOLL_RHAND);
+		return getInventory().getItemFrom(Paperdoll.RHAND);
 	}
 	
-	/**
-	 * Return the active weapon item (always equipped in the right hand).
-	 */
 	@Override
 	public Weapon getActiveWeaponItem()
 	{
-		final ItemInstance weapon = getInventory().getPaperdollItem(Inventory.PAPERDOLL_RHAND);
-		return (weapon == null) ? getTemplate().getFists() : (Weapon) weapon.getItem();
+		final ItemInstance item = getActiveWeaponInstance();
+		return (item == null) ? getTemplate().getFists() : (Weapon) item.getItem();
 	}
 	
-	/**
-	 * @return the type of attack, depending of the worn weapon.
-	 */
 	@Override
 	public WeaponType getAttackType()
 	{
 		return getActiveWeaponItem().getItemType();
 	}
 	
-	/**
-	 * @param type : The ArmorType to check. It supports NONE, SHIELD, MAGIC, LIGHT and HEAVY.
-	 * @return true if the given ArmorType is used by the chest of the player, false otherwise.
-	 */
-	public boolean isWearingArmorType(ArmorType type)
+	@Override
+	public ItemInstance getSecondaryWeaponInstance()
 	{
-		// Retrieve either the shield or the chest, following ArmorType to check.
-		final ItemInstance armor = getInventory().getPaperdollItem((type == ArmorType.SHIELD) ? Inventory.PAPERDOLL_LHAND : Inventory.PAPERDOLL_CHEST);
-		if (armor == null)
-			return type == ArmorType.NONE; // Return true if not equipped and the check was based on NONE ArmorType.
-			
-		// Test if the equipped item is an armor, then finally compare both ArmorType.
-		return armor.getItemType() instanceof ArmorType && armor.getItemType() == type;
+		return getInventory().getItemFrom(Paperdoll.LHAND);
+	}
+	
+	@Override
+	public Item getSecondaryWeaponItem()
+	{
+		final ItemInstance item = getSecondaryWeaponInstance();
+		return (item == null) ? null : item.getItem();
 	}
 	
 	public boolean isUnderMarryRequest()
@@ -3046,28 +2831,6 @@ public final class Player extends Playable
 				requester.sendMessage("Your partner declined your marriage request.");
 			}
 		}
-	}
-	
-	/**
-	 * Return the secondary weapon instance (always equipped in the left hand).
-	 */
-	@Override
-	public ItemInstance getSecondaryWeaponInstance()
-	{
-		return getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND);
-	}
-	
-	/**
-	 * Return the secondary L2Item item (always equiped in the left hand).
-	 */
-	@Override
-	public Item getSecondaryWeaponItem()
-	{
-		final ItemInstance item = getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND);
-		if (item != null)
-			return item.getItem();
-		
-		return null;
 	}
 	
 	/**
@@ -3132,14 +2895,14 @@ public final class Player extends Playable
 					}
 					
 					// Reduce player's xp and karma.
-					if (Config.ALT_GAME_DELEVEL && (!hasSkill(L2Skill.SKILL_LUCKY) || getStat().getLevel() > 9))
-						deathPenalty(pk != null && getClan() != null && pk.getClan() != null && (getClan().isAtWarWith(pk.getClanId()) || pk.getClan().isAtWarWith(getClanId())), pk != null, killer instanceof SiegeGuard);
+					if (Config.ALLOW_DELEVEL && (!hasSkill(L2Skill.SKILL_LUCKY) || getStatus().getLevel() > 9))
+						applyDeathPenalty(pk != null && getClan() != null && pk.getClan() != null && (getClan().isAtWarWith(pk.getClanId()) || pk.getClan().isAtWarWith(getClanId())), pk != null);
 				}
 			}
 		}
 		
 		// Unsummon Cubics
-		stopCubics(false);
+		_cubicList.stopCubics(false);
 		
 		if (getFusionSkill() != null)
 			getCast().stop();
@@ -3153,7 +2916,7 @@ public final class Player extends Playable
 		
 		WaterTaskManager.getInstance().remove(this);
 		
-		if (isPhoenixBlessed() || (isAffected(EffectFlag.CHARM_OF_COURAGE) && isInSiege()))
+		if (isPhoenixBlessed())
 			reviveRequest(this, null, false);
 		
 		// Icons update in order to get retained buffs list
@@ -3190,7 +2953,7 @@ public final class Player extends Playable
 				dropItem = Config.KARMA_RATE_DROP_ITEM;
 				dropLimit = Config.KARMA_DROP_LIMIT;
 			}
-			else if (isKillerNpc && getLevel() > 4 && !isFestivalParticipant())
+			else if (isKillerNpc && getStatus().getLevel() > 4 && !isFestivalParticipant())
 			{
 				dropPercent = Config.PLAYER_RATE_DROP;
 				dropEquip = Config.PLAYER_RATE_DROP_EQUIP;
@@ -3214,7 +2977,7 @@ public final class Player extends Playable
 					{
 						// Set proper chance according to Item type of equipped Item
 						itemDropPercent = itemDrop.getItem().getType2() == Item.TYPE2_WEAPON ? dropEquipWeapon : dropEquip;
-						getInventory().unEquipItemInSlot(itemDrop.getLocationSlot());
+						getInventory().unequipItemInSlot(itemDrop.getLocationSlot());
 					}
 					else
 						itemDropPercent = dropItem; // Item in inventory
@@ -3236,7 +2999,7 @@ public final class Player extends Playable
 	{
 		if (!isCursedWeaponEquipped() && getKarma() > 0)
 		{
-			final int karmaLost = Formulas.calculateKarmaLost(getLevel(), exp);
+			final int karmaLost = Formulas.calculateKarmaLost(getStatus().getLevel(), exp);
 			if (karmaLost > 0)
 				setKarma(getKarma() - karmaLost);
 		}
@@ -3352,45 +3115,38 @@ public final class Player extends Playable
 	{
 		if (getExpBeforeDeath() > 0)
 		{
-			getStat().addExp((int) Math.round((getExpBeforeDeath() - getExp()) * restorePercent / 100));
+			getStatus().addExp((int) Math.round((getExpBeforeDeath() - getStatus().getExp()) * restorePercent / 100));
 			setExpBeforeDeath(0);
 		}
 	}
 	
 	/**
-	 * Reduce the Experience (and level if necessary) of the Player in function of the calculated Death Penalty.
-	 * <ul>
-	 * <li>Calculate the Experience loss</li>
-	 * <li>Set the value of _expBeforeDeath</li>
-	 * <li>Set the new Experience value of the Player and Decrease its level if necessary</li>
-	 * <li>Send StatusUpdate packet with its new Experience</li>
-	 * </ul>
-	 * @param atWar If true, use clan war penalty system instead of regular system.
-	 * @param killedByPlayable Used to see if victim loses XP or not.
-	 * @param killedBySiegeNpc Used to see if victim loses XP or not.
+	 * Calculate the xp loss and the karma decrease.
+	 * @param atWar : If true, use clan war penalty system instead of regular system.
+	 * @param killedByPlayable : If true, we use specific rules if killed by playable only.
 	 */
-	public void deathPenalty(boolean atWar, boolean killedByPlayable, boolean killedBySiegeNpc)
+	public void applyDeathPenalty(boolean atWar, boolean killedByPlayable)
 	{
-		// No xp loss inside pvp zone unless
-		// - it's a siege zone and you're NOT participating
-		// - you're killed by a non-pc whose not belong to the siege
 		if (isInsideZone(ZoneId.PVP))
 		{
-			// No xp loss for siege participants inside siege zone.
+			// No xp loss inside siege zone if a Charm of Courage is active.
 			if (isInsideZone(ZoneId.SIEGE))
 			{
-				if (isInSiege() && (killedByPlayable || killedBySiegeNpc))
+				if (isAffected(EffectFlag.CHARM_OF_COURAGE))
+				{
+					stopEffects(EffectType.CHARM_OF_COURAGE);
 					return;
+				}
 			}
-			// No xp loss for arenas participants killed by playable.
+			// No xp loss for arenas participants killed by Playable.
 			else if (killedByPlayable)
 				return;
 		}
 		
-		// Get the level of the Player
-		final int lvl = getLevel();
+		// Get the level of the Player.
+		final int lvl = getStatus().getLevel();
 		
-		// The death steal you some Exp
+		// The death steal you some xp.
 		double percentLost = PlayerLevelData.getInstance().getPlayerLevel(lvl).getExpLossAtDeath();
 		
 		if (getKarma() > 0)
@@ -3399,23 +3155,23 @@ public final class Player extends Playable
 		if (isFestivalParticipant() || atWar || isInsideZone(ZoneId.SIEGE))
 			percentLost /= 4.0;
 		
-		// Calculate the Experience loss
+		// Calculate the xp loss.
 		long lostExp = 0;
 		
 		final int maxLevel = PlayerLevelData.getInstance().getMaxLevel();
 		if (lvl < maxLevel)
-			lostExp = Math.round((getStat().getExpForLevel(lvl + 1) - getStat().getExpForLevel(lvl)) * percentLost / 100);
+			lostExp = Math.round((getStatus().getExpForLevel(lvl + 1) - getStatus().getExpForLevel(lvl)) * percentLost / 100);
 		else
-			lostExp = Math.round((getStat().getExpForLevel(maxLevel) - getStat().getExpForLevel(maxLevel - 1)) * percentLost / 100);
+			lostExp = Math.round((getStatus().getExpForLevel(maxLevel) - getStatus().getExpForLevel(maxLevel - 1)) * percentLost / 100);
 		
-		// Get the Experience before applying penalty
-		setExpBeforeDeath(getExp());
+		// Get the xp before applying penalty.
+		setExpBeforeDeath(getStatus().getExp());
 		
-		// Set new karma
+		// Set new karma.
 		updateKarmaLoss(lostExp);
 		
-		// Set the new Experience value of the Player
-		getStat().addExp(-lostExp);
+		// Set the new xp value of the Player.
+		getStatus().addExp(-lostExp);
 	}
 	
 	public int getPartyRoom()
@@ -3737,7 +3493,7 @@ public final class Player extends Playable
 				addSkill(skill.getSkill(), false);
 			
 			// Remove the Lucky skill if level superior to 10.
-			if (getLevel() >= 10 && hasSkill(L2Skill.SKILL_LUCKY))
+			if (getStatus().getLevel() >= 10 && hasSkill(L2Skill.SKILL_LUCKY))
 				removeSkill(L2Skill.SKILL_LUCKY, false);
 			
 			// Remove invalid skills.
@@ -3758,7 +3514,7 @@ public final class Player extends Playable
 			addSkill(skill.getSkill(), skill.getCost() != 0);
 		
 		// Remove the Lucky skill if level superior to 10.
-		if (getLevel() >= 10 && hasSkill(L2Skill.SKILL_LUCKY))
+		if (getStatus().getLevel() >= 10 && hasSkill(L2Skill.SKILL_LUCKY))
 			removeSkill(L2Skill.SKILL_LUCKY, false);
 		
 		// Remove invalid skills.
@@ -3780,7 +3536,7 @@ public final class Player extends Playable
 			return;
 		
 		// Retrieve the player template skills, based on actual level (+9 for regular skills, unchanged for expertise).
-		final Map<Integer, Optional<GeneralSkillNode>> availableSkills = getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getLevel() + ((s.getId() == L2Skill.SKILL_EXPERTISE) ? 0 : 9)).collect(Collectors.groupingBy(s -> s.getId(), Collectors.maxBy(COMPARE_SKILLS_BY_LVL)));
+		final Map<Integer, Optional<GeneralSkillNode>> availableSkills = getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getStatus().getLevel() + ((s.getId() == L2Skill.SKILL_EXPERTISE) ? 0 : 9)).collect(Collectors.groupingBy(s -> s.getId(), Collectors.maxBy(COMPARE_SKILLS_BY_LVL)));
 		
 		for (final L2Skill skill : getSkills().values())
 		{
@@ -3804,7 +3560,7 @@ public final class Player extends Playable
 			if (skill.getLevel() > maxLevel)
 			{
 				// Player level is inferior to 76, or available skill is a good candidate.
-				if ((getLevel() < 76 || availableSkill.getValue() < maxLevel) && skill.getLevel() > availableSkill.getValue())
+				if ((getStatus().getLevel() < 76 || availableSkill.getValue() < maxLevel) && skill.getLevel() > availableSkill.getValue())
 					addSkill(availableSkill.getSkill(), true);
 			}
 			// We check if current known skill level is bigger than available skill level. If it's true, we override current skill with available skill.
@@ -3862,7 +3618,7 @@ public final class Player extends Playable
 	{
 		final List<GeneralSkillNode> result = new ArrayList<>();
 		
-		getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getLevel() && s.getCost() == 0).collect(Collectors.groupingBy(s -> s.getId(), Collectors.maxBy(COMPARE_SKILLS_BY_LVL))).forEach((i, s) ->
+		getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getStatus().getLevel() && s.getCost() == 0).collect(Collectors.groupingBy(s -> s.getId(), Collectors.maxBy(COMPARE_SKILLS_BY_LVL))).forEach((i, s) ->
 		{
 			if (getSkillLevel(i) < s.get().getValue())
 				result.add(s.get());
@@ -3877,7 +3633,7 @@ public final class Player extends Playable
 	{
 		final List<GeneralSkillNode> result = new ArrayList<>();
 		
-		getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getLevel() && s.getCost() != 0).forEach(s ->
+		getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getStatus().getLevel() && s.getCost() != 0).forEach(s ->
 		{
 			if (getSkillLevel(s.getId()) == s.getValue() - 1)
 				result.add(s);
@@ -3892,7 +3648,7 @@ public final class Player extends Playable
 	{
 		final List<GeneralSkillNode> result = new ArrayList<>();
 		
-		getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getLevel()).collect(Collectors.groupingBy(s -> s.getId(), Collectors.maxBy(COMPARE_SKILLS_BY_LVL))).forEach((i, s) ->
+		getTemplate().getSkills().stream().filter(s -> s.getMinLvl() <= getStatus().getLevel()).collect(Collectors.groupingBy(s -> s.getId(), Collectors.maxBy(COMPARE_SKILLS_BY_LVL))).forEach((i, s) ->
 		{
 			if (getSkillLevel(i) < s.get().getValue())
 				result.add(s.get());
@@ -3906,7 +3662,7 @@ public final class Player extends Playable
 	 */
 	public int getRequiredLevelForNextSkill()
 	{
-		return getTemplate().getSkills().stream().filter(s -> s.getMinLvl() > getLevel() && s.getCost() != 0).min(COMPARE_SKILLS_BY_MIN_LVL).map(s -> s.getMinLvl()).orElse(0);
+		return getTemplate().getSkills().stream().filter(s -> s.getMinLvl() > getStatus().getLevel() && s.getCost() != 0).min(COMPARE_SKILLS_BY_MIN_LVL).map(s -> s.getMinLvl()).orElse(0);
 	}
 	
 	/**
@@ -3962,7 +3718,7 @@ public final class Player extends Playable
 	@Override
 	public void reduceArrowCount() // TODO: replace with a simple player.destroyItem...
 	{
-		final ItemInstance arrows = getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND);
+		final ItemInstance arrows = getSecondaryWeaponInstance();
 		if (arrows == null)
 			return;
 		
@@ -4010,7 +3766,7 @@ public final class Player extends Playable
 			return true;
 		
 		// Equip arrows in left hand.
-		getInventory().setPaperdollItem(Inventory.PAPERDOLL_LHAND, arrows);
+		getInventory().setPaperdollItem(Paperdoll.LHAND, arrows);
 		
 		// Send ItemList to this player to update left hand equipement
 		sendPacket(new ItemList(this, false));
@@ -4035,7 +3791,7 @@ public final class Player extends Playable
 		InventoryUpdate iu = null;
 		
 		// Unequip the weapon.
-		ItemInstance[] unequipped = getInventory().unEquipItemInBodySlotAndRecord(Item.SLOT_ALLWEAPON);
+		ItemInstance[] unequipped = getInventory().unequipItemInBodySlotAndRecord(Item.SLOT_R_HAND);
 		if (!ArraysUtil.isEmpty(unequipped))
 		{
 			iu = new InventoryUpdate();
@@ -4054,7 +3810,7 @@ public final class Player extends Playable
 		// Unequip the shield.
 		if (leftHandIncluded)
 		{
-			unequipped = getInventory().unEquipItemInBodySlotAndRecord(Item.SLOT_L_HAND);
+			unequipped = getInventory().unequipItemInBodySlotAndRecord(Item.SLOT_L_HAND);
 			if (!ArraysUtil.isEmpty(unequipped))
 			{
 				if (iu == null)
@@ -4092,10 +3848,10 @@ public final class Player extends Playable
 		stopAllToggles();
 		
 		final Ride mount = new Ride(getObjectId(), Ride.ACTION_MOUNT, pet.getTemplate().getNpcId());
-		setMount(pet.getNpcId(), pet.getLevel(), mount.getMountType());
+		setMount(pet.getNpcId(), pet.getStatus().getLevel(), mount.getMountType());
 		
 		_petTemplate = (PetTemplate) pet.getTemplate();
-		_petData = _petTemplate.getPetDataEntry(pet.getLevel());
+		_petData = _petTemplate.getPetDataEntry(pet.getStatus().getLevel());
 		_mountObjectId = pet.getControlItemId();
 		
 		startFeed(pet.getNpcId());
@@ -4117,10 +3873,10 @@ public final class Player extends Playable
 		stopAllToggles();
 		
 		final Ride mount = new Ride(getObjectId(), Ride.ACTION_MOUNT, npcId);
-		if (setMount(npcId, getLevel(), mount.getMountType()))
+		if (setMount(npcId, getStatus().getLevel(), mount.getMountType()))
 		{
 			_petTemplate = (PetTemplate) NpcData.getInstance().getTemplate(npcId);
-			_petData = _petTemplate.getPetDataEntry(getLevel());
+			_petData = _petTemplate.getPetDataEntry(getStatus().getLevel());
 			_mountObjectId = controlItemId;
 			
 			broadcastPacket(mount);
@@ -4263,7 +4019,7 @@ public final class Player extends Playable
 	{
 		if (_controlItemId != 0 && petId != 0)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement("UPDATE pets SET fed=? WHERE item_obj_id = ?"))
 			{
 				ps.setInt(1, getCurrentFeed());
@@ -4547,7 +4303,7 @@ public final class Player extends Playable
 	 */
 	public void updateAndBroadcastStatus(int broadcastType)
 	{
-		refreshOverloaded();
+		refreshWeightPenalty();
 		refreshExpertisePenalty();
 		
 		if (broadcastType == 1)
@@ -4562,7 +4318,7 @@ public final class Player extends Playable
 	public void broadcastKarma()
 	{
 		final StatusUpdate su = new StatusUpdate(this);
-		su.addAttribute(StatusUpdate.KARMA, getKarma());
+		su.addAttribute(StatusType.KARMA, getKarma());
 		sendPacket(su);
 		
 		if (_summon != null)
@@ -4596,7 +4352,7 @@ public final class Player extends Playable
 	 */
 	public void updateOnlineStatus()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("UPDATE characters SET online=?, lastAccess=? WHERE obj_id=?"))
 		{
 			ps.setInt(1, isOnlineInt());
@@ -4624,7 +4380,7 @@ public final class Player extends Playable
 	{
 		Player player = null;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_CHARACTER))
 		{
 			ps.setInt(1, objectId);
@@ -4641,9 +4397,9 @@ public final class Player extends Playable
 					player.setName(rs.getString("char_name"));
 					player._lastAccess = rs.getLong("lastAccess");
 					
-					player.getStat().setExp(rs.getLong("exp"));
-					player.getStat().setLevel(rs.getByte("level"));
-					player.getStat().setSp(rs.getInt("sp"));
+					player.getStatus().setExp(rs.getLong("exp"));
+					player.getStatus().setLevel(rs.getByte("level"));
+					player.getStatus().setSp(rs.getInt("sp"));
 					
 					player.setExpBeforeDeath(rs.getLong("expBeforeDeath"));
 					player.setWantsPeace(rs.getInt("wantspeace") == 1);
@@ -4752,14 +4508,12 @@ public final class Player extends Playable
 					// Restore current CP, HP and MP values
 					final double currentHp = rs.getDouble("curHp");
 					
-					player.setCurrentCp(rs.getDouble("curCp"));
-					player.setCurrentHp(currentHp);
-					player.setCurrentMp(rs.getDouble("curMp"));
+					player.getStatus().setCpHpMp(rs.getDouble("curCp"), currentHp, rs.getDouble("curMp"));
 					
 					if (currentHp < 0.5)
 					{
 						player.setIsDead(true);
-						player.stopHpMpRegeneration();
+						player.getStatus().stopHpMpRegeneration();
 					}
 					
 					// Restore pet if it exists in the world.
@@ -4770,7 +4524,7 @@ public final class Player extends Playable
 						pet.setOwner(player);
 					}
 					
-					player.refreshOverloaded();
+					player.refreshWeightPenalty();
 					player.refreshExpertisePenalty();
 					
 					player.restoreFriendList();
@@ -4821,7 +4575,7 @@ public final class Player extends Playable
 	 */
 	private static boolean restoreSubClassData(Player player)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_CHAR_SUBCLASSES))
 		{
 			ps.setInt(1, player.getObjectId());
@@ -4896,22 +4650,22 @@ public final class Player extends Playable
 		
 		_classIndex = 0;
 		
-		final long exp = getStat().getExp();
-		final int level = getStat().getLevel();
-		final int sp = getStat().getSp();
+		final long exp = getStatus().getExp();
+		final int level = getStatus().getLevel();
+		final int sp = getStatus().getSp();
 		
 		_classIndex = currentClassIndex;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_CHARACTER))
 		{
 			ps.setInt(1, level);
-			ps.setInt(2, getMaxHp());
-			ps.setDouble(3, getCurrentHp());
-			ps.setInt(4, getMaxCp());
-			ps.setDouble(5, getCurrentCp());
-			ps.setInt(6, getMaxMp());
-			ps.setDouble(7, getCurrentMp());
+			ps.setInt(2, getStatus().getMaxHp());
+			ps.setDouble(3, getStatus().getHp());
+			ps.setInt(4, getStatus().getMaxCp());
+			ps.setDouble(5, getStatus().getCp());
+			ps.setInt(6, getStatus().getMaxMp());
+			ps.setDouble(7, getStatus().getMp());
 			ps.setInt(8, getAppearance().getFace());
 			ps.setInt(9, getAppearance().getHairStyle());
 			ps.setInt(10, getAppearance().getHairColor());
@@ -4982,7 +4736,7 @@ public final class Player extends Playable
 		if (_subClasses.isEmpty())
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_CHAR_SUBCLASS))
 		{
 			for (final SubClass subClass : _subClasses.values())
@@ -5008,7 +4762,7 @@ public final class Player extends Playable
 		if (!Config.STORE_SKILL_COOLTIME)
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			// Delete all current stored effects for char to avoid dupe
 			try (PreparedStatement ps = con.prepareStatement(DELETE_SKILL_SAVE))
@@ -5028,12 +4782,8 @@ public final class Player extends Playable
 				{
 					for (final AbstractEffect effect : getAllEffects())
 					{
-						switch (effect.getEffectType())
-						{
-							case HEAL_OVER_TIME:
-							case COMBAT_POINT_HEAL_OVER_TIME:
-								continue;
-						}
+						if (effect.getEffectType() == EffectType.HEAL_OVER_TIME)
+							continue;
 						
 						final L2Skill skill = effect.getSkill();
 						if (storedSkills.contains(skill.getReuseHashCode()))
@@ -5242,7 +4992,7 @@ public final class Player extends Playable
 		
 		if (store)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(DELETE_SKILL_FROM_CHAR))
 			{
 				ps.setInt(1, skillId);
@@ -5270,7 +5020,7 @@ public final class Player extends Playable
 	 */
 	private void storeSkill(L2Skill skill, int classIndex)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(ADD_OR_UPDATE_SKILL))
 		{
 			ps.setInt(1, getObjectId());
@@ -5290,7 +5040,7 @@ public final class Player extends Playable
 	 */
 	private void restoreSkills()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_SKILLS_FOR_CHAR))
 		{
 			ps.setInt(1, getObjectId());
@@ -5313,7 +5063,7 @@ public final class Player extends Playable
 	 */
 	public void restoreEffects()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(RESTORE_SKILL_SAVE))
 			{
@@ -5385,7 +5135,7 @@ public final class Player extends Playable
 	 */
 	private void restoreRecom()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_CHAR_RECOMS))
 		{
 			ps.setInt(1, getObjectId());
@@ -5408,66 +5158,6 @@ public final class Player extends Playable
 	public HennaList getHennaList()
 	{
 		return _hennaList;
-	}
-	
-	public boolean checkIfOkToUseStriderSiegeAssault(L2Skill skill)
-	{
-		final Siege siege = CastleManager.getInstance().getActiveSiege(this);
-		
-		SystemMessage sm;
-		
-		if (!isRiding())
-			sm = SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill);
-		else if (!(getTarget() instanceof Door))
-			sm = SystemMessage.getSystemMessage(SystemMessageId.INVALID_TARGET);
-		else if (siege == null || !siege.checkSide(getClan(), SiegeSide.ATTACKER))
-			sm = SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill);
-		else
-			return true;
-		
-		sendPacket(sm);
-		return false;
-	}
-	
-	public boolean checkIfOkToCastSealOfRule(Castle castle, boolean isCheckOnly, L2Skill skill, WorldObject target)
-	{
-		if (castle == null || castle.getCastleId() <= 0)
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
-			return false;
-		}
-		else if (!castle.isGoodArtifact(target))
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.INVALID_TARGET));
-			return false;
-		}
-		else if (!castle.getSiege().isInProgress())
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
-			return false;
-		}
-		else if (!MathUtil.checkIfInRange(200, this, target, true))
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.DIST_TOO_FAR_CASTING_STOPPED));
-			return false;
-		}
-		else if (!isInsideZone(ZoneId.CAST_ON_ARTIFACT))
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
-			return false;
-		}
-		else if (!castle.getSiege().checkSide(getClan(), SiegeSide.ATTACKER))
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
-			return false;
-		}
-		else
-		{
-			if (!isCheckOnly)
-				castle.getSiege().announceToPlayers(SystemMessage.getSystemMessage(SystemMessageId.OPPONENT_STARTED_ENGRAVING), false);
-			
-			return true;
-		}
 	}
 	
 	/**
@@ -5663,95 +5353,6 @@ public final class Player extends Playable
 	public boolean isInventoryDisabled()
 	{
 		return _inventoryDisable;
-	}
-	
-	/**
-	 * @return The {@link Queue} holding {@link Cubic}s associated to this {@link Player}.
-	 */
-	public Queue<Cubic> getCubics()
-	{
-		return _cubics;
-	}
-	
-	/**
-	 * @param id : The id to check.
-	 * @return The {@link Cubic} corresponding to the id set as parameter, or null if not existing.
-	 */
-	public Cubic getCubic(int id)
-	{
-		return _cubics.stream().filter(c -> c.getId() == id).findFirst().orElse(null);
-	}
-	
-	/**
-	 * Add, or refresh a {@link Cubic} to/from this {@link Player} _cubics {@link Queue}.
-	 * @param id : The {@link Cubic} id.
-	 * @param level : The level of {@link L2Skill}.
-	 * @param matk : The magic power of the used {@link L2Skill}.
-	 * @param activationTime : The tick time of called action.
-	 * @param activationChance : The activation rate of called action.
-	 * @param totalLifetime : The total lifetime of the {@link Cubic}.
-	 * @param givenByOther : If true, it means the {@link Cubic} is a party {@link Cubic}.
-	 */
-	public void addOrRefreshCubic(int id, int level, double matk, int activationTime, int activationChance, int totalLifetime, boolean givenByOther)
-	{
-		final Cubic cubic = getCubic(id);
-		if (cubic != null)
-			cubic.refreshDisappearTask(totalLifetime);
-		else
-		{
-			if (_cubics.size() > getSkillLevel(L2SkillSummon.SKILL_CUBIC_MASTERY))
-				_cubics.poll().stop(false);
-			
-			_cubics.add(new Cubic(this, id, level, (int) matk, activationTime, activationChance, totalLifetime, givenByOther));
-			
-			broadcastUserInfo();
-		}
-	}
-	
-	/**
-	 * Remove the {@link Cubic}, based on its id, from this {@link Player} _cubics {@link Queue}.
-	 * @param id : The id to check.
-	 */
-	public void removeCubic(int id)
-	{
-		_cubics.remove(getCubic(id));
-	}
-	
-	/**
-	 * Stop all {@link Cubic}s from this {@link Player}.
-	 * @param doBroadcast : If true, we broadcast UserInfo/CharInfo.
-	 */
-	public final void stopCubics(boolean doBroadcast)
-	{
-		if (!_cubics.isEmpty())
-		{
-			for (final Cubic cubic : _cubics)
-				cubic.stop(false);
-			
-			if (doBroadcast)
-				broadcastUserInfo();
-		}
-	}
-	
-	/**
-	 * Stop all {@link Cubic}s given by other {@link Player}s from this {@link Player}.
-	 */
-	public final void stopCubicsGivenByOthers()
-	{
-		if (!_cubics.isEmpty())
-		{
-			boolean doBroadcast = false;
-			for (final Cubic cubic : _cubics)
-			{
-				if (cubic.givenByOther())
-				{
-					cubic.stop(false);
-					doBroadcast = true;
-				}
-			}
-			if (doBroadcast)
-				broadcastUserInfo();
-		}
 	}
 	
 	@Override
@@ -5969,7 +5570,7 @@ public final class Player extends Playable
 			_tamedBeast.deleteMe();
 		
 		// Delete any form of cubics
-		stopCubics(true);
+		_cubicList.stopCubics(true);
 	}
 	
 	public void enterObserverMode(int x, int y, int z)
@@ -6023,7 +5624,7 @@ public final class Player extends Playable
 	
 	public void leaveObserverMode()
 	{
-		getAI().tryTo(IntentionType.IDLE, null, null);
+		getAI().tryToIdle();
 		
 		setTarget(null);
 		getAppearance().setVisible(true);
@@ -6044,7 +5645,7 @@ public final class Player extends Playable
 		
 		_olympiadGameId = -1;
 		
-		getAI().tryTo(IntentionType.IDLE, null, null);
+		getAI().tryToIdle();
 		
 		setTarget(null);
 		getAppearance().setVisible(true);
@@ -6115,37 +5716,6 @@ public final class Player extends Playable
 	public void setRace(int i, int val)
 	{
 		_race[i] = val;
-	}
-	
-	public boolean isInRefusalMode()
-	{
-		return _messageRefusal;
-	}
-	
-	public void setInRefusalMode(boolean mode)
-	{
-		_messageRefusal = mode;
-		sendPacket(new EtcStatusUpdate(this));
-	}
-	
-	public void setTradeRefusal(boolean mode)
-	{
-		_tradeRefusal = mode;
-	}
-	
-	public boolean getTradeRefusal()
-	{
-		return _tradeRefusal;
-	}
-	
-	public void setExchangeRefusal(boolean mode)
-	{
-		_exchangeRefusal = mode;
-	}
-	
-	public boolean getExchangeRefusal()
-	{
-		return _exchangeRefusal;
 	}
 	
 	public BlockList getBlockList()
@@ -6262,7 +5832,7 @@ public final class Player extends Playable
 	{
 		if (isInCombat() || _punishment.getType() == PunishmentType.JAIL)
 			_noDuelReason = SystemMessageId.S1_CANNOT_DUEL_BECAUSE_S1_IS_CURRENTLY_ENGAGED_IN_BATTLE;
-		else if (isDead() || isAlikeDead() || (getCurrentHp() < getMaxHp() / 2 || getCurrentMp() < getMaxMp() / 2))
+		else if (isDead() || isAlikeDead() || getStatus().getHpRatio() < 0.5 || getStatus().getMpRatio() < 0.5)
 			_noDuelReason = SystemMessageId.S1_CANNOT_DUEL_BECAUSE_S1_HP_OR_MP_IS_BELOW_50_PERCENT;
 		else if (isInDuel())
 			_noDuelReason = SystemMessageId.S1_CANNOT_DUEL_BECAUSE_S1_IS_ALREADY_ENGAGED_IN_A_DUEL;
@@ -6290,29 +5860,33 @@ public final class Player extends Playable
 	}
 	
 	/**
-	 * Set Noblesse Status, and reward with nobles' skills.
-	 * @param val Add skills if setted to true, else remove skills.
-	 * @param store Store the status directly in the db if setted to true.
+	 * Set Noblesse status, and reward with nobles' {@link L2Skill}s.
+	 * @param isNoble : If true, add {@link L2Skill}s ; otherwise remove them.
+	 * @param storeInDb : If true, store directly the data in the db.
 	 */
-	public void setNoble(boolean val, boolean store)
+	public void setNoble(boolean isNoble, boolean storeInDb)
 	{
-		if (val)
+		if (isNoble)
+		{
 			for (final L2Skill skill : SkillTable.getNobleSkills())
 				addSkill(skill, false);
+		}
 		else
+		{
 			for (final L2Skill skill : SkillTable.getNobleSkills())
 				removeSkill(skill.getId(), false);
-			
-		_isNoble = val;
+		}
+		
+		_isNoble = isNoble;
 		
 		sendSkillList();
 		
-		if (store)
+		if (storeInDb)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_NOBLESS))
 			{
-				ps.setBoolean(1, val);
+				ps.setBoolean(1, isNoble);
 				ps.setInt(2, getObjectId());
 				ps.executeUpdate();
 			}
@@ -6418,7 +5992,7 @@ public final class Player extends Playable
 			
 			final SubClass subclass = new SubClass(classId, classIndex);
 			
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(ADD_CHAR_SUBCLASS))
 			{
 				ps.setInt(1, getObjectId());
@@ -6465,7 +6039,7 @@ public final class Player extends Playable
 		
 		try
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+			try (Connection con = ConnectionPool.getConnection())
 			{
 				// Remove all henna info stored for this sub-class.
 				try (PreparedStatement ps = con.prepareStatement(DELETE_CHAR_HENNAS))
@@ -6617,7 +6191,7 @@ public final class Player extends Playable
 				removeSkill(skill.getId(), false);
 			
 			stopAllEffectsExceptThoseThatLastThroughDeath();
-			stopCubics(true);
+			_cubicList.stopCubics(true);
 			
 			if (isSubClassActive())
 				_recipeBook.clear();
@@ -6643,14 +6217,19 @@ public final class Player extends Playable
 			_hennaList.restore();
 			sendPacket(new HennaInfo(this));
 			
-			if (getCurrentHp() > getMaxHp())
-				setCurrentHp(getMaxHp());
-			if (getCurrentMp() > getMaxMp())
-				setCurrentMp(getMaxMp());
-			if (getCurrentCp() > getMaxCp())
-				setCurrentCp(getMaxCp());
+			int max = getStatus().getMaxHp();
+			if (getStatus().getHp() > max)
+				getStatus().setHp(max);
 			
-			refreshOverloaded();
+			max = getStatus().getMaxMp();
+			if (getStatus().getMp() > max)
+				getStatus().setMp(max);
+			
+			max = getStatus().getMaxCp();
+			if (getStatus().getCp() > max)
+				getStatus().setCp(max);
+			
+			refreshWeightPenalty();
 			refreshExpertisePenalty();
 			broadcastUserInfo();
 			
@@ -6716,10 +6295,12 @@ public final class Player extends Playable
 		{
 			if (isInvul())
 				sendMessage("Entering world in Invulnerable mode.");
+			
 			if (!getAppearance().isVisible())
 				sendMessage("Entering world in Invisible mode.");
-			if (isInRefusalMode())
-				sendMessage("Entering world in Message Refusal mode.");
+			
+			if (getBlockList().isBlockingAll())
+				sendMessage("Entering world in Refusal mode.");
 		}
 		
 		revalidateZone(true);
@@ -6746,7 +6327,7 @@ public final class Player extends Playable
 			startFeed(_mountNpcId);
 		
 		// Schedule a paralyzed task to wait for the animation to finish
-		ThreadPool.schedule(() -> setIsParalyzed(false), (int) (2500 / getStat().getMovementSpeedMultiplier()));
+		ThreadPool.schedule(() -> setIsParalyzed(false), (int) (2500 / getStatus().getMovementSpeedMultiplier()));
 		setIsParalyzed(true);
 	}
 	
@@ -6758,45 +6339,32 @@ public final class Player extends Playable
 		doRevive();
 	}
 	
-	public void reviveRequest(Player Reviver, L2Skill skill, boolean Pet)
+	public void reviveRequest(Player reviver, L2Skill skill, boolean isPet)
 	{
 		if (_reviveRequested == 1)
 		{
 			// Resurrection has already been proposed.
-			if (_revivePet == Pet)
-				Reviver.sendPacket(SystemMessageId.RES_HAS_ALREADY_BEEN_PROPOSED);
+			if (_revivePet == isPet)
+				reviver.sendPacket(SystemMessageId.RES_HAS_ALREADY_BEEN_PROPOSED);
 			else
 			{
-				if (Pet)
+				if (isPet)
 					// A pet cannot be resurrected while it's owner is in the process of resurrecting.
-					Reviver.sendPacket(SystemMessageId.CANNOT_RES_PET2);
+					reviver.sendPacket(SystemMessageId.CANNOT_RES_PET2);
 				else
 					// While a pet is attempting to resurrect, it cannot help in resurrecting its master.
-					Reviver.sendPacket(SystemMessageId.MASTER_CANNOT_RES);
+					reviver.sendPacket(SystemMessageId.MASTER_CANNOT_RES);
 			}
 			return;
 		}
 		
-		if ((Pet && _summon != null && _summon.isDead()) || (!Pet && isDead()))
+		if ((isPet && _summon != null && _summon.isDead()) || (!isPet && isDead()))
 		{
 			_reviveRequested = 1;
+			_revivePower = (isPhoenixBlessed()) ? 100 : Formulas.calculateSkillResurrectRestorePercent(skill.getPower(), reviver);
+			_revivePet = isPet;
 			
-			if (isPhoenixBlessed())
-				_revivePower = 100;
-			else if (isAffected(EffectFlag.CHARM_OF_COURAGE))
-				_revivePower = 0;
-			else
-				_revivePower = Formulas.calculateSkillResurrectRestorePercent(skill.getPower(), Reviver);
-			
-			_revivePet = Pet;
-			
-			if (isAffected(EffectFlag.CHARM_OF_COURAGE))
-			{
-				sendPacket(new ConfirmDlg(SystemMessageId.DO_YOU_WANT_TO_BE_RESTORED).addTime(60000));
-				return;
-			}
-			
-			sendPacket(new ConfirmDlg(SystemMessageId.RESSURECTION_REQUEST_BY_S1).addCharName(Reviver));
+			sendPacket(new ConfirmDlg(SystemMessageId.RESSURECTION_REQUEST_BY_S1).addCharName(reviver));
 		}
 	}
 	
@@ -6878,17 +6446,17 @@ public final class Player extends Playable
 	@Override
 	public void addExpAndSp(long addToExp, int addToSp)
 	{
-		getStat().addExpAndSp(addToExp, addToSp);
+		getStatus().addExpAndSp(addToExp, addToSp);
 	}
 	
 	public void addExpAndSp(long addToExp, int addToSp, Map<Creature, RewardInfo> rewards)
 	{
-		getStat().addExpAndSp(addToExp, addToSp, rewards);
+		getStatus().addExpAndSp(addToExp, addToSp, rewards);
 	}
 	
 	public void removeExpAndSp(long removeExp, int removeSp)
 	{
-		getStat().removeExpAndSp(removeExp, removeSp);
+		getStatus().removeExpAndSp(removeExp, removeSp);
 	}
 	
 	@Override
@@ -7184,46 +6752,6 @@ public final class Player extends Playable
 		return _fishingStance;
 	}
 	
-	public int getInventoryLimit()
-	{
-		return ((getRace() == ClassRace.DWARF) ? Config.INVENTORY_MAXIMUM_DWARF : Config.INVENTORY_MAXIMUM_NO_DWARF) + (int) getStat().calcStat(Stats.INV_LIM, 0, null, null);
-	}
-	
-	public static int getQuestInventoryLimit()
-	{
-		return Config.INVENTORY_MAXIMUM_QUEST_ITEMS;
-	}
-	
-	public int getWareHouseLimit()
-	{
-		return ((getRace() == ClassRace.DWARF) ? Config.WAREHOUSE_SLOTS_DWARF : Config.WAREHOUSE_SLOTS_NO_DWARF) + (int) getStat().calcStat(Stats.WH_LIM, 0, null, null);
-	}
-	
-	public int getPrivateSellStoreLimit()
-	{
-		return ((getRace() == ClassRace.DWARF) ? Config.MAX_PVTSTORE_SLOTS_DWARF : Config.MAX_PVTSTORE_SLOTS_OTHER) + (int) getStat().calcStat(Stats.P_SELL_LIM, 0, null, null);
-	}
-	
-	public int getPrivateBuyStoreLimit()
-	{
-		return ((getRace() == ClassRace.DWARF) ? Config.MAX_PVTSTORE_SLOTS_DWARF : Config.MAX_PVTSTORE_SLOTS_OTHER) + (int) getStat().calcStat(Stats.P_BUY_LIM, 0, null, null);
-	}
-	
-	public int getFreightLimit()
-	{
-		return Config.FREIGHT_SLOTS + (int) getStat().calcStat(Stats.FREIGHT_LIM, 0, null, null);
-	}
-	
-	public int getDwarfRecipeLimit()
-	{
-		return Config.DWARF_RECIPE_LIMIT + (int) getStat().calcStat(Stats.REC_D_LIM, 0, null, null);
-	}
-	
-	public int getCommonRecipeLimit()
-	{
-		return Config.COMMON_RECIPE_LIMIT + (int) getStat().calcStat(Stats.REC_C_LIM, 0, null, null);
-	}
-	
 	public int getMountNpcId()
 	{
 		return _mountNpcId;
@@ -7344,7 +6872,7 @@ public final class Player extends Playable
 		if (_deathPenaltyBuffLevel >= 15) // maximum level reached
 			return;
 		
-		if ((getKarma() > 0 || Rnd.get(1, 100) <= Config.DEATH_PENALTY_CHANCE) && !(killer instanceof Player) && !isGM() && !(getCharmOfLuck() && (killer == null || killer.isRaidRelated())) && !isPhoenixBlessed() && !(isInsideZone(ZoneId.PVP) || isInsideZone(ZoneId.SIEGE)))
+		if ((getKarma() > 0 || Rnd.get(1, 100) <= Config.DEATH_PENALTY_CHANCE) && !(killer instanceof Player) && !(getCharmOfLuck() && (killer == null || killer.isRaidRelated())) && !isPhoenixBlessed() && !(isInsideZone(ZoneId.PVP) || isInsideZone(ZoneId.SIEGE)))
 		{
 			if (_deathPenaltyBuffLevel != 0)
 				removeSkill(5076, false);
@@ -7455,12 +6983,12 @@ public final class Player extends Playable
 	
 	public void checkItemRestriction()
 	{
-		for (final ItemInstance equippedItem : getInventory().getPaperdollItems())
+		for (final ItemInstance item : getInventory().getPaperdollItems())
 		{
-			if (equippedItem.getItem().checkCondition(this, this, false))
+			if (item.getItem().checkCondition(this, this, false))
 				continue;
 			
-			useEquippableItem(equippedItem, equippedItem.isWeapon());
+			useEquippableItem(item, item.isWeapon());
 		}
 	}
 	
@@ -7492,16 +7020,6 @@ public final class Player extends Playable
 			_dismountTask.cancel(true);
 			_dismountTask = null;
 		}
-	}
-	
-	public boolean isInSiege()
-	{
-		return _isInSiege;
-	}
-	
-	public void setIsInSiege(boolean value)
-	{
-		_isInSiege = value;
 	}
 	
 	public boolean isInSieagableHallSiege()
@@ -7598,151 +7116,11 @@ public final class Player extends Playable
 		}
 	}
 	
-	/**
-	 * Teleport the current {@link Player} to the destination of another player.<br>
-	 * <br>
-	 * Check if summoning is allowed, and consume items if {@link L2Skill} got such constraints.
-	 * @param player : The player to teleport on.
-	 * @param skill : The skill used to find item consumption informations.
-	 */
-	public void teleportToFriend(Player player, L2Skill skill)
-	{
-		if (player == null || skill == null)
-			return;
-		
-		if (!player.checkSummonerStatus() || !player.checkSummonTargetStatus(this))
-			return;
-		
-		final int itemConsumeId = skill.getTargetConsumeId();
-		final int itemConsumeCount = skill.getTargetConsume();
-		
-		if (itemConsumeId != 0 && itemConsumeCount != 0)
-		{
-			if (getInventory().getInventoryItemCount(itemConsumeId, -1) < itemConsumeCount)
-			{
-				sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_REQUIRED_FOR_SUMMONING).addItemName(skill.getTargetConsumeId()));
-				return;
-			}
-			
-			destroyItemByItemId("Consume", itemConsumeId, itemConsumeCount, this, true);
-		}
-		teleportTo(player.getX(), player.getY(), player.getZ(), 20);
-	}
-	
-	/**
-	 * Test if the current {@link Player} can summon. Send back messages if he can't.
-	 * @return true if the player can summon, false otherwise.
-	 */
-	public boolean checkSummonerStatus()
-	{
-		if (isMounted())
-			return false;
-		
-		if (isInOlympiadMode() || isInObserverMode() || isInsideZone(ZoneId.NO_SUMMON_FRIEND))
-		{
-			sendPacket(SystemMessageId.YOU_MAY_NOT_SUMMON_FROM_YOUR_CURRENT_LOCATION);
-			return false;
-		}
-		return true;
-	}
-	
-	/**
-	 * Test if the {@link WorldObject} can be summoned. Send back messages if he can't.
-	 * @param target : The target to test.
-	 * @return true if the given target can be summoned, false otherwise.
-	 */
-	public boolean checkSummonTargetStatus(WorldObject target)
-	{
-		if (!(target instanceof Player))
-			return false;
-		
-		final Player player = (Player) target;
-		
-		if (player.isAlikeDead())
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IS_DEAD_AT_THE_MOMENT_AND_CANNOT_BE_SUMMONED).addCharName(player));
-			return false;
-		}
-		
-		if (player.isOperating())
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CURRENTLY_TRADING_OR_OPERATING_PRIVATE_STORE_AND_CANNOT_BE_SUMMONED).addCharName(player));
-			return false;
-		}
-		
-		if (player.isRooted() || player.isInCombat())
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IS_ENGAGED_IN_COMBAT_AND_CANNOT_BE_SUMMONED).addCharName(player));
-			return false;
-		}
-		
-		if (player.isInOlympiadMode())
-		{
-			sendPacket(SystemMessageId.YOU_CANNOT_SUMMON_PLAYERS_WHO_ARE_IN_OLYMPIAD);
-			return false;
-		}
-		
-		if (player.isFestivalParticipant() || player.isMounted())
-		{
-			sendPacket(SystemMessageId.YOUR_TARGET_IS_IN_AN_AREA_WHICH_BLOCKS_SUMMONING);
-			return false;
-		}
-		
-		if (player.isInObserverMode() || player.isInsideZone(ZoneId.NO_SUMMON_FRIEND))
-		{
-			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IN_SUMMON_BLOCKING_AREA).addCharName(player));
-			return false;
-		}
-		
-		return true;
-	}
-	
-	public final int getClientX()
-	{
-		return _clientX;
-	}
-	
-	public final int getClientY()
-	{
-		return _clientY;
-	}
-	
-	public final int getClientZ()
-	{
-		return _clientZ;
-	}
-	
-	public final void setClientX(int val)
-	{
-		_clientX = val;
-	}
-	
-	public final void setClientY(int val)
-	{
-		_clientY = val;
-	}
-	
-	public final void setClientZ(int val)
-	{
-		_clientZ = val;
-	}
-	
-	public final SpawnLocation getClientPosition()
-	{
-		return new SpawnLocation(_clientX, _clientY, _clientZ, 0);
-	}
-	
-	/**
-	 * @return the mailPosition.
-	 */
 	public int getMailPosition()
 	{
 		return _mailPosition;
 	}
 	
-	/**
-	 * @param mailPosition The mailPosition to set.
-	 */
 	public void setMailPosition(int mailPosition)
 	{
 		_mailPosition = mailPosition;
@@ -7767,7 +7145,7 @@ public final class Player extends Playable
 		final int damage = (int) Formulas.calcFallDam(this, deltaZ);
 		if (damage > 0)
 		{
-			reduceCurrentHp(Math.min(damage, getCurrentHp() - 1), null, false, true, null);
+			reduceCurrentHp(Math.min(damage, getStatus().getHp() - 1), null, false, true, null);
 			sendPacket(SystemMessage.getSystemMessage(SystemMessageId.FALL_DAMAGE_S1).addNumber(damage));
 		}
 		
@@ -7827,7 +7205,7 @@ public final class Player extends Playable
 	{
 		_friendList.clear();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("SELECT friend_id FROM character_friends WHERE char_id = ? AND relation = 0"))
 		{
 			ps.setInt(1, getObjectId());
@@ -7850,16 +7228,16 @@ public final class Player extends Playable
 		}
 	}
 	
-	private void notifyFriends(boolean login)
+	private void notifyFriends(boolean isOnline)
 	{
 		for (final int id : _friendList)
 		{
 			final Player friend = World.getInstance().getPlayer(id);
 			if (friend != null)
 			{
-				friend.sendPacket(new FriendList(friend));
+				friend.sendPacket(new L2FriendStatus(this, isOnline));
 				
-				if (login)
+				if (isOnline)
 					friend.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.FRIEND_S1_HAS_LOGGED_IN).addCharName(this));
 			}
 		}
@@ -7953,13 +7331,13 @@ public final class Player extends Playable
 	@Override
 	public double getCollisionRadius()
 	{
-		return getBaseTemplate().getCollisionRadiusBySex(getAppearance().getSex());
+		return (isMounted()) ? NpcData.getInstance().getTemplate(_mountNpcId).getCollisionRadius() : getBaseTemplate().getCollisionRadiusBySex(getAppearance().getSex());
 	}
 	
 	@Override
 	public double getCollisionHeight()
 	{
-		return getBaseTemplate().getCollisionHeightBySex(getAppearance().getSex());
+		return (isMounted()) ? NpcData.getInstance().getTemplate(_mountNpcId).getCollisionHeight() : getBaseTemplate().getCollisionHeightBySex(getAppearance().getSex());
 	}
 	
 	public boolean teleportRequest(Player requester, L2Skill skill)
@@ -7978,7 +7356,7 @@ public final class Player extends Playable
 			return;
 		
 		if (answer == 1 && _summonTargetRequest.getObjectId() == requesterId)
-			teleportToFriend(_summonTargetRequest, _summonSkillRequest);
+			SummonFriend.teleportTo(this, _summonTargetRequest, _summonSkillRequest);
 		
 		_summonTargetRequest = null;
 		_summonSkillRequest = null;
@@ -8100,7 +7478,7 @@ public final class Player extends Playable
 	 */
 	public boolean isWearingFormalWear()
 	{
-		final ItemInstance formal = getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
+		final ItemInstance formal = getInventory().getItemFrom(Paperdoll.CHEST);
 		return formal != null && formal.getItem().getBodyPart() == Item.SLOT_ALLDRESS;
 	}
 	
@@ -8117,7 +7495,7 @@ public final class Player extends Playable
 			
 			getAI().notifyEvent(AiEventType.SAT_DOWN, null, null);
 			
-		}, (int) (3000 / getStat().getMovementSpeedMultiplier()));
+		}, (int) (3000 / getStatus().getMovementSpeedMultiplier()));
 		
 		broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_START_FAKEDEATH));
 	}
@@ -8140,7 +7518,7 @@ public final class Player extends Playable
 			_isFakeDeath = false;
 			
 			getAI().notifyEvent(AiEventType.STOOD_UP, null, null);
-		}, (int) (2500 / getStat().getMovementSpeedMultiplier()));
+		}, (int) (2500 / getStatus().getMovementSpeedMultiplier()));
 		
 		broadcastPacket(new ChangeWaitType(this, ChangeWaitType.WT_STOP_FAKEDEATH));
 		broadcastPacket(new Revive(this));
@@ -8164,5 +7542,18 @@ public final class Player extends Playable
 				player.sendPacket(new RecipeShopSellList(player, this));
 				break;
 		}
+	}
+	
+	/**
+	 * Added to other GMs, test also this {@link Player} instance. If GM, set it.
+	 */
+	@Override
+	public List<Player> getSurroundingGMs()
+	{
+		final List<Player> gms = super.getSurroundingGMs();
+		if (isGM())
+			gms.add(this);
+		
+		return gms;
 	}
 }

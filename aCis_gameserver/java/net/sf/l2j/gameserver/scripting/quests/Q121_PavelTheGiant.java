@@ -56,7 +56,7 @@ public class Q121_PavelTheGiant extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 46) ? "31961-1a.htm" : "31961-1.htm";
+				htmltext = (player.getStatus().getLevel() < 46) ? "31961-1a.htm" : "31961-1.htm";
 				break;
 			
 			case STATE_STARTED:

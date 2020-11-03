@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.gameserver.data.manager.BoatManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Boat;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.BoatEntrance;
@@ -69,7 +68,7 @@ public final class RequestMoveToLocationInVehicle extends L2GameClientPacket
 			}
 			
 			final BoatEntrance closestEntrance = boat.getClosestEntrance(player.getPosition());
-			player.getAI().tryTo(IntentionType.MOVE_TO, closestEntrance.getOuterLocation(), boat);
+			player.getAI().tryToMoveTo(closestEntrance.getOuterLocation(), boat);
 		}
 	}
 }

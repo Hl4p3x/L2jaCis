@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -13,7 +12,6 @@ import net.sf.l2j.gameserver.model.actor.ai.type.SummonAI;
 import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.actor.instance.Servitor;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.NpcSay;
@@ -105,15 +103,15 @@ public final class RequestActionUse extends L2GameClientPacket
 		}
 		
 		final Summon summon = player.getSummon();
-		final Creature target = (Creature) player.getTarget();
+		final WorldObject target = player.getTarget();
 		
 		switch (_actionId)
 		{
 			case 0: // Sit/Stand
 				if (player.isSitting() || player.isSittingNow())
-					player.getAI().tryTo(IntentionType.STAND, null, null);
+					player.getAI().tryToStand();
 				else
-					player.getAI().tryTo(IntentionType.SIT, target, null);
+					player.getAI().tryToSit(target);
 				break;
 			
 			case 1: // Walk/Run
@@ -154,7 +152,11 @@ public final class RequestActionUse extends L2GameClientPacket
 			
 			case 16:
 			case 22: // Attack (pet attack)
-				if (!(target != null) || summon == null || summon == target || player == target)
+				if (target == null || summon == null || summon == target || player == target)
+					return;
+				
+				// If target is trully dead, then do nothing at all. Fake Death is handled elsewhere (attack task).
+				if (target instanceof Creature && ((Creature) target).isDead())
 					return;
 				
 				// Sin eater, Big Boom, Wyvern can't attack with attack button.
@@ -167,7 +169,7 @@ public final class RequestActionUse extends L2GameClientPacket
 					return;
 				}
 				
-				if (summon instanceof Pet && (summon.getLevel() - player.getLevel() > 20))
+				if (summon instanceof Pet && (summon.getStatus().getLevel() - player.getStatus().getLevel() > 20))
 				{
 					player.sendPacket(SystemMessageId.PET_TOO_HIGH_TO_CONTROL);
 					return;
@@ -175,14 +177,13 @@ public final class RequestActionUse extends L2GameClientPacket
 				
 				summon.setTarget(target);
 				
-				if (!target.isAttackableWithoutForceBy(player) && !_isCtrlPressed)
-				{
-					summon.getAI().setFollowStatus(false);
-					summon.getAI().tryTo(IntentionType.FOLLOW, target, _isShiftPressed);
-					return;
-				}
+				// Summon loses follow status, no matter what.
+				summon.getAI().setFollowStatus(false);
 				
-				summon.getAI().tryTo(IntentionType.ATTACK, target, _isShiftPressed);
+				if (target instanceof Creature)
+					summon.getAI().tryToAttack((Creature) target, _isCtrlPressed, _isShiftPressed);
+				else
+					summon.getAI().tryToInteract(target, _isCtrlPressed, _isShiftPressed);
 				break;
 			
 			case 17:
@@ -196,11 +197,11 @@ public final class RequestActionUse extends L2GameClientPacket
 					return;
 				}
 				
-				summon.getAI().tryTo(IntentionType.ACTIVE, null, null);
+				summon.getAI().tryToActive();
 				break;
 			
 			case 19: // Returns pet to control item
-				if (summon == null || !(summon instanceof Pet))
+				if (!(summon instanceof Pet))
 					return;
 				
 				if (summon.isDead())
@@ -303,7 +304,7 @@ public final class RequestActionUse extends L2GameClientPacket
 				}
 				
 				summon.getAI().setFollowStatus(false);
-				summon.getAI().tryTo(IntentionType.MOVE_TO, target.getPosition(), null);
+				summon.getAI().tryToMoveTo(target.getPosition(), null);
 				break;
 			
 			case 61: // Private Store Package Sell
@@ -462,14 +463,14 @@ public final class RequestActionUse extends L2GameClientPacket
 		if (skill == null)
 			return false;
 		
-		if (summon instanceof Pet && summon.getLevel() - player.getLevel() > 20)
+		if (summon instanceof Pet && summon.getStatus().getLevel() - player.getStatus().getLevel() > 20)
 			return false;
 		
 		Creature finalTarget = null;
 		if (target instanceof Creature)
 			finalTarget = (Creature) target;
 		
-		summon.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(summon, finalTarget, skill, _isCtrlPressed, _isShiftPressed), null);
+		summon.getAI().tryToCast(finalTarget, skill, _isCtrlPressed, _isShiftPressed, 0);
 		return true;
 	}
 }

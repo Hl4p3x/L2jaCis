@@ -4,9 +4,7 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
@@ -15,7 +13,6 @@ import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
@@ -83,7 +80,7 @@ public class Orfen extends L2AttackableAIScript
 			final int mp = info.getInteger("currentMP");
 			
 			final GrandBoss orfen = (GrandBoss) addSpawn(ORFEN, loc_x, loc_y, loc_z, heading, false, 0, false);
-			orfen.setCurrentHpMp(hp, mp);
+			orfen.getStatus().setHpMp(hp, mp);
 			spawnBoss(orfen);
 		}
 	}
@@ -111,7 +108,7 @@ public class Orfen extends L2AttackableAIScript
 			if (_isTeleported)
 			{
 				// HPs raised over 95%, instantly random teleport elsewhere. Teleport flag is set back to false.
-				if (npc.getCurrentHp() / npc.getMaxHp() > 0.95)
+				if (npc.getStatus().getHpRatio() > 0.95)
 				{
 					teleportOrfen(npc, Rnd.get(1, 3));
 					
@@ -138,7 +135,7 @@ public class Orfen extends L2AttackableAIScript
 			originalCaster.teleportTo(npc.getPosition(), 0);
 			
 			// Cast a skill.
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, originalCaster, SkillTable.getInstance().getInfo(4064, 1), false, false), null);
+			npc.getAI().tryToCast(originalCaster, 4064, 1);
 		}
 		return super.onSkillSee(npc, caster, skill, targets, isPet);
 	}
@@ -150,9 +147,9 @@ public class Orfen extends L2AttackableAIScript
 			return super.onFactionCall(npc, caller, attacker, isPet);
 		
 		if (npc.getNpcId() == RAIKEL_LEOS && Rnd.get(100) < 5)
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4067, 4), false, false), null);
-		else if (npc.getNpcId() == RIBA_IREN && caller.getNpcId() != RIBA_IREN && (caller.getCurrentHp() / caller.getMaxHp() < 0.5) && Rnd.get(100) < ((caller.getNpcId() == ORFEN) ? 90 : 10))
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, caller, SkillTable.getInstance().getInfo(4516, 1), false, false), null);
+			npc.getAI().tryToCast(attacker, 4067, 4);
+		else if (npc.getNpcId() == RIBA_IREN && caller.getNpcId() != RIBA_IREN && (caller.getStatus().getHpRatio() < 0.5) && Rnd.get(100) < ((caller.getNpcId() == ORFEN) ? 90 : 10))
+			npc.getAI().tryToCast(caller, 4516, 1);
 		
 		return super.onFactionCall(npc, caller, attacker, isPet);
 	}
@@ -169,7 +166,7 @@ public class Orfen extends L2AttackableAIScript
 			if (npc.getNpcId() == ORFEN)
 			{
 				// Orfen didn't yet teleport, and reached 50% HP.
-				if (!_isTeleported && npc.getCurrentHp() / npc.getMaxHp() < 0.5)
+				if (!_isTeleported && npc.getStatus().getHpRatio() < 0.5)
 				{
 					// Set teleport flag to true.
 					_isTeleported = true;
@@ -188,15 +185,15 @@ public class Orfen extends L2AttackableAIScript
 						// Teleport caster near Orfen.
 						attacker.teleportTo(npc.getPosition(), 0);
 						
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4063, 1), false, false), null);
+						npc.getAI().tryToCast(attacker, 4063, 1);
 					}
 					else if (Rnd.get(100) < 20)
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4064, 1), false, false), null);
+						npc.getAI().tryToCast(attacker, 4064, 1);
 				}
 			}
 			// RIBA_IREN case, as it's the only other registered.
-			else if (npc.getCurrentHp() / npc.getMaxHp() < 0.5)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, SkillTable.getInstance().getInfo(4516, 1), false, false), null);
+			else if (npc.getStatus().getHpRatio() < 0.5)
+				npc.getAI().tryToCast(attacker, 4516, 1);
 		}
 		return super.onAttack(npc, attacker, damage, skill);
 	}

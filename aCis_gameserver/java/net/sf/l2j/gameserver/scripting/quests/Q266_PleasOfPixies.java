@@ -65,7 +65,7 @@ public class Q266_PleasOfPixies extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "31852-00.htm";
-				else if (player.getLevel() < 3)
+				else if (player.getStatus().getLevel() < 3)
 					htmltext = "31852-01.htm";
 				else
 					htmltext = "31852-02.htm";

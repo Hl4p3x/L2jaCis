@@ -141,7 +141,7 @@ public class Q222_TestOfTheDuelist extends SecondClassQuest
 				final int classId = player.getClassId().getId();
 				if (classId != 0x01 && classId != 0x2f && classId != 0x13 && classId != 0x20)
 					htmltext = "30623-02.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30623-01.htm";
 				else
 					htmltext = "30623-03.htm";

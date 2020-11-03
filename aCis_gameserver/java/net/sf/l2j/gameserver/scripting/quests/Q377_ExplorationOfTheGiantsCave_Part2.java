@@ -99,7 +99,7 @@ public class Q377_ExplorationOfTheGiantsCave_Part2 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 57 || !st.hasQuestItems(DICTIONARY_INTERMEDIATE)) ? "31147-01.htm" : "31147-02.htm";
+				htmltext = (player.getStatus().getLevel() < 57 || !st.hasQuestItems(DICTIONARY_INTERMEDIATE)) ? "31147-01.htm" : "31147-02.htm";
 				break;
 			
 			case STATE_STARTED:

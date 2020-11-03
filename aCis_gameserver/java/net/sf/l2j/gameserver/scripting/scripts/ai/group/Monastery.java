@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.scripting.scripts.ai.group;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.enums.actors.Sex;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
@@ -10,7 +8,6 @@ import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -60,7 +57,7 @@ public class Monastery extends L2AttackableAIScript
 				{
 					case 22124:
 					case 22126:
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4589, 8), false, false), null);
+						npc.getAI().tryToCast(player, 4589, 8);
 						break;
 					
 					default:
@@ -109,7 +106,7 @@ public class Monastery extends L2AttackableAIScript
 						case 22124:
 						case 22126:
 						case 22127:
-							npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, SkillTable.getInstance().getInfo(4589, 8), false, false), null);
+							npc.getAI().tryToCast(target, 4589, 8);
 							break;
 						
 						default:

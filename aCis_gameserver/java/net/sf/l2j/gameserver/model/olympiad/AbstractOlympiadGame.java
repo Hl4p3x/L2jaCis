@@ -6,7 +6,6 @@ import net.sf.l2j.commons.logging.CLogger;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.MessageType;
 import net.sf.l2j.gameserver.enums.OlympiadType;
 import net.sf.l2j.gameserver.enums.SpawnType;
@@ -239,7 +238,7 @@ public abstract class AbstractOlympiadGame
 			return SystemMessage.getSystemMessage(SystemMessageId.THE_GAME_HAS_BEEN_CANCELLED_BECAUSE_THE_OTHER_PARTY_DOES_NOT_MEET_THE_REQUIREMENTS_FOR_JOINING_THE_GAME);
 		}
 		
-		if (player.getInventoryLimit() * 0.8 <= player.getInventory().getSize())
+		if (player.getStatus().isOverburden())
 		{
 			player.sendPacket(SystemMessageId.SINCE_80_PERCENT_OR_MORE_OF_YOUR_INVENTORY_SLOTS_ARE_FULL_YOU_CANNOT_PARTICIPATE_IN_THE_OLYMPIAD);
 			return SystemMessage.getSystemMessage(SystemMessageId.THE_GAME_HAS_BEEN_CANCELLED_BECAUSE_THE_OTHER_PARTY_DOES_NOT_MEET_THE_REQUIREMENTS_FOR_JOINING_THE_GAME);
@@ -308,7 +307,7 @@ public abstract class AbstractOlympiadGame
 		}
 		
 		// Heal Player fully
-		healPlayer(player);
+		player.getStatus().setMaxCpHpMp();
 		
 		// Dismount player, if mounted.
 		if (player.isMounted())
@@ -332,7 +331,7 @@ public abstract class AbstractOlympiadGame
 		}
 		
 		// stop any cubic that has been given by other player.
-		player.stopCubicsGivenByOthers();
+		player.getCubicList().stopCubicsGivenByOthers();
 		
 		// Remove player from his party
 		if (removeParty)
@@ -380,17 +379,6 @@ public abstract class AbstractOlympiadGame
 	}
 	
 	/**
-	 * Heal the {@link Player}.
-	 * @param player : the happy benefactor.
-	 */
-	protected static final void healPlayer(Player player)
-	{
-		player.setCurrentCp(player.getMaxCp());
-		player.setCurrentHp(player.getMaxHp());
-		player.setCurrentMp(player.getMaxMp());
-	}
-	
-	/**
 	 * Cancel all {@link Player} animations, set the Intention to IDLE. Affects also the {@link Summon}, if existing. Heal the Player, start his HP/MP regen.
 	 * @param player : The Player to affect.
 	 */
@@ -398,7 +386,7 @@ public abstract class AbstractOlympiadGame
 	{
 		player.setOlympiadStart(false);
 		player.abortAll(true);
-		player.getAI().tryTo(IntentionType.IDLE, null, null);
+		player.getAI().tryToIdle();
 		
 		if (player.isDead())
 			player.setIsDead(false);
@@ -407,10 +395,10 @@ public abstract class AbstractOlympiadGame
 		if (summon != null && !summon.isDead())
 		{
 			summon.abortAll(true);
-			summon.getAI().tryTo(IntentionType.IDLE, null, null);
+			summon.getAI().tryToIdle();
 		}
 		
-		healPlayer(player);
+		player.getStatus().setMaxCpHpMp();
 		player.getStatus().startHpMpRegeneration();
 	}
 	
@@ -439,7 +427,7 @@ public abstract class AbstractOlympiadGame
 			player.getClan().addClanSkillsTo(player);
 			
 			// heal again after adding clan skills
-			healPlayer(player);
+			player.getStatus().setMaxCpHpMp();
 		}
 		
 		// Add Hero skills.

@@ -124,7 +124,7 @@ public class Q365_DevilsLegacy extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 39) ? "30095-00.htm" : "30095-01.htm";
+				htmltext = (player.getStatus().getLevel() < 39) ? "30095-00.htm" : "30095-01.htm";
 				break;
 			
 			case STATE_STARTED:

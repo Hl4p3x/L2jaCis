@@ -17,9 +17,6 @@ public class Q273_InvadersOfTheHolyLand extends Quest
 	private static final int BLACK_SOULSTONE = 1475;
 	private static final int RED_SOULSTONE = 1476;
 	
-	// Reward
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
-	
 	public Q273_InvadersOfTheHolyLand()
 	{
 		super(273, "Invaders of the Holy Land");
@@ -68,37 +65,28 @@ public class Q273_InvadersOfTheHolyLand extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30566-00.htm";
-				else if (player.getLevel() < 6)
+				else if (player.getStatus().getLevel() < 6)
 					htmltext = "30566-01.htm";
 				else
 					htmltext = "30566-02.htm";
 				break;
 			
 			case STATE_STARTED:
-				int red = st.getQuestItemsCount(RED_SOULSTONE);
-				int black = st.getQuestItemsCount(BLACK_SOULSTONE);
+				final int red = st.getQuestItemsCount(RED_SOULSTONE);
+				final int black = st.getQuestItemsCount(BLACK_SOULSTONE);
 				
 				if (red + black == 0)
 					htmltext = "30566-04.htm";
 				else
 				{
-					if (red == 0)
-						htmltext = "30566-05.htm";
-					else
-						htmltext = "30566-06.htm";
+					htmltext = (red == 0) ? "30566-05.htm" : "30566-06.htm";
+					st.takeItems(BLACK_SOULSTONE, -1);
+					st.takeItems(RED_SOULSTONE, -1);
 					
 					int reward = (black * 3) + (red * 10) + ((black >= 10) ? ((red >= 1) ? 1800 : 1500) : 0);
 					
-					st.takeItems(BLACK_SOULSTONE, -1);
-					st.takeItems(RED_SOULSTONE, -1);
 					st.rewardItems(57, reward);
-					
-					if (player.isNewbie() && st.getInt("Reward") == 0)
-					{
-						st.giveItems(SOULSHOT_FOR_BEGINNERS, 6000);
-						st.playTutorialVoice("tutorial_voice_026");
-						st.set("Reward", "1");
-					}
+					st.rewardNewbieShots(6000, 0);
 				}
 				break;
 		}

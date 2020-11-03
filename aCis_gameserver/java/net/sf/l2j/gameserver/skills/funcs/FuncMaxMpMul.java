@@ -21,7 +21,7 @@ public class FuncMaxMpMul extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		return value * Formulas.MEN_BONUS[effector.getMEN()];
+		return value * Formulas.MEN_BONUS[effector.getStatus().getMEN()];
 	}
 	
 	public static Func getInstance()

@@ -22,7 +22,7 @@ public class DoorStatusUpdate extends L2GameServerPacket
 		writeD(_door.getDamage());
 		writeD((_showHp) ? 1 : 0);
 		writeD(_door.getDoorId());
-		writeD(_door.getMaxHp());
-		writeD((int) _door.getCurrentHp());
+		writeD(_door.getStatus().getMaxHp());
+		writeD((int) _door.getStatus().getHp());
 	}
 }

@@ -94,7 +94,7 @@ public class L2SkillTeleport extends L2Skill
 				if (target instanceof Player)
 					((Player) target).setIsIn7sDungeon(false);
 				
-				target.teleportTo(loc.getX(), loc.getY(), loc.getZ(), 20);
+				target.teleportTo(loc, 20);
 			}
 		}
 		

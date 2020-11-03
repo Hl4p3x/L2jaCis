@@ -9,12 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.EtcStatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class BlockList
@@ -30,6 +31,8 @@ public class BlockList
 	private final Player _owner;
 	private List<Integer> _blockList;
 	
+	private boolean _isBlockingAll;
+	
 	public BlockList(Player owner)
 	{
 		_owner = owner;
@@ -37,6 +40,18 @@ public class BlockList
 		_blockList = OFFLINE_LIST.get(owner.getObjectId());
 		if (_blockList == null)
 			_blockList = loadList(_owner.getObjectId());
+	}
+	
+	public boolean isBlockingAll()
+	{
+		return _isBlockingAll;
+	}
+	
+	public void setInBlockingAll(boolean isBlockingAll)
+	{
+		_isBlockingAll = isBlockingAll;
+		
+		_owner.sendPacket(new EtcStatusUpdate(_owner));
 	}
 	
 	private synchronized void addToBlockList(int target)
@@ -62,7 +77,7 @@ public class BlockList
 	{
 		final List<Integer> list = new ArrayList<>();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(LOAD_BLOCKLIST))
 			{
@@ -90,7 +105,7 @@ public class BlockList
 	
 	private void updateInDB(int targetId, boolean state)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement((state) ? INSERT_BLOCKED_USER : DELETE_BLOCKED_USER))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -113,28 +128,6 @@ public class BlockList
 		return _blockList.contains(targetId);
 	}
 	
-	private boolean isBlockAll()
-	{
-		return _owner.isInRefusalMode();
-	}
-	
-	public static boolean isBlocked(Player listOwner, Player target)
-	{
-		final BlockList blockList = listOwner.getBlockList();
-		return blockList.isBlockAll() || blockList.isInBlockList(target);
-	}
-	
-	public static boolean isBlocked(Player listOwner, int targetId)
-	{
-		final BlockList blockList = listOwner.getBlockList();
-		return blockList.isBlockAll() || blockList.isInBlockList(targetId);
-	}
-	
-	private void setBlockAll(boolean state)
-	{
-		_owner.setInRefusalMode(state);
-	}
-	
 	public List<Integer> getBlockList()
 	{
 		return _blockList;
@@ -146,18 +139,6 @@ public class BlockList
 			return;
 		
 		final String targetName = PlayerInfoTable.getInstance().getPlayerName(targetId);
-		
-		if (listOwner.getFriendList().contains(targetId))
-		{
-			listOwner.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_ALREADY_IN_FRIENDS_LIST).addString(targetName));
-			return;
-		}
-		
-		if (listOwner.getBlockList().getBlockList().contains(targetId))
-		{
-			listOwner.sendMessage(targetName + " is already registered in your ignore list.");
-			return;
-		}
 		
 		listOwner.getBlockList().addToBlockList(targetId);
 		listOwner.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_WAS_ADDED_TO_YOUR_IGNORE_LIST).addString(targetName));
@@ -172,29 +153,11 @@ public class BlockList
 		if (listOwner == null)
 			return;
 		
-		if (!listOwner.getBlockList().getBlockList().contains(targetId))
+		if (listOwner.getBlockList().getBlockList().contains(targetId))
 		{
-			listOwner.sendPacket(SystemMessageId.TARGET_IS_INCORRECT);
-			return;
+			listOwner.getBlockList().removeFromBlockList(targetId);
+			listOwner.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_WAS_REMOVED_FROM_YOUR_IGNORE_LIST).addString(PlayerInfoTable.getInstance().getPlayerName(targetId)));
 		}
-		
-		listOwner.getBlockList().removeFromBlockList(targetId);
-		listOwner.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_WAS_REMOVED_FROM_YOUR_IGNORE_LIST).addString(PlayerInfoTable.getInstance().getPlayerName(targetId)));
-	}
-	
-	public static boolean isInBlockList(Player listOwner, Player target)
-	{
-		return listOwner.getBlockList().isInBlockList(target);
-	}
-	
-	public boolean isBlockAll(Player listOwner)
-	{
-		return listOwner.getBlockList().isBlockAll();
-	}
-	
-	public static void setBlockAll(Player listOwner, boolean newValue)
-	{
-		listOwner.getBlockList().setBlockAll(newValue);
 	}
 	
 	public static void sendListToOwner(Player listOwner)
@@ -217,7 +180,7 @@ public class BlockList
 	{
 		final Player player = World.getInstance().getPlayer(ownerId);
 		if (player != null)
-			return BlockList.isBlocked(player, targetId);
+			return player.getBlockList().isInBlockList(targetId);
 		
 		if (!OFFLINE_LIST.containsKey(ownerId))
 			OFFLINE_LIST.put(ownerId, loadList(ownerId));

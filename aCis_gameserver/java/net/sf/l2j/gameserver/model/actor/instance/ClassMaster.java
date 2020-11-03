@@ -108,7 +108,7 @@ public final class ClassMaster extends Folk
 			final StringBuilder sb = new StringBuilder(100);
 			sb.append("<html><body>");
 			
-			switch (player.getClassId().level())
+			switch (player.getClassId().getLevel())
 			{
 				case 0:
 					if (Config.CLASS_MASTER_SETTINGS.isAllowed(1))
@@ -147,17 +147,17 @@ public final class ClassMaster extends Folk
 		else
 		{
 			final ClassId currentClassId = player.getClassId();
-			if (currentClassId.level() >= level)
+			if (currentClassId.getLevel() >= level)
 				html.setFile("data/html/classmaster/nomore.htm");
 			else
 			{
-				final int minLevel = getMinLevel(currentClassId.level());
-				if (player.getLevel() >= minLevel || Config.ALLOW_ENTIRE_TREE)
+				final int minLevel = getMinLevel(currentClassId.getLevel());
+				if (player.getStatus().getLevel() >= minLevel || Config.ALLOW_ENTIRE_TREE)
 				{
 					final StringBuilder menu = new StringBuilder(100);
 					for (ClassId cid : ClassId.VALUES)
 					{
-						if (cid.level() != level)
+						if (cid.getLevel() != level)
 							continue;
 						
 						if (validateClassId(currentClassId, cid))
@@ -197,13 +197,13 @@ public final class ClassMaster extends Folk
 	private static final boolean checkAndChangeClass(Player player, int val)
 	{
 		final ClassId currentClassId = player.getClassId();
-		if (getMinLevel(currentClassId.level()) > player.getLevel() && !Config.ALLOW_ENTIRE_TREE)
+		if (getMinLevel(currentClassId.getLevel()) > player.getStatus().getLevel() && !Config.ALLOW_ENTIRE_TREE)
 			return false;
 		
 		if (!validateClassId(currentClassId, val))
 			return false;
 		
-		int newJobLevel = currentClassId.level() + 1;
+		int newJobLevel = currentClassId.getLevel() + 1;
 		
 		// Weight/Inventory check
 		if (!Config.CLASS_MASTER_SETTINGS.getRewardItems(newJobLevel).isEmpty())
@@ -302,7 +302,7 @@ public final class ClassMaster extends Folk
 		if (oldCID == newCID.getParent())
 			return true;
 		
-		if (Config.ALLOW_ENTIRE_TREE && newCID.childOf(oldCID))
+		if (Config.ALLOW_ENTIRE_TREE && newCID.isChildOf(oldCID))
 			return true;
 		
 		return false;

@@ -1,12 +1,10 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -72,6 +70,6 @@ public final class RequestMagicSkillUse extends L2GameClientPacket
 		if (target instanceof Creature)
 			finalTarget = (Creature) target;
 		
-		player.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(player, finalTarget, skill, _ctrlPressed, _shiftPressed), null);
+		player.getAI().tryToCast(finalTarget, skill, _ctrlPressed, _shiftPressed, 0);
 	}
 }

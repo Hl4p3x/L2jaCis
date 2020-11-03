@@ -3,6 +3,7 @@ package net.sf.l2j.gameserver.skills.l2skills;
 import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
+import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
@@ -18,8 +19,6 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class L2SkillSummon extends L2Skill
 {
-	public static final int SKILL_CUBIC_MASTERY = 143;
-	
 	private final int _npcId;
 	private final float _expPenalty;
 	private final boolean _isCubic;
@@ -69,7 +68,7 @@ public class L2SkillSummon extends L2Skill
 				if (getTargetType() != SkillTargetType.SELF)
 					return true;
 				
-				if (player.getCubics().size() > player.getSkillLevel(SKILL_CUBIC_MASTERY))
+				if (player.getCubicList().isFull())
 				{
 					player.sendPacket(SystemMessageId.CUBIC_SUMMONING_FAILED);
 					return false;
@@ -118,11 +117,11 @@ public class L2SkillSummon extends L2Skill
 					if (!(obj instanceof Player))
 						continue;
 					
-					((Player) obj).addOrRefreshCubic(_npcId, skillLevel, getPower(), _activationTime, _activationChance, _summonTotalLifeTime, (obj != activeChar));
+					((Player) obj).getCubicList().addOrRefreshCubic(_npcId, skillLevel, getPower(), _activationTime, _activationChance, _summonTotalLifeTime, (obj != activeChar));
 				}
 			}
 			else
-				activeChar.addOrRefreshCubic(_npcId, skillLevel, getPower(), _activationTime, _activationChance, _summonTotalLifeTime, false);
+				activeChar.getCubicList().addOrRefreshCubic(_npcId, skillLevel, getPower(), _activationTime, _activationChance, _summonTotalLifeTime, false);
 		}
 		else
 		{
@@ -133,7 +132,7 @@ public class L2SkillSummon extends L2Skill
 			NpcTemplate summonTemplate = NpcData.getInstance().getTemplate(_npcId);
 			if (summonTemplate == null)
 			{
-				_log.warning("Summon attempt for nonexisting NPC ID: " + _npcId + ", skill ID: " + getId());
+				LOGGER.warn("Couldn't properly spawn with id {} ; the template is missing.", _npcId);
 				return;
 			}
 			
@@ -147,8 +146,7 @@ public class L2SkillSummon extends L2Skill
 			summon.setName(summonTemplate.getName());
 			summon.setTitle(activeChar.getName());
 			summon.setExpPenalty(_expPenalty);
-			summon.setCurrentHp(summon.getMaxHp());
-			summon.setCurrentMp(summon.getMaxMp());
+			summon.getStatus().setMaxHpMp();
 			summon.forceRunStance();
 			
 			final Location spawnLoc = activeChar.getPosition().clone();
@@ -158,6 +156,8 @@ public class L2SkillSummon extends L2Skill
 			summon.spawnMe(spawnLoc, activeChar.getHeading());
 			summon.getAI().setFollowStatus(true);
 		}
+		
+		activeChar.setChargedShot(activeChar.isChargedShot(ShotType.BLESSED_SPIRITSHOT) ? ShotType.BLESSED_SPIRITSHOT : ShotType.SPIRITSHOT, isStaticReuse());
 	}
 	
 	public final boolean isCubic()

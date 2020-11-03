@@ -54,7 +54,7 @@ public class Q319_ScentOfDeath extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 11) ? "30138-02.htm" : "30138-03.htm";
+				htmltext = (player.getStatus().getLevel() < 11) ? "30138-02.htm" : "30138-03.htm";
 				break;
 			
 			case STATE_STARTED:

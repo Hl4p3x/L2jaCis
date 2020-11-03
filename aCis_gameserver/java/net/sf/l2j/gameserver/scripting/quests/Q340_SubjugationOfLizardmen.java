@@ -96,7 +96,7 @@ public class Q340_SubjugationOfLizardmen extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 17) ? "30385-01.htm" : "30385-02.htm";
+				htmltext = (player.getStatus().getLevel() < 17) ? "30385-01.htm" : "30385-02.htm";
 				break;
 			
 			case STATE_STARTED:

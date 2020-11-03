@@ -38,7 +38,7 @@ public final class RequestSurrenderPersonally extends L2GameClientPacket
 		}
 		
 		player.setWantsPeace(true);
-		player.deathPenalty(false, false, false);
+		player.applyDeathPenalty(false, false);
 		player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_HAVE_PERSONALLY_SURRENDERED_TO_THE_S1_CLAN).addString(_pledgeName));
 		ClanTable.getInstance().checkSurrender(playerClan, clan);
 	}

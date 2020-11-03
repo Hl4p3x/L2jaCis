@@ -60,7 +60,7 @@ public class Q161_FruitOfTheMotherTree extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30362-00.htm";
-				else if (player.getLevel() < 3)
+				else if (player.getStatus().getLevel() < 3)
 					htmltext = "30362-02.htm";
 				else
 					htmltext = "30362-03.htm";

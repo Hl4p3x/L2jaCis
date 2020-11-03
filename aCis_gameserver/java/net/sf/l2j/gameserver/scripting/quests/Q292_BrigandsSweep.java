@@ -79,7 +79,7 @@ public class Q292_BrigandsSweep extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DWARF)
 					htmltext = "30532-00.htm";
-				else if (player.getLevel() < 5)
+				else if (player.getStatus().getLevel() < 5)
 					htmltext = "30532-01.htm";
 				else
 					htmltext = "30532-02.htm";

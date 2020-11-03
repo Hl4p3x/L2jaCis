@@ -25,15 +25,13 @@ public class Q107_MercilessPunishment extends Quest
 	private static final int LETTER_TO_ELF = 1558;
 	
 	// Rewards
+	private static final int LESSER_HEALING_POTION = 1060;
 	private static final int BUTCHER_SWORD = 1510;
-	private static final int SPIRITSHOT_FOR_BEGINNERS = 5790;
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
 	private static final int ECHO_BATTLE = 4412;
 	private static final int ECHO_LOVE = 4413;
 	private static final int ECHO_SOLITUDE = 4414;
 	private static final int ECHO_FEAST = 4415;
 	private static final int ECHO_CELEBRATION = 4416;
-	private static final int LESSER_HEALING_POTION = 1060;
 	
 	public Q107_MercilessPunishment()
 	{
@@ -98,7 +96,7 @@ public class Q107_MercilessPunishment extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30568-00.htm";
-				else if (player.getLevel() < 12)
+				else if (player.getStatus().getLevel() < 12)
 					htmltext = "30568-01.htm";
 				else
 					htmltext = "30568-02.htm";
@@ -124,30 +122,16 @@ public class Q107_MercilessPunishment extends Quest
 							st.takeItems(LETTER_TO_DARKELF, -1);
 							st.takeItems(LETTER_TO_HUMAN, -1);
 							st.takeItems(LETTER_TO_ELF, -1);
-							
 							st.giveItems(BUTCHER_SWORD, 1);
-							st.giveItems(LESSER_HEALING_POTION, 100);
 							
-							if (player.isNewbie())
-							{
-								st.showQuestionMark(26);
-								if (player.isMageClass())
-								{
-									st.playTutorialVoice("tutorial_voice_027");
-									st.giveItems(SPIRITSHOT_FOR_BEGINNERS, 3000);
-								}
-								else
-								{
-									st.playTutorialVoice("tutorial_voice_026");
-									st.giveItems(SOULSHOT_FOR_BEGINNERS, 6000);
-								}
-							}
+							st.rewardNewbieShots(7000, 0);
+							st.rewardItems(LESSER_HEALING_POTION, 100);
+							st.rewardItems(ECHO_BATTLE, 10);
+							st.rewardItems(ECHO_LOVE, 10);
+							st.rewardItems(ECHO_SOLITUDE, 10);
+							st.rewardItems(ECHO_FEAST, 10);
+							st.rewardItems(ECHO_CELEBRATION, 10);
 							
-							st.giveItems(ECHO_BATTLE, 10);
-							st.giveItems(ECHO_LOVE, 10);
-							st.giveItems(ECHO_SOLITUDE, 10);
-							st.giveItems(ECHO_FEAST, 10);
-							st.giveItems(ECHO_CELEBRATION, 10);
 							player.broadcastPacket(new SocialAction(player, 3));
 							st.playSound(QuestState.SOUND_FINISH);
 							st.exitQuest(false);

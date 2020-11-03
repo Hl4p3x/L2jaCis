@@ -2,15 +2,13 @@ package net.sf.l2j.gameserver.model.actor.move;
 
 import java.awt.Color;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.MoveType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.World;
@@ -18,7 +16,6 @@ import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.Summon;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.zone.type.WaterZone;
 import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
@@ -29,16 +26,18 @@ import net.sf.l2j.gameserver.network.serverpackets.StopMove;
 
 /**
  * This class groups all movement data related to a {@link Creature}.
+ * @param <T> : The {@link Creature} used as actor.
  */
-public class CreatureMove
+public class CreatureMove<T extends Creature>
 {
 	private static final int FOLLOW_INTERVAL = 1000;
 	private static final int ATTACK_FOLLOW_INTERVAL = 500;
 	
-	protected final Creature _creature;
+	protected final T _actor;
 	
 	protected WorldObject _pawn;
 	protected int _offset;
+	protected boolean _blocked;
 	
 	protected byte _moveTypes;
 	
@@ -49,15 +48,15 @@ public class CreatureMove
 	
 	protected final Queue<Location> _geoPath = new LinkedList<>();
 	
-	protected boolean _isDebugMove = false;
-	protected boolean _isDebugPath = false;
+	protected boolean _isDebugMove;
+	protected boolean _isDebugPath;
 	
 	protected ScheduledFuture<?> _task;
 	protected ScheduledFuture<?> _followTask;
 	
-	public CreatureMove(Creature creature)
+	public CreatureMove(T actor)
 	{
-		_creature = creature;
+		_actor = actor;
 	}
 	
 	public Location getDestination()
@@ -121,167 +120,63 @@ public class CreatureMove
 	}
 	
 	/**
-	 * Allows the {@link Creature} to move to a {@link WorldObject} pawn.<br>
-	 * <br>
-	 * The pawn can freely move, and so {@link #updatePosition()} takes the offset in consideration (generally the collision radius of both characters + weapon or interaction range).
-	 * @param pawn : The WorldObject used as destination.
-	 * @param offset : The distance where onEvtArrived event can occur.
+	 * Move the {@link Creature} associated to this {@link CreatureMove} to defined {@link Location}.
+	 * @param dLoc : The {@link Location} used as original destination.
+	 * @param pathfinding : If true, we try to setup a pathfind. If a pathfind occured, then the destination {@link Location} is the first pathfind segment.
 	 */
-	public void moveToPawn(WorldObject pawn, int offset)
+	protected void moveToLocation(Location dLoc, boolean pathfinding)
 	{
-		// Get the movement speed of the Creature.
-		final float speed = _creature.getStat().getMoveSpeed();
-		if (speed <= 0 || _creature.isMovementDisabled())
-			return;
-		
-		int tx = pawn.getX();
-		int ty = pawn.getY();
-		int tz = pawn.getZ();
-		
-		// If a movement already exists with the exact destination and offset, don't bother calculate anything.
-		if (_task != null && _destination.equals(tx, ty, tz) && _offset == offset)
-			return;
-		
 		// Get the current position of the Creature.
-		final int ox = _creature.getX();
-		final int oy = _creature.getY();
-		final int oz = _creature.getZ();
+		final Location position = _actor.getPosition().clone();
 		
 		// Set the current x/y.
-		_xAccurate = ox;
-		_yAccurate = oy;
+		_xAccurate = position.getX();
+		_yAccurate = position.getY();
 		
 		// Initialize variables.
 		_geoPath.clear();
 		
-		// Set the pawn and offset.
-		_pawn = pawn;
-		_offset = offset;
+		// Visual destination isn't the same than computed destination. Remove collision radius out of it.
+		final Location destination = new Location(position);
+		destination.setLocationMinusOffset(dLoc, _actor.getCollisionRadius());
 		
-		// Calculate the path.
-		final Location loc = calculatePath(ox, oy, oz, tx, ty, tz);
-		if (loc != null)
+		if (pathfinding)
 		{
-			tx = loc.getX();
-			ty = loc.getY();
-			tz = loc.getZ();
-		}
-		
-		// Draw a debug of this movement if activated.
-		if (_isDebugMove)
-		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
-			
-			// Draw debug packet to all players.
-			for (Player p : gms)
+			// Calculate the path.
+			final Location loc = calculatePath(position.getX(), position.getY(), position.getZ(), destination.getX(), destination.getY(), destination.getZ());
+			if (loc != null)
 			{
-				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("MOVE" + _creature.getObjectId());
-				
-				// Reset the packet lines and points.
-				debug.reset();
-				
-				// Add a WHITE line corresponding to the initial click release.
-				debug.addLine("MoveToPawn (" + _offset + "): " + tx + " " + ty + " " + tz, Color.WHITE, true, ox, oy, oz, tx, ty, tz);
-				
-				p.sendMessage("Moving from " + ox + " " + oy + " " + oz + " to " + tx + " " + ty + " " + tz);
+				destination.set(loc);
+				dLoc.set(loc);
 			}
 		}
 		
-		// Set the destination.
-		_destination.set(tx, ty, tz);
-		
-		// Calculate the heading.
-		_creature.getPosition().setHeadingTo(tx, ty);
-		
-		registerMoveTask();
-		
-		// Broadcast the good packet giving the situation.
-		_creature.broadcastPacket(new MoveToLocation(_creature));
-	}
-	
-	public void moveToLocation(Location loc)
-	{
-		moveToLocation(loc.getX(), loc.getY(), loc.getZ());
-	}
-	
-	/**
-	 * Move the {@link Creature} associated to this {@link CreatureMove} to defined x/y/z coordinates.
-	 * @param tx : The X position to reach.
-	 * @param ty : The Y position to reach.
-	 * @param tz : The Z position to reach.
-	 */
-	public void moveToLocation(int tx, int ty, int tz)
-	{
-		// If a movement already exists with the exact destination, don't bother calculate anything.
-		if (_task != null && _destination.equals(tx, ty, tz))
-			return;
-		
-		// Get the movement speed of the Creature.
-		final float speed = _creature.getStat().getMoveSpeed();
-		if (speed <= 0 || _creature.isMovementDisabled())
-			return;
-		
-		// Get the current position of the Creature.
-		final int ox = _creature.getX();
-		final int oy = _creature.getY();
-		final int oz = _creature.getZ();
-		
-		// If no distance to go through, the movement is canceled.
-		if (ox == tx && oy == ty && oz == tz)
-		{
-			cancelMoveTask();
-			
-			_creature.revalidateZone(true);
-			_creature.getAI().notifyEvent(AiEventType.ARRIVED, false, null);
-			return;
-		}
-		
-		// Set the current x/y.
-		_xAccurate = ox;
-		_yAccurate = oy;
-		
-		// Initialize variables.
-		_geoPath.clear();
-		_pawn = null;
-		_offset = 0;
-		
-		// Calculate the path.
-		final Location loc = calculatePath(ox, oy, oz, tx, ty, tz);
-		if (loc != null)
-		{
-			tx = loc.getX();
-			ty = loc.getY();
-			tz = loc.getZ();
-		}
-		
 		// Draw a debug of this movement if activated.
 		if (_isDebugMove)
 		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
-			
-			// Draw debug packet to all players.
-			for (Player p : gms)
+			// Draw debug packet to surrounding GMs.
+			for (Player p : _actor.getSurroundingGMs())
 			{
 				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("MOVE" + _creature.getObjectId());
+				final ExServerPrimitive debug = p.getDebugPacket("MOVE" + _actor.getObjectId());
 				
 				// Reset the packet lines and points.
 				debug.reset();
 				
 				// Add a WHITE line corresponding to the initial click release.
-				debug.addLine("MoveToLocation: " + tx + " " + ty + " " + tz, Color.WHITE, true, ox, oy, oz, tx, ty, tz);
+				debug.addLine("MoveToLocation: " + destination.toString(), Color.WHITE, true, position, destination);
 				
-				// Add BLUE lines corresponding to the geo path, if any. Add a single BLUE line if no geoPath encountered.
+				// Add a RED point corresponding to initial start location.
+				debug.addPoint(Color.RED, position);
+				
+				// Add YELLOW lines corresponding to the geo path, if any. Add a single YELLOW line if no geoPath encountered.
 				if (!_geoPath.isEmpty())
 				{
 					// Add manually a segment, since poll() was executed.
-					debug.addLine("Segment #1", Color.YELLOW, true, ox, oy, oz, tx, ty, tz);
+					debug.addLine("Segment #1", Color.YELLOW, true, position, destination);
 					
 					// Initialize a Location based on target location.
-					final Location curPos = new Location(tx, ty, tz);
+					final Location curPos = new Location(destination);
 					int i = 2;
 					
 					// Iterate geo path.
@@ -296,22 +191,22 @@ public class CreatureMove
 					}
 				}
 				else
-					debug.addLine("No geopath", Color.YELLOW, true, ox, oy, oz, tx, ty, tz);
+					debug.addLine("No geopath", Color.YELLOW, true, position, destination);
 				
-				p.sendMessage("Moving from " + ox + " " + oy + " " + oz + " to " + tx + " " + ty + " " + tz);
+				p.sendMessage("Moving from " + position.toString() + " to " + destination.toString());
 			}
 		}
 		
 		// Set the destination.
-		_destination.set(tx, ty, tz);
+		_destination.set(destination);
 		
 		// Calculate the heading.
-		_creature.getPosition().setHeadingTo(tx, ty);
+		_actor.getPosition().setHeadingTo(destination);
 		
 		registerMoveTask();
 		
 		// Broadcast MoveToLocation packet to known objects.
-		_creature.broadcastPacket(new MoveToLocation(_creature));
+		_actor.broadcastPacket(new MoveToLocation(_actor, dLoc));
 	}
 	
 	public void registerMoveTask()
@@ -319,15 +214,20 @@ public class CreatureMove
 		if (_task != null)
 			return;
 		
+		_blocked = false;
+		
 		_task = ThreadPool.scheduleAtFixedRate(() ->
 		{
-			if (updatePosition() && !moveToNextRoutePoint())
+			if (updatePosition(false) && !moveToNextRoutePoint())
 				ThreadPool.execute(() ->
 				{
 					cancelMoveTask();
 					
-					_creature.revalidateZone(true);
-					_creature.getAI().notifyEvent(AiEventType.ARRIVED, false, null);
+					_actor.revalidateZone(true);
+					if (!_blocked)
+						_actor.getAI().notifyEvent(AiEventType.ARRIVED, null, null);
+					else
+						_actor.getAI().notifyEvent(AiEventType.ARRIVED_BLOCKED, null, null);
 				});
 		}, 100, 100);
 	}
@@ -348,7 +248,7 @@ public class CreatureMove
 			return false;
 		
 		// Movement is not allowed, return.
-		if (_creature.getStat().getMoveSpeed() <= 0 || _creature.isMovementDisabled())
+		if (_actor.getStatus().getMoveSpeed() <= 0 || _actor.isMovementDisabled())
 			return false;
 		
 		// Geopath is dry, return.
@@ -356,18 +256,25 @@ public class CreatureMove
 		if (destination == null)
 			return false;
 		
+		Location targetLoc = destination;
+		if (_geoPath.isEmpty())
+		{
+			targetLoc = _actor.getPosition().clone();
+			targetLoc.setLocationMinusOffset(destination, _actor.getCollisionRadius());
+		}
+		
 		// Set the current x/y.
-		_xAccurate = _creature.getX();
-		_yAccurate = _creature.getY();
+		_xAccurate = _actor.getX();
+		_yAccurate = _actor.getY();
 		
 		// Set the destination.
-		_destination.set(destination);
+		_destination.set(targetLoc);
 		
 		// Set the heading.
-		_creature.getPosition().setHeadingTo(destination);
+		_actor.getPosition().setHeadingTo(targetLoc);
 		
 		// Broadcast MoveToLocation packet to known objects.
-		_creature.broadcastPacket(new MoveToLocation(_creature));
+		_actor.broadcastPacket(new MoveToLocation(_actor, destination));
 		
 		return true;
 	}
@@ -383,18 +290,23 @@ public class CreatureMove
 	 * Client->Server ValidatePosition packet to eventually correct the gap on the server. But, it's always the server position that is used in range calculation.<BR>
 	 * <BR>
 	 * At the end of the estimated movement time, the Creature position is automatically set to the destination position even if the movement is not finished.
+	 * @param firstRun
 	 * @return true if the movement is finished.
 	 */
-	public boolean updatePosition()
+	public boolean updatePosition(boolean firstRun)
 	{
-		if (_task == null || !_creature.isVisible())
+		if (_task == null || !_actor.isVisible())
+			return true;
+		
+		// We got a pawn target, but it is not known anymore - stop the movement.
+		if (_pawn != null && !_actor.knows(_pawn))
 			return true;
 		
 		final MoveType type = getMoveType();
 		
-		final int curX = _creature.getX();
-		final int curY = _creature.getY();
-		final int curZ = _creature.getZ();
+		final int curX = _actor.getX();
+		final int curY = _actor.getY();
+		final int curZ = _actor.getZ();
 		
 		if (type == MoveType.GROUND)
 			_destination.setZ(GeoEngine.getInstance().getHeight(_destination));
@@ -405,7 +317,7 @@ public class CreatureMove
 		
 		// We use Z for delta calculation only if different of GROUND MoveType.
 		final double leftDistance = (type == MoveType.GROUND) ? Math.sqrt(dx * dx + dy * dy) : Math.sqrt(dx * dx + dy * dy + dz * dz);
-		final double passedDistance = _creature.getStat().getMoveSpeed() / 10;
+		final double passedDistance = _actor.getStatus().getMoveSpeed() / 10;
 		
 		// Calculate the current distance fraction based on the delta.
 		double fraction = 1;
@@ -445,112 +357,104 @@ public class CreatureMove
 		
 		// Check if location can be reached (case of dynamic objects, such as opening doors/fences).
 		if (type == MoveType.GROUND && !GeoEngine.getInstance().canMoveToTarget(curX, curY, curZ, nextX, nextY, nextZ))
+		{
+			_blocked = true;
 			return true;
+		}
 		
 		// Set the position of the Creature.
-		_creature.setXYZ(nextX, nextY, nextZ);
+		_actor.setXYZ(nextX, nextY, nextZ);
 		
 		// Draw a debug of this movement if activated.
 		if (_isDebugMove)
 		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
+			final String heading = "" + _actor.getHeading();
 			
-			// Draw debug packet to all players.
-			for (Player p : gms)
+			// Draw debug packet to surrounding GMs.
+			for (Player p : _actor.getSurroundingGMs())
 			{
 				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("MOVE" + _creature.getObjectId());
+				final ExServerPrimitive debug = p.getDebugPacket("MOVE" + _actor.getObjectId());
 				
-				debug.addPoint(Color.RED, curX, curY, curZ);
-				debug.addPoint(Color.GREEN, _creature.getPosition());
+				// Draw a RED point for current position.
+				debug.addPoint(heading, Color.RED, true, _actor.getPosition());
 				
+				// Send the packet to the Player.
 				debug.sendTo(p);
 				
 				// We are supposed to run, but the difference of Z is way too high.
-				if (type == MoveType.GROUND && Math.abs(curZ - _creature.getPosition().getZ()) > 100)
-					p.sendMessage("Falling/Climb bug found when moving from " + curX + ", " + curY + ", " + curZ + " to " + _creature.getPosition().toString());
+				if (type == MoveType.GROUND && Math.abs(curZ - _actor.getPosition().getZ()) > 100)
+					p.sendMessage("Falling/Climb bug found when moving from " + curX + ", " + curY + ", " + curZ + " to " + _actor.getPosition().toString());
 			}
 		}
 		
-		_creature.revalidateZone(false);
+		_actor.revalidateZone(false);
 		
 		if (isOnLastPawnMoveGeoPath())
 		{
-			final int offset = (int) (_offset + _creature.getCollisionRadius() + ((_pawn instanceof Creature) ? ((Creature) _pawn).getCollisionRadius() : 0));
-			return (type == MoveType.GROUND) ? _creature.isIn2DRadius(_destination, offset) : _creature.isIn3DRadius(_destination, offset);
+			final boolean stopMovementPrematurely = (type == MoveType.GROUND) ? _actor.isIn2DRadius(_pawn, _offset) : _actor.isIn3DRadius(_pawn, _offset);
+			if (stopMovementPrematurely)
+				return true;
 		}
 		
 		return (passedDistance >= leftDistance);
 	}
 	
-	/**
-	 * @param target : The Location we try to reach.
-	 * @param offset : The interact area radius.
-	 * @param isShiftPressed
-	 * @return true if a movement must be done to reach the {@link Location}, based on an offset.
-	 */
-	public boolean maybeMoveToPosition(Location target, int offset, boolean isShiftPressed)
+	public boolean maybeMoveToPawn(WorldObject target, int offset, boolean isShiftPressed)
 	{
-		if (offset < 0)
+		return false;
+	}
+	
+	public boolean maybeStartOffensiveFollow(Creature target, int weaponAttackRange)
+	{
+		if (weaponAttackRange < 0)
 			return false;
 		
-		if (!_creature.isIn2DRadius(target, (int) (offset + _creature.getCollisionRadius())))
+		final int collisionOffset = (int) (_actor.getCollisionRadius() + target.getCollisionRadius());
+		if (!_actor.isIn2DRadius(target, weaponAttackRange + collisionOffset))
 		{
-			if (!_creature.isMovementDisabled() && !isShiftPressed)
-			{
-				final Location loc = _creature.getPosition().clone();
-				loc.addOffsetBasedOnLocation(target, offset);
-				moveToLocation(loc);
-			}
+			if (!_actor.isMovementDisabled())
+				startOffensiveFollow(target, weaponAttackRange);
 			
 			return true;
-		}
-		
-		switch (_creature.getAI().getCurrentIntention().getType())
-		{
-			case CAST:
-			case PICK_UP:
-				_creature.broadcastPacket(new StopMove(_creature));
-				break;
 		}
 		
 		return false;
 	}
 	
-	/**
-	 * @param target : The WorldObject we try to reach.
-	 * @param offset : The interact area radius.
-	 * @param isShiftPressed : If movement is necessary, it disallows it.
-	 * @return true if a movement must be done to reach the {@link WorldObject}, based on an offset.
-	 */
-	public boolean maybeMoveToPawn(WorldObject target, int offset, boolean isShiftPressed)
+	public boolean maybeStartFriendlyFollow(Creature target, int range)
 	{
-		if (offset < 0 || _creature == target)
-			return false;
-		
-		double collisionOffset = _creature.getCollisionRadius();
-		if (target instanceof Creature)
-			collisionOffset += ((Creature) target).getCollisionRadius();
-		
-		if (!_creature.isIn2DRadius(target, offset + (int) collisionOffset))
+		if (!_actor.isMovementDisabled())
 		{
-			if (!_creature.isMovementDisabled() && !isShiftPressed)
-				moveToPawn(target, offset);
-			
+			startFriendlyFollow(target, range);
 			return true;
 		}
 		
-		switch (_creature.getAI().getCurrentIntention().getType())
+		return false;
+	}
+	
+	// Used for:
+	// Players: Pickup (pathfinding = true), casting signets (pathfinding = false), regular movement
+	// Monsters: regular movement, NOT for combat
+	public boolean maybeMoveToLocation(Location target, int offset, boolean pathfinding, boolean isShiftPressed)
+	{
+		Location targetLoc = target;
+		if (offset > 0)
 		{
-			case CAST:
-			case ATTACK:
-				_creature.broadcastPacket(new MoveToPawn(_creature, target, offset));
-				break;
+			targetLoc = _actor.getPosition().clone();
+			targetLoc.setLocationMinusOffset(target, offset);
+		}
+		
+		if (!_actor.isIn3DRadius(targetLoc, offset))
+		{
+			if (!_actor.isMovementDisabled() && !isShiftPressed)
+			{
+				_pawn = null;
+				_offset = 0;
+				moveToLocation(targetLoc, pathfinding);
+			}
 			
-			case INTERACT:
-				_creature.broadcastPacket(new StopMove(_creature));
-				break;
+			return true;
 		}
 		
 		return false;
@@ -567,88 +471,10 @@ public class CreatureMove
 		if (_task == null)
 			return;
 		
-		_creature.revalidateZone(true);
-		_creature.broadcastPacket(packetToStopMove());
+		_actor.revalidateZone(true);
+		_actor.broadcastPacket(new StopMove(_actor));
 		
 		cancelMoveTask();
-	}
-	
-	/**
-	 * Create and launch a follow task upon a {@link WorldObject} pawn, executed every 1s. It is used by onIntentionFollow.
-	 * @param pawn : The WorldObject to follow.
-	 */
-	public void startFollow(WorldObject pawn)
-	{
-		if (_followTask != null)
-		{
-			if (pawn == _pawn)
-				return;
-			
-			_followTask.cancel(false);
-			_followTask = null;
-		}
-		
-		// Create and Launch an AI Follow Task to execute every 1s
-		_followTask = ThreadPool.scheduleAtFixedRate(() -> followTask(pawn), 5, FOLLOW_INTERVAL);
-	}
-	
-	/**
-	 * Create and launch a follow task upon a {@link WorldObject} pawn, every 0.5s, following at specified range.
-	 * @param pawn : The WorldObject to follow.
-	 * @param offset : The specific range to follow at.
-	 */
-	public void startFollow(WorldObject pawn, int offset)
-	{
-		if (_followTask != null)
-		{
-			if (pawn == _pawn && _offset == offset)
-				return;
-			
-			_followTask.cancel(false);
-			_followTask = null;
-		}
-		
-		_followTask = ThreadPool.scheduleAtFixedRate(() -> followTask(pawn, offset), 5, ATTACK_FOLLOW_INTERVAL);
-	}
-	
-	/**
-	 * Stop the follow task.
-	 */
-	public void cancelFollowTask()
-	{
-		if (_followTask != null)
-		{
-			_followTask.cancel(false);
-			_followTask = null;
-		}
-	}
-	
-	protected void followTask(WorldObject pawn)
-	{
-		followTask(pawn, 70);
-	}
-	
-	protected void followTask(WorldObject pawn, int offset)
-	{
-		if (_followTask == null)
-			return;
-		
-		// Invalid pawn to follow, or the pawn isn't registered on knownlist.
-		if (!_creature.knows(pawn))
-		{
-			if (_creature instanceof Summon)
-				((Summon) _creature).getAI().setFollowStatus(false);
-			
-			_creature.getAI().tryTo(IntentionType.IDLE, null, null);
-			return;
-		}
-		
-		final int realOffset = (int) (offset + _creature.getCollisionRadius() + ((_pawn instanceof Creature) ? ((Creature) _pawn).getCollisionRadius() : 0));
-		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _creature.isIn2DRadius(pawn, realOffset) : _creature.isIn3DRadius(pawn, realOffset))
-			return;
-		
-		moveToPawn(pawn, offset);
 	}
 	
 	/**
@@ -667,12 +493,7 @@ public class CreatureMove
 	 */
 	protected L2GameServerPacket findPacketToSend()
 	{
-		return new MoveToLocation(_creature);
-	}
-	
-	protected L2GameServerPacket packetToStopMove()
-	{
-		return new StopMove(_creature);
+		return new MoveToLocation(_actor);
 	}
 	
 	/**
@@ -691,26 +512,21 @@ public class CreatureMove
 			return null;
 		
 		// Create dummy packet.
-		ExServerPrimitive dummy = _isDebugPath ? new ExServerPrimitive() : null;
+		final ExServerPrimitive dummy = _isDebugPath ? new ExServerPrimitive() : null;
 		
 		// Calculate the path. If no path or too short, calculate the first valid location.
-		final LinkedList<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, _creature instanceof Playable, dummy);
+		final LinkedList<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, _actor instanceof Playable, dummy);
 		if (path == null || path.size() < 2)
 			return GeoEngine.getInstance().getValidLocation(ox, oy, oz, tx, ty, tz, null);
 		
 		// Draw a debug of this movement if activated.
 		if (_isDebugPath)
 		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
-			if (_creature instanceof Player)
-				gms.add((Player) _creature);
-			
 			// Draw debug packet to all players.
-			for (Player p : gms)
+			for (Player p : _actor.getSurroundingGMs())
 			{
 				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("PATH" + _creature.getObjectId());
+				final ExServerPrimitive debug = p.getDebugPacket("PATH" + _actor.getObjectId());
 				
 				// Reset the packet and add all lines and points.
 				debug.reset();
@@ -730,9 +546,104 @@ public class CreatureMove
 	
 	public boolean canfollow(Creature target)
 	{
-		if (_creature == target)
-			return false;
+		return (_actor != target);
+	}
+	
+	/**
+	 * Create and launch a follow task upon a {@link WorldObject} pawn, executed every 1s. It is used by onIntentionFollow.
+	 * @param pawn : The WorldObject to follow.
+	 * @param offset : The specific range to follow at.
+	 */
+	public void startFriendlyFollow(Creature pawn, int offset)
+	{
+		if (_followTask != null)
+		{
+			_followTask.cancel(false);
+			_followTask = null;
+		}
 		
-		return true;
+		// Create and Launch an AI Follow Task to execute every 1s
+		_followTask = ThreadPool.scheduleAtFixedRate(() -> friendlyFollowTask(pawn, offset), 5, FOLLOW_INTERVAL);
+	}
+	
+	/**
+	 * Create and launch a follow task upon a {@link WorldObject} pawn, every 0.5s, following at specified range.
+	 * @param pawn : The WorldObject to follow.
+	 * @param offset : The specific range to follow at.
+	 */
+	public void startOffensiveFollow(Creature pawn, int offset)
+	{
+		if (_followTask != null)
+		{
+			_followTask.cancel(false);
+			_followTask = null;
+		}
+		
+		_followTask = ThreadPool.scheduleAtFixedRate(() -> offensiveFollowTask(pawn, offset), 5, ATTACK_FOLLOW_INTERVAL);
+	}
+	
+	protected void offensiveFollowTask(Creature target, int offset)
+	{
+		if (_followTask == null)
+			return;
+		
+		// Invalid pawn to follow, or the pawn isn't registered on knownlist.
+		if (!_actor.knows(target))
+		{
+			_actor.getAI().tryToActive();
+			return;
+		}
+		
+		Location targetLoc = _actor.getPosition().clone();
+		targetLoc.setLocationMinusOffset(target.getPosition(), target.getStatus().getMoveSpeed() / -2);
+		
+		// Don't bother moving if already in radius.
+		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(targetLoc, offset) : _actor.isIn3DRadius(targetLoc, offset))
+			return;
+		
+		_pawn = target;
+		_offset = offset;
+		moveToLocation(targetLoc, true);
+	}
+	
+	protected void friendlyFollowTask(Creature target, int offset)
+	{
+		if (_followTask == null)
+			return;
+		
+		// Invalid pawn to follow, or the pawn isn't registered on knownlist.
+		if (!_actor.knows(target))
+		{
+			_actor.getAI().tryToActive();
+			return;
+		}
+		
+		Location targetLoc = _actor.getPosition().clone();
+		targetLoc.setLocationMinusOffset(target.getPosition(), (int) (offset + target.getCollisionRadius() + _actor.getCollisionRadius()));
+		
+		// Don't bother moving if already in radius.
+		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(targetLoc, offset) : _actor.isIn3DRadius(targetLoc, offset))
+			return;
+		
+		_pawn = null;
+		_offset = 0;
+		moveToLocation(targetLoc, true);
+	}
+	
+	/**
+	 * Stop the follow task.
+	 */
+	public void cancelFollowTask()
+	{
+		if (_followTask != null)
+		{
+			_followTask.cancel(false);
+			_followTask = null;
+		}
+	}
+	
+	public void avoidAttack(Creature attacker)
+	{
+		// Summon behavior
 	}
 }

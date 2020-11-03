@@ -208,7 +208,7 @@ public class Q378_MagnificentFeast extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "30594-0.htm" : "30594-1.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "30594-0.htm" : "30594-1.htm";
 				break;
 			
 			case STATE_STARTED:

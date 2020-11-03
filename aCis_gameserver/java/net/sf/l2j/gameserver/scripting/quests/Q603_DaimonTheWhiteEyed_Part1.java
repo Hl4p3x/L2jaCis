@@ -138,7 +138,7 @@ public class Q603_DaimonTheWhiteEyed_Part1 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 73) ? "31683-02.htm" : "31683-01.htm";
+				htmltext = (player.getStatus().getLevel() < 73) ? "31683-02.htm" : "31683-01.htm";
 				break;
 			
 			case STATE_STARTED:

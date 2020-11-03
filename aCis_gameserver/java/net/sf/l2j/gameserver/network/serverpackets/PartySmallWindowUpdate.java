@@ -4,28 +4,26 @@ import net.sf.l2j.gameserver.model.actor.Player;
 
 public class PartySmallWindowUpdate extends L2GameServerPacket
 {
-	private final Player _member;
+	private final Player _player;
 	
-	public PartySmallWindowUpdate(Player member)
+	public PartySmallWindowUpdate(Player player)
 	{
-		_member = member;
+		_player = player;
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0x52);
-		writeD(_member.getObjectId());
-		writeS(_member.getName());
-		
-		writeD((int) _member.getCurrentCp()); // c4
-		writeD(_member.getMaxCp()); // c4
-		writeD((int) _member.getCurrentHp());
-		writeD(_member.getMaxHp());
-		writeD((int) _member.getCurrentMp());
-		writeD(_member.getMaxMp());
-		
-		writeD(_member.getLevel());
-		writeD(_member.getClassId().getId());
+		writeD(_player.getObjectId());
+		writeS(_player.getName());
+		writeD((int) _player.getStatus().getCp());
+		writeD(_player.getStatus().getMaxCp());
+		writeD((int) _player.getStatus().getHp());
+		writeD(_player.getStatus().getMaxHp());
+		writeD((int) _player.getStatus().getMp());
+		writeD(_player.getStatus().getMaxMp());
+		writeD(_player.getStatus().getLevel());
+		writeD(_player.getClassId().getId());
 	}
 }

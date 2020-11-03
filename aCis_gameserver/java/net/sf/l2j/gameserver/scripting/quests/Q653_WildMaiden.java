@@ -104,7 +104,7 @@ public class Q653_WildMaiden extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 36) ? "32013-01.htm" : "32013-02.htm";
+				htmltext = (player.getStatus().getLevel() < 36) ? "32013-01.htm" : "32013-02.htm";
 				break;
 			
 			case STATE_STARTED:

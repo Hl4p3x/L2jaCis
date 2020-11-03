@@ -2,11 +2,11 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
@@ -94,7 +94,7 @@ public class Q212_TrialOfDuty extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.KNIGHT && player.getClassId() != ClassId.ELVEN_KNIGHT && player.getClassId() != ClassId.PALUS_KNIGHT)
 					htmltext = "30109-02.htm";
-				else if (player.getLevel() < 35)
+				else if (player.getStatus().getLevel() < 35)
 					htmltext = "30109-01.htm";
 				else
 					htmltext = "30109-03.htm";
@@ -188,7 +188,7 @@ public class Q212_TrialOfDuty extends SecondClassQuest
 					case SILVERSHADOW:
 						if (cond == 10)
 						{
-							if (player.getLevel() < 35)
+							if (player.getStatus().getLevel() < 35)
 								htmltext = "30655-01.htm";
 							else
 							{
@@ -285,7 +285,7 @@ public class Q212_TrialOfDuty extends SecondClassQuest
 				break;
 			
 			case 27119:
-				if (cond == 2 && st.getItemEquipped(Inventory.PAPERDOLL_RHAND) == OLD_KNIGHT_SWORD)
+				if (cond == 2 && st.getItemIdFrom(Paperdoll.RHAND) == OLD_KNIGHT_SWORD)
 				{
 					st.set("cond", "3");
 					st.playSound(QuestState.SOUND_MIDDLE);

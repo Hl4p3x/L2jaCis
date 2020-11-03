@@ -99,7 +99,7 @@ public final class RequestDropItem extends L2GameClientPacket
 		
 		if (item.isEquipped() && (!item.isStackable() || (item.isStackable() && _count >= item.getCount())))
 		{
-			ItemInstance[] unequipped = player.getInventory().unEquipItemInBodySlotAndRecord(item);
+			ItemInstance[] unequipped = player.getInventory().unequipItemInBodySlotAndRecord(item);
 			InventoryUpdate iu = new InventoryUpdate();
 			for (ItemInstance itm : unequipped)
 			{

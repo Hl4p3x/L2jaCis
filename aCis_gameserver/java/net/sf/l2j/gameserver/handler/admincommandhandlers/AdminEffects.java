@@ -96,7 +96,7 @@ public class AdminEffects implements IAdminCommandHandler
 			if (summon != null)
 			{
 				summon.decayMe();
-				summon.broadcastStatusUpdate();
+				summon.getStatus().broadcastStatusUpdate();
 				summon.spawnMe();
 			}
 		}

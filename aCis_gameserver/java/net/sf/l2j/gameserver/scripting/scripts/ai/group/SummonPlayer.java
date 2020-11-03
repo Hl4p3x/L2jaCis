@@ -2,13 +2,11 @@ package net.sf.l2j.gameserver.scripting.scripts.ai.group;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -45,7 +43,7 @@ public class SummonPlayer extends L2AttackableAIScript
 			{
 				if (Rnd.nextBoolean())
 				{
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, Rnd.get(npc.getTemplate().getSkills(NpcSkillType.TELEPORT)), false, false), null);
+					npc.getAI().tryToCast(attacker, Rnd.get(npc.getTemplate().getSkills(NpcSkillType.TELEPORT)));
 					npc.setScriptValue(1);
 				}
 			}
@@ -56,7 +54,7 @@ public class SummonPlayer extends L2AttackableAIScript
 				
 				if ((mostHated == attacker && chance < 50) || chance < 10)
 				{
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, Rnd.get(npc.getTemplate().getSkills(NpcSkillType.TELEPORT)), false, false), null);
+					npc.getAI().tryToCast(attacker, Rnd.get(npc.getTemplate().getSkills(NpcSkillType.TELEPORT)));
 					npc.setScriptValue(1);
 				}
 			}
@@ -73,7 +71,7 @@ public class SummonPlayer extends L2AttackableAIScript
 			
 			final Creature mostHated = ((Attackable) npc).getMostHated();
 			if (mostHated == player && Rnd.get(100) < 33)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, Rnd.get(npc.getTemplate().getSkills(NpcSkillType.SHORT_RANGE)), false, false), null);
+				npc.getAI().tryToCast(player, Rnd.get(npc.getTemplate().getSkills(NpcSkillType.SHORT_RANGE)));
 		}
 		return super.onSpellFinished(npc, player, skill);
 	}

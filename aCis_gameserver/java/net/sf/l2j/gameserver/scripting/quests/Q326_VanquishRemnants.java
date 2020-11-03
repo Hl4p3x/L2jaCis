@@ -64,7 +64,7 @@ public class Q326_VanquishRemnants extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 21) ? "30435-01.htm" : "30435-02.htm";
+				htmltext = (player.getStatus().getLevel() < 21) ? "30435-01.htm" : "30435-02.htm";
 				break;
 			
 			case STATE_STARTED:

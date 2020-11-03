@@ -1,13 +1,19 @@
 package net.sf.l2j.gameserver.network.serverpackets;
 
 import net.sf.l2j.gameserver.data.cache.HtmCache;
+import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.model.actor.Player;
 
 public final class NpcHtmlMessage extends L2GameServerPacket
 {
+	// Shared "config" used by Players GMs to see file directory.
+	public static boolean SHOW_FILE;
+	
 	private final int _objectId;
 	
 	private String _html;
+	private String _file;
+	
 	private int _itemId = 0;
 	private boolean _validate = true;
 	
@@ -25,6 +31,9 @@ public final class NpcHtmlMessage extends L2GameServerPacket
 		final Player player = getClient().getPlayer();
 		if (player == null)
 			return;
+		
+		if (SHOW_FILE && player.isGM() && _file != null)
+			player.sendPacket(new CreatureSay(SayType.ALL, "HTML", _file));
 		
 		player.clearBypass();
 		for (int i = 0; i < _html.length(); i++)
@@ -81,6 +90,15 @@ public final class NpcHtmlMessage extends L2GameServerPacket
 	
 	public void setFile(String filename)
 	{
+		// Avoid to generate file directory if config is off.
+		if (SHOW_FILE)
+		{
+			_file = filename;
+			
+			final int index = _file.indexOf("html/");
+			if (index != -1)
+				_file = _file.substring(index + 5, _file.length());
+		}
 		setHtml(HtmCache.getInstance().getHtmForce(filename));
 	}
 	

@@ -12,11 +12,11 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.HistoryInfo;
@@ -68,7 +68,7 @@ public class DerbyTrackManager
 	
 	protected final List<Npc> _runners = new ArrayList<>(); // List holding initial npcs, shuffled on a new race.
 	protected final TreeMap<Integer, HistoryInfo> _history = new TreeMap<>(); // List holding old race records.
-	protected final Map<Integer, Long> _betsPerLane = new ConcurrentHashMap<>(); // Map holding all bets for each lane ; values setted to 0 after every race.
+	protected final Map<Integer, Long> _betsPerLane = new ConcurrentHashMap<>(); // Map holding all bets for each lane ; values are set to 0 after every race.
 	protected final List<Double> _odds = new ArrayList<>(); // List holding sorted odds per lane ; cleared at new odds calculation.
 	
 	protected int _raceNumber = 1;
@@ -245,7 +245,7 @@ public class DerbyTrackManager
 	 */
 	protected void loadHistory()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_HISTORY);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -273,7 +273,7 @@ public class DerbyTrackManager
 	 */
 	protected void saveHistory(HistoryInfo history)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SAVE_HISTORY))
 		{
 			ps.setInt(1, history.getRaceId());
@@ -293,7 +293,7 @@ public class DerbyTrackManager
 	 */
 	protected void loadBets()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_BETS);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -313,7 +313,7 @@ public class DerbyTrackManager
 	 */
 	protected void saveBet(int lane, long sum)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SAVE_BETS))
 		{
 			ps.setInt(1, lane);
@@ -334,7 +334,7 @@ public class DerbyTrackManager
 		for (int key : _betsPerLane.keySet())
 			_betsPerLane.put(key, 0L);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(CLEAR_BETS))
 		{
 			ps.execute();

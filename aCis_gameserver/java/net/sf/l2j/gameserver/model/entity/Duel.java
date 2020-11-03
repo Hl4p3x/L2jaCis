@@ -5,10 +5,9 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.DuelManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.TeamType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -127,9 +126,9 @@ public class Duel
 				return;
 			
 			_player = player;
-			_hp = _player.getCurrentHp();
-			_mp = _player.getCurrentMp();
-			_cp = _player.getCurrentCp();
+			_hp = _player.getStatus().getHp();
+			_mp = _player.getStatus().getMp();
+			_cp = _player.getStatus().getCp();
 			
 			if (partyDuel)
 			{
@@ -146,9 +145,7 @@ public class Duel
 			if (abnormalEnd)
 				return;
 			
-			_player.setCurrentHp(_hp);
-			_player.setCurrentMp(_mp);
-			_player.setCurrentCp(_cp);
+			_player.getStatus().setCpHpMp(_cp, _hp, _mp);
 			
 			if (_debuffs != null)
 			{
@@ -305,7 +302,7 @@ public class Duel
 	private static void stopFighting(Player player)
 	{
 		player.getCast().stop();
-		player.getAI().tryTo(IntentionType.ACTIVE, null, null);
+		player.getAI().tryToActive();
 		player.setTarget(null);
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}

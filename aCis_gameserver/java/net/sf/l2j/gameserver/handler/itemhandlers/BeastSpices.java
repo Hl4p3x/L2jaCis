@@ -1,12 +1,10 @@
 package net.sf.l2j.gameserver.handler.itemhandlers;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.FeedableBeast;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -30,6 +28,6 @@ public class BeastSpices implements IItemHandler
 		
 		final L2Skill skill = item.getEtcItem().getSkills()[0].getSkill();
 		if (skill != null)
-			player.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(player, target, skill, false, false), null);
+			player.getAI().tryToCast(target, skill);
 	}
 }

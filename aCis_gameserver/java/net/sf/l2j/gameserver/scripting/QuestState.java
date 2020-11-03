@@ -6,18 +6,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
+import net.sf.l2j.gameserver.enums.Paperdoll;
+import net.sf.l2j.gameserver.enums.StatusType;
+import net.sf.l2j.gameserver.handler.ISkillHandler;
+import net.sf.l2j.gameserver.handler.SkillHandler;
+import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.DropData;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.itemcontainer.PcInventory;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ExShowQuestMark;
 import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
 import net.sf.l2j.gameserver.network.serverpackets.QuestList;
 import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
@@ -26,6 +33,7 @@ import net.sf.l2j.gameserver.network.serverpackets.TutorialCloseHtml;
 import net.sf.l2j.gameserver.network.serverpackets.TutorialEnableClientEvent;
 import net.sf.l2j.gameserver.network.serverpackets.TutorialShowHtml;
 import net.sf.l2j.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import net.sf.l2j.gameserver.skills.L2Skill;
 
 public final class QuestState
 {
@@ -39,6 +47,7 @@ public final class QuestState
 	public static final String SOUND_JACKPOT = "ItemSound.quest_jackpot";
 	public static final String SOUND_FANFARE = "ItemSound.quest_fanfare_2";
 	public static final String SOUND_BEFORE_BATTLE = "Itemsound.quest_before_battle";
+	public static final String SOUND_TUTORIAL = "ItemSound.quest_tutorial";
 	
 	private static final String QUEST_SET_VAR = "REPLACE INTO character_quests (charId,name,var,value) VALUES (?,?,?,?)";
 	private static final String QUEST_DEL_VAR = "DELETE FROM character_quests WHERE charId=? AND name=? AND var=?";
@@ -184,7 +193,7 @@ public final class QuestState
 				takeItems(itemId, -1);
 		}
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement((repeatable) ? QUEST_DELETE : QUEST_COMPLETE))
 		{
 			ps.setInt(1, _player.getObjectId());
@@ -405,7 +414,7 @@ public final class QuestState
 	 */
 	private void setQuestVarInDb(String var, String value)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(QUEST_SET_VAR))
 		{
 			ps.setInt(1, _player.getObjectId());
@@ -426,7 +435,7 @@ public final class QuestState
 	 */
 	private void removeQuestVarInDb(String var)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(QUEST_DEL_VAR))
 		{
 			ps.setInt(1, _player.getObjectId());
@@ -492,26 +501,12 @@ public final class QuestState
 	}
 	
 	/**
-	 * @param loc A paperdoll slot to check.
-	 * @return the id of the item in the loc paperdoll slot.
+	 * @param slot : The {@link Paperdoll} slot to test.
+	 * @return The item id of the {@link ItemInstance} in the {@link Paperdoll} slot, or 0 if nothing is equipped.
 	 */
-	public int getItemEquipped(int loc)
+	public int getItemIdFrom(Paperdoll slot)
 	{
-		return _player.getInventory().getPaperdollItemId(loc);
-	}
-	
-	/**
-	 * Return the level of enchantment on the weapon of the player(Done specifically for weapon SA's)
-	 * @param itemId : ID of the item to check enchantment
-	 * @return int
-	 */
-	public int getEnchantLevel(int itemId)
-	{
-		final ItemInstance enchanteditem = _player.getInventory().getItemByItemId(itemId);
-		if (enchanteditem == null)
-			return 0;
-		
-		return enchanteditem.getEnchantLevel();
+		return _player.getInventory().getItemIdFrom(slot);
 	}
 	
 	/**
@@ -571,7 +566,7 @@ public final class QuestState
 		
 		// Send status update packet.
 		StatusUpdate su = new StatusUpdate(_player);
-		su.addAttribute(StatusUpdate.CUR_LOAD, _player.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, _player.getCurrentWeight());
 		_player.sendPacket(su);
 	}
 	
@@ -594,7 +589,7 @@ public final class QuestState
 		// Disarm item, if equipped.
 		if (item.isEquipped())
 		{
-			ItemInstance[] unequiped = _player.getInventory().unEquipItemInBodySlotAndRecord(item);
+			ItemInstance[] unequiped = _player.getInventory().unequipItemInBodySlotAndRecord(item);
 			InventoryUpdate iu = new InventoryUpdate();
 			for (ItemInstance itm : unequiped)
 				iu.addModifiedItem(itm);
@@ -687,7 +682,7 @@ public final class QuestState
 			}
 			
 			// Inventory slot check.
-			if (!_player.getInventory().validateCapacityByItemId(itemId))
+			if (!_player.getInventory().validateCapacityByItemId(itemId, amount))
 				return false;
 			
 			// Give items to the player.
@@ -772,7 +767,7 @@ public final class QuestState
 					amount = ((currentCount + amount) >= neededCount) ? neededCount - currentCount : amount;
 				
 				// Inventory slot check.
-				if (!_player.getInventory().validateCapacityByItemId(itemId))
+				if (!_player.getInventory().validateCapacityByItemId(itemId, amount))
 					continue;
 				
 				// Give items to the player.
@@ -808,6 +803,37 @@ public final class QuestState
 	}
 	
 	/**
+	 * Reward ss or sps for beginners.
+	 * @param ssCount : The count of ss to reward.
+	 * @param spsCount : The count of ss to reward.
+	 */
+	public void rewardNewbieShots(int ssCount, int spsCount)
+	{
+		// Don't process if not a newbie or already rewarded.
+		if (!_player.isNewbie(true) || _player.getMemos().containsKey(_quest.getName() + "_OneTimeQuestFlag"))
+			return;
+		
+		// Reward ss or sps, according Player class. Call Tutorial voice 26 or 27.
+		if (spsCount > 0 && _player.isMageClass())
+		{
+			showQuestionMark(26);
+			
+			rewardItems(5790, spsCount);
+			playTutorialVoice("tutorial_voice_027");
+		}
+		else if (ssCount > 0 && !_player.isMageClass())
+		{
+			showQuestionMark(26);
+			
+			rewardItems(5789, ssCount);
+			playTutorialVoice("tutorial_voice_026");
+		}
+		
+		// Set the Memo for further usage.
+		_player.getMemos().set(_quest.getName() + "_OneTimeQuestFlag", true);
+	}
+	
+	/**
 	 * Reward player with EXP and SP. The amount is affected by Config.RATE_QUEST_REWARD_XP and Config.RATE_QUEST_REWARD_SP
 	 * @param exp : Experience amount.
 	 * @param sp : Skill point amount.
@@ -817,25 +843,20 @@ public final class QuestState
 		_player.addExpAndSp((long) (exp * Config.RATE_QUEST_REWARD_XP), (int) (sp * Config.RATE_QUEST_REWARD_SP));
 	}
 	
-	// TODO: More radar functions need to be added when the radar class is complete.
-	// BEGIN STUFF THAT WILL PROBABLY BE CHANGED
-	
-	public void addRadar(int x, int y, int z)
+	public void addRadar(Location loc)
 	{
-		_player.getRadarList().addMarker(x, y, z);
+		_player.getRadarList().addMarker(loc);
 	}
 	
-	public void removeRadar(int x, int y, int z)
+	public void removeRadar(Location loc)
 	{
-		_player.getRadarList().removeMarker(x, y, z);
+		_player.getRadarList().removeMarker(loc);
 	}
 	
 	public void clearRadar()
 	{
 		_player.getRadarList().removeAllMarkers();
 	}
-	
-	// END STUFF THAT WILL PROBABLY BE CHANGED
 	
 	/**
 	 * Send a packet in order to play sound at client terminal
@@ -858,7 +879,7 @@ public final class QuestState
 	
 	public void showTutorialHTML(String html)
 	{
-		_player.sendPacket(new TutorialShowHtml(HtmCache.getInstance().getHtmForce("data/html/scripts/quests/Tutorial/" + html)));
+		_player.sendPacket(new TutorialShowHtml(HtmCache.getInstance().getHtmForce("data/html/scripts/feature/Tutorial/" + html)));
 	}
 	
 	public void closeTutorialHtml()
@@ -869,5 +890,32 @@ public final class QuestState
 	public void onTutorialClientEvent(int number)
 	{
 		_player.sendPacket(new TutorialEnableClientEvent(number));
+	}
+	
+	public void callSkill(L2Skill skill)
+	{
+		callSkill(skill, _player);
+	}
+	
+	public void callSkill(L2Skill skill, Creature target)
+	{
+		// Send animation.
+		_player.broadcastPacket(new MagicSkillUse(_player, target, skill.getId(), skill.getLevel(), skill.getHitTime(), 0));
+		
+		// Define target.
+		final Creature[] targets = new Creature[]
+		{
+			target
+		};
+		
+		// Handle the effect.
+		final ISkillHandler handler = SkillHandler.getInstance().getHandler(skill.getSkillType());
+		if (handler != null)
+			handler.useSkill(_player, skill, targets);
+		else
+			skill.useSkill(_player, targets);
+		
+		// Send message to the target.
+		target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(skill));
 	}
 }

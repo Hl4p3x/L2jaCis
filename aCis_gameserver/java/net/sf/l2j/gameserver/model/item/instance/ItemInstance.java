@@ -10,14 +10,15 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.xml.ItemData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
+import net.sf.l2j.gameserver.enums.items.ItemState;
 import net.sf.l2j.gameserver.enums.items.ItemType;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
@@ -38,7 +39,6 @@ import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.DropItem;
 import net.sf.l2j.gameserver.network.serverpackets.GetItem;
-import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.network.serverpackets.SpawnItem;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
@@ -62,27 +62,6 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	
 	private static final String DELETE_PET_ITEM = "DELETE FROM pets WHERE item_obj_id=?";
 	
-	public static enum ItemState
-	{
-		UNCHANGED,
-		ADDED,
-		MODIFIED,
-		REMOVED
-	}
-	
-	public static enum ItemLocation
-	{
-		VOID,
-		INVENTORY,
-		PAPERDOLL,
-		WAREHOUSE,
-		CLANWH,
-		PET,
-		PET_EQUIP,
-		LEASE,
-		FREIGHT
-	}
-	
 	private static final long REGULAR_LOOT_PROTECTION_TIME = 15000;
 	private static final long RAID_LOOT_PROTECTION_TIME = 300000;
 	
@@ -90,10 +69,8 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	private int _dropperObjectId = 0;
 	
 	private int _count;
-	private int _initCount;
 	
 	private long _time;
-	private boolean _decrease = false;
 	
 	private final int _itemId;
 	private final Item _item;
@@ -235,15 +212,15 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	 * <BR>
 	 * <U><I>Remark :</I></U> If loc and loc_data different from database, say datas not up-to-date
 	 * @param loc : ItemLocation (enumeration)
-	 * @param loc_data : int designating the slot where the item is stored or the village for freights
+	 * @param locData : int designating the slot where the item is stored or the village for freights
 	 */
-	public void setLocation(ItemLocation loc, int loc_data)
+	public void setLocation(ItemLocation loc, int locData)
 	{
-		if (loc == _loc && loc_data == _locData)
+		if (loc == _loc && locData == _locData)
 			return;
 		
 		_loc = loc;
-		_locData = loc_data;
+		_locData = locData;
 		_storedInDb = false;
 	}
 	
@@ -337,7 +314,6 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	 */
 	public int getLocationSlot()
 	{
-		assert _loc == ItemLocation.PAPERDOLL || _loc == ItemLocation.PET_EQUIP || _loc == ItemLocation.FREIGHT;
 		return _locData;
 	}
 	
@@ -584,23 +560,8 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		final Player player = (Player) target;
-		if (player.isGM() && isShiftPressed)
-		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setFile("data/html/admin/iteminfo.htm");
-			html.replace("%objid%", getObjectId());
-			html.replace("%itemid%", getItemId());
-			html.replace("%ownerid%", getOwnerId());
-			html.replace("%loc%", getLocation().toString());
-			html.replace("%class%", getClass().getSimpleName());
-			player.sendPacket(html);
-			player.sendPacket(ActionFailed.STATIC_PACKET);
-			return;
-		}
-		
 		if (player.isFlying())
 		{
 			player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -638,7 +599,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 			}
 		}
 		
-		player.getAI().tryTo(IntentionType.PICK_UP, this, isShiftPressed);
+		player.getAI().tryToPickUp(getObjectId(), isShiftPressed);
 	}
 	
 	/**
@@ -704,7 +665,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 		
 		_augmentation = null;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_AUGMENTATION))
 		{
 			ps.setInt(1, getObjectId());
@@ -718,7 +679,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	
 	private void restoreAttributes()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_AUGMENTATION))
 		{
 			ps.setInt(1, getObjectId());
@@ -737,7 +698,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	
 	private void updateItemAttributes()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_AUGMENTATION))
 		{
 			ps.setInt(1, getObjectId());
@@ -981,12 +942,12 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 		if (castle != null && castle.getTicket(_itemId) != null)
 			castle.removeDroppedTicket(this);
 		
-		if (!Config.DISABLE_TUTORIAL && (_itemId == 57 || _itemId == 6353))
+		if (_itemId == 57 || _itemId == 6353)
 		{
-			Player actor = player.getActingPlayer();
+			final Player actor = player.getActingPlayer();
 			if (actor != null)
 			{
-				QuestState qs = actor.getQuestState("Tutorial");
+				final QuestState qs = actor.getQuestState("Tutorial");
 				if (qs != null)
 					qs.getQuest().notifyEvent("CE" + _itemId + "", null, actor);
 			}
@@ -1006,7 +967,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 		if (_storedInDb)
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_ITEM))
 		{
 			ps.setInt(1, _ownerId);
@@ -1037,7 +998,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	{
 		assert !_existsInDb && getObjectId() != 0;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_ITEM))
 		{
 			ps.setInt(1, _ownerId);
@@ -1072,7 +1033,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	{
 		assert _existsInDb;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(DELETE_ITEM))
 			{
@@ -1141,32 +1102,6 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 		return ((_itemId >= 8505 && _itemId <= 8513) || _itemId == 8485);
 	}
 	
-	public void setCountDecrease(boolean decrease)
-	{
-		_decrease = decrease;
-	}
-	
-	public boolean getCountDecrease()
-	{
-		return _decrease;
-	}
-	
-	public void setInitCount(int InitCount)
-	{
-		_initCount = InitCount;
-	}
-	
-	public int getInitCount()
-	{
-		return _initCount;
-	}
-	
-	public void restoreInitCount()
-	{
-		if (_decrease)
-			_count = _initCount;
-	}
-	
 	public long getTime()
 	{
 		return _time;
@@ -1195,6 +1130,11 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	public boolean isHerb()
 	{
 		return getItem().getItemType() == EtcItemType.HERB;
+	}
+	
+	public boolean isSummonItem()
+	{
+		return getItem().getItemType() == EtcItemType.PET_COLLAR;
 	}
 	
 	public boolean isHeroItem()
@@ -1281,9 +1221,9 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 		}
 		
 		// if it's a pet control item, delete the pet as well
-		if (getItemType() == EtcItemType.PET_COLLAR)
+		if (isSummonItem())
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(DELETE_PET_ITEM))
 			{
 				ps.setInt(1, getObjectId());

@@ -67,7 +67,7 @@ public class Q160_NerupasRequest extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30370-00.htm";
-				else if (player.getLevel() < 3)
+				else if (player.getStatus().getLevel() < 3)
 					htmltext = "30370-02.htm";
 				else
 					htmltext = "30370-03.htm";

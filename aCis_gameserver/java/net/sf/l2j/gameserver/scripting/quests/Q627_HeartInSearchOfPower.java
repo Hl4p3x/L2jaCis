@@ -161,7 +161,7 @@ public class Q627_HeartInSearchOfPower extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "31518-00a.htm" : "31518-00.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "31518-00a.htm" : "31518-00.htm";
 				break;
 			
 			case STATE_STARTED:

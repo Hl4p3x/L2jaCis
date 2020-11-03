@@ -90,7 +90,7 @@ public class Q042_HelpTheUncle extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 25) ? "30828-00a.htm" : "30828-00.htm";
+				htmltext = (player.getStatus().getLevel() < 25) ? "30828-00a.htm" : "30828-00.htm";
 				break;
 			
 			case STATE_STARTED:

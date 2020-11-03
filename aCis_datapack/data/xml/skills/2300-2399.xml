@@ -117,13 +117,13 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
 	<skill id="2309" levels="1" name="Pig Chest">
 		<table name="#extractableItems">
-			2513,300,8627,5,100
+			9143,1,70
 		</table>
 		<set name="capsuled_items_skill" val="#extractableItems" />
 		<set name="operateType" val="ACTIVE" />
@@ -131,8 +131,8 @@
 		<set name="target" val="SELF" />
 		<cond msgId="129">
 			<and>
-				<player invSize="1" />
-				<player weight="80" />
+				<player invSize="10" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -297,7 +297,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -312,7 +312,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -327,7 +327,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -342,7 +342,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -357,7 +357,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>
@@ -372,7 +372,7 @@
 		<cond msgId="129">
 			<and>
 				<player invSize="1" />
-				<player weight="80" />
+				<player weight="3" />
 			</and>
 		</cond>
 	</skill>

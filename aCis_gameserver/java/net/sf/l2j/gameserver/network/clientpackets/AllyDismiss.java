@@ -65,13 +65,13 @@ public final class AllyDismiss extends L2GameClientPacket
 		}
 		
 		long currentTime = System.currentTimeMillis();
-		leaderClan.setAllyPenaltyExpiryTime(currentTime + Config.ALT_ACCEPT_CLAN_DAYS_WHEN_DISMISSED * 86400000L, Clan.PENALTY_TYPE_DISMISS_CLAN);
+		leaderClan.setAllyPenaltyExpiryTime(currentTime + Config.ACCEPT_CLAN_DAYS_WHEN_DISMISSED * 86400000L, Clan.PENALTY_TYPE_DISMISS_CLAN);
 		leaderClan.updateClanInDB();
 		
 		clan.setAllyId(0);
 		clan.setAllyName(null);
 		clan.changeAllyCrest(0, true);
-		clan.setAllyPenaltyExpiryTime(currentTime + Config.ALT_ALLY_JOIN_DAYS_WHEN_DISMISSED * 86400000L, Clan.PENALTY_TYPE_CLAN_DISMISSED);
+		clan.setAllyPenaltyExpiryTime(currentTime + Config.ALLY_JOIN_DAYS_WHEN_DISMISSED * 86400000L, Clan.PENALTY_TYPE_CLAN_DISMISSED);
 		clan.updateClanInDB();
 		
 		player.sendPacket(SystemMessageId.YOU_HAVE_EXPELED_A_CLAN);

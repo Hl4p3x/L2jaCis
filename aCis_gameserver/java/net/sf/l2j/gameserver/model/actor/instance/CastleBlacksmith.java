@@ -1,6 +1,7 @@
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.actors.NpcTalkCond;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.pledge.Clan;
@@ -8,10 +9,6 @@ import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 
 public class CastleBlacksmith extends Folk
 {
-	protected static final int COND_ALL_FALSE = 0;
-	protected static final int COND_BUSY_BECAUSE_OF_SIEGE = 1;
-	protected static final int COND_OWNER = 2;
-	
 	public CastleBlacksmith(int objectId, NpcTemplate template)
 	{
 		super(objectId, template);
@@ -30,7 +27,7 @@ public class CastleBlacksmith extends Folk
 			return;
 		}
 		
-		if (validateCondition(player) != COND_OWNER)
+		if (getNpcTalkCond(player) != NpcTalkCond.OWNER)
 			return;
 		
 		if (command.startsWith("Chat"))
@@ -65,40 +62,37 @@ public class CastleBlacksmith extends Folk
 			return;
 		}
 		
-		String filename = "data/html/castleblacksmith/castleblacksmith-no.htm";
-		
-		int condition = validateCondition(player);
-		if (condition > COND_ALL_FALSE)
-		{
-			if (condition == COND_BUSY_BECAUSE_OF_SIEGE)
-				filename = "data/html/castleblacksmith/castleblacksmith-busy.htm"; // Busy because of siege
-			else if (condition == COND_OWNER) // Clan owns castle
-			{
-				if (val == 0)
-					filename = "data/html/castleblacksmith/castleblacksmith.htm";
-				else
-					filename = "data/html/castleblacksmith/castleblacksmith-" + val + ".htm";
-			}
-		}
-		
 		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-		html.setFile(filename);
+		
+		final NpcTalkCond condition = getNpcTalkCond(player);
+		if (condition == NpcTalkCond.NONE)
+			html.setFile("data/html/castleblacksmith/castleblacksmith-no.htm");
+		else if (condition == NpcTalkCond.UNDER_SIEGE)
+			html.setFile("data/html/castleblacksmith/castleblacksmith-busy.htm");
+		else
+		{
+			if (val == 0)
+				html.setFile("data/html/castleblacksmith/castleblacksmith.htm");
+			else
+				html.setFile("data/html/castleblacksmith/castleblacksmith-" + val + ".htm");
+		}
 		html.replace("%objectId%", getObjectId());
 		html.replace("%npcname%", getName());
 		html.replace("%castleid%", getCastle().getCastleId());
 		player.sendPacket(html);
 	}
 	
-	protected int validateCondition(Player player)
+	@Override
+	protected NpcTalkCond getNpcTalkCond(Player player)
 	{
 		if (getCastle() != null && player.getClan() != null)
 		{
 			if (getCastle().getSiege().isInProgress())
-				return COND_BUSY_BECAUSE_OF_SIEGE;
+				return NpcTalkCond.UNDER_SIEGE;
 			
 			if (getCastle().getOwnerId() == player.getClanId() && player.hasClanPrivileges(Clan.CP_CS_MANOR_ADMIN))
-				return COND_OWNER;
+				return NpcTalkCond.OWNER;
 		}
-		return COND_ALL_FALSE;
+		return NpcTalkCond.NONE;
 	}
 }

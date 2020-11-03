@@ -11,8 +11,8 @@ import java.util.StringTokenizer;
 
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.enums.ShortcutType;
 import net.sf.l2j.gameserver.model.Macro;
 import net.sf.l2j.gameserver.model.Macro.MacroCmd;
@@ -137,7 +137,7 @@ public class MacroList
 		if (sb.length() > 255)
 			sb.setLength(255);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_MACRO))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -161,7 +161,7 @@ public class MacroList
 	 */
 	private void deleteMacroFromDb(Macro macro)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_MACRO))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -181,7 +181,7 @@ public class MacroList
 	{
 		_macros.clear();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_MACROS))
 		{
 			ps.setInt(1, _owner.getObjectId());

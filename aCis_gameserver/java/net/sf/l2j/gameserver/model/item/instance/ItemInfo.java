@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.item.instance;
 
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemState;
+import net.sf.l2j.gameserver.enums.items.ItemState;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 
 /**

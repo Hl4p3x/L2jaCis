@@ -71,7 +71,7 @@ public class Q612_WarWithKetraOrcs extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() >= 74 && player.isAlliedWithVarka()) ? "31377-01.htm" : "31377-02.htm";
+				htmltext = (player.getStatus().getLevel() >= 74 && player.isAlliedWithVarka()) ? "31377-01.htm" : "31377-02.htm";
 				break;
 			
 			case STATE_STARTED:

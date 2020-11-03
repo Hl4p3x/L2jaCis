@@ -99,7 +99,7 @@ public class Q364_JovialAccordion extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30959-00.htm" : "30959-01.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30959-00.htm" : "30959-01.htm";
 				break;
 			
 			case STATE_STARTED:

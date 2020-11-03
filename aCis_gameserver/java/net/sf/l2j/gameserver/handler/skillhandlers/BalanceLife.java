@@ -9,7 +9,6 @@ import net.sf.l2j.gameserver.handler.SkillHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class BalanceLife implements ISkillHandler
@@ -50,8 +49,8 @@ public class BalanceLife implements ISkillHandler
 					continue;
 			}
 			
-			fullHP += target.getMaxHp();
-			currentHPs += target.getCurrentHp();
+			fullHP += target.getStatus().getMaxHp();
+			currentHPs += target.getStatus().getHp();
 			
 			// Add the character to the final list.
 			finalList.add(target);
@@ -62,13 +61,7 @@ public class BalanceLife implements ISkillHandler
 			double percentHP = currentHPs / fullHP;
 			
 			for (Creature target : finalList)
-			{
-				target.setCurrentHp(target.getMaxHp() * percentHP);
-				
-				StatusUpdate su = new StatusUpdate(target);
-				su.addAttribute(StatusUpdate.CUR_HP, (int) target.getCurrentHp());
-				target.sendPacket(su);
-			}
+				target.getStatus().setHp(target.getStatus().getMaxHp() * percentHP);
 		}
 	}
 	

@@ -1,6 +1,8 @@
 package net.sf.l2j.gameserver.model.actor.instance;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import java.util.concurrent.Future;
+
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -15,15 +17,14 @@ public class SiegeFlag extends Npc
 {
 	private final Clan _clan;
 	
-	public SiegeFlag(Player player, int objectId, NpcTemplate template)
+	private Future<?> _task;
+	
+	public SiegeFlag(Clan clan, int objectId, NpcTemplate template)
 	{
 		super(objectId, template);
 		
-		_clan = player.getClan();
-		
-		// Player clan became null during flag initialization ; don't bother setting clan flag.
-		if (_clan != null)
-			_clan.setFlag(this);
+		_clan = clan;
+		_clan.setFlag(this);
 	}
 	
 	@Override
@@ -33,10 +34,22 @@ public class SiegeFlag extends Npc
 			return false;
 		
 		// Reset clan flag to null.
-		if (_clan != null)
-			_clan.setFlag(null);
+		_clan.setFlag(null);
 		
 		return true;
+	}
+	
+	@Override
+	public void deleteMe()
+	{
+		// Stop the task.
+		if (_task != null)
+		{
+			_task.cancel(false);
+			_task = null;
+		}
+		
+		super.deleteMe();
 	}
 	
 	@Override
@@ -53,13 +66,16 @@ public class SiegeFlag extends Npc
 	@Override
 	public void reduceCurrentHp(double damage, Creature attacker, L2Skill skill)
 	{
+		// Any SiegeSummon can hurt SiegeFlag (excepted Swoop Cannon - anti-infantery summon).
+		if (attacker instanceof SiegeSummon && ((SiegeSummon) attacker).getNpcId() == SiegeSummon.SWOOP_CANNON_ID)
+			return;
+		
 		// Send warning to owners of headquarters that theirs base is under attack.
-		if (_clan != null && isScriptValue(0))
+		if (_task == null)
 		{
-			_clan.broadcastToOnlineMembers(SystemMessage.getSystemMessage(SystemMessageId.BASE_UNDER_ATTACK));
+			_task = ThreadPool.schedule(() -> _task = null, 30000);
 			
-			setScriptValue(1);
-			ThreadPool.schedule(() -> setScriptValue(0), 30000);
+			_clan.broadcastToOnlineMembers(SystemMessage.getSystemMessage(SystemMessageId.BASE_UNDER_ATTACK));
 		}
 		super.reduceCurrentHp(damage, attacker, skill);
 	}

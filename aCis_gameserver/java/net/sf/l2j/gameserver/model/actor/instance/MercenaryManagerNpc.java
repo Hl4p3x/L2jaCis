@@ -5,6 +5,7 @@ import java.util.StringTokenizer;
 import net.sf.l2j.gameserver.data.manager.BuyListManager;
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.enums.SealType;
+import net.sf.l2j.gameserver.enums.actors.NpcTalkCond;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.buylist.NpcBuyList;
@@ -14,10 +15,6 @@ import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 
 public final class MercenaryManagerNpc extends Folk
 {
-	private static final int COND_ALL_FALSE = 0;
-	private static final int COND_BUSY_BECAUSE_OF_SIEGE = 1;
-	private static final int COND_OWNER = 2;
-	
 	public MercenaryManagerNpc(int objectId, NpcTemplate template)
 	{
 		super(objectId, template);
@@ -26,8 +23,8 @@ public final class MercenaryManagerNpc extends Folk
 	@Override
 	public void onBypassFeedback(Player player, String command)
 	{
-		final int condition = validateCondition(player);
-		if (condition < COND_OWNER)
+		final NpcTalkCond condition = getNpcTalkCond(player);
+		if (condition != NpcTalkCond.OWNER)
 			return;
 		
 		if (command.startsWith("back"))
@@ -82,12 +79,12 @@ public final class MercenaryManagerNpc extends Folk
 	{
 		final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 		
-		final int condition = validateCondition(player);
-		if (condition == COND_ALL_FALSE)
+		final NpcTalkCond condition = getNpcTalkCond(player);
+		if (condition == NpcTalkCond.NONE)
 			html.setFile("data/html/mercmanager/mseller002.htm");
-		else if (condition == COND_BUSY_BECAUSE_OF_SIEGE)
+		else if (condition == NpcTalkCond.UNDER_SIEGE)
 			html.setFile("data/html/mercmanager/mseller003.htm");
-		else if (condition == COND_OWNER)
+		else
 		{
 			// Different output depending about who is currently owning the Seal of Strife.
 			switch (SevenSignsManager.getInstance().getSealOwner(SealType.STRIFE))
@@ -110,16 +107,17 @@ public final class MercenaryManagerNpc extends Folk
 		player.sendPacket(html);
 	}
 	
-	private int validateCondition(Player player)
+	@Override
+	protected NpcTalkCond getNpcTalkCond(Player player)
 	{
 		if (getCastle() != null && player.getClan() != null)
 		{
 			if (getCastle().getSiege().isInProgress())
-				return COND_BUSY_BECAUSE_OF_SIEGE;
+				return NpcTalkCond.UNDER_SIEGE;
 			
 			if (getCastle().getOwnerId() == player.getClanId() && player.hasClanPrivileges(Clan.CP_CS_MERCENARIES))
-				return COND_OWNER;
+				return NpcTalkCond.OWNER;
 		}
-		return COND_ALL_FALSE;
+		return NpcTalkCond.NONE;
 	}
 }

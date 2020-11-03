@@ -135,7 +135,7 @@ public class Q639_GuardiansOfTheHolyGrail extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 73) ? "31350-02.htm" : "31350-01.htm";
+				htmltext = (player.getStatus().getLevel() < 73) ? "31350-02.htm" : "31350-01.htm";
 				break;
 			
 			case STATE_STARTED:

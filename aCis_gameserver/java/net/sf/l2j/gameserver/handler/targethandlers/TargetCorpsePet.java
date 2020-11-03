@@ -5,17 +5,20 @@ import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetCorpsePet implements ITargetHandler
 {
 	@Override
-	public Creature[] getTargetList(SkillUseHolder skillUseHolder)
+	public SkillTargetType getTargetType()
 	{
-		final Creature caster = skillUseHolder.getCaster();
-		final Creature target = caster.getSummon();
+		return SkillTargetType.CORPSE_PET;
+	}
+	
+	@Override
+	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
+	{
 		if (target != null && target.isDead())
 		{
 			final Pet targetPet;
@@ -54,13 +57,7 @@ public class TargetCorpsePet implements ITargetHandler
 	}
 	
 	@Override
-	public SkillTargetType getTargetType()
-	{
-		return SkillTargetType.CORPSE_PET;
-	}
-	
-	@Override
-	public Creature getFinalTarget(Creature target, Creature caster, L2Skill skill, boolean isCtrlPressed)
+	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		if (!(caster instanceof Player))
 			return null;

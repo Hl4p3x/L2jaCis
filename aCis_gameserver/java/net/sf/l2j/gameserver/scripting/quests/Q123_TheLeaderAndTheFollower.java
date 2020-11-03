@@ -152,7 +152,7 @@ public class Q123_TheLeaderAndTheFollower extends Quest
 					if (st2 != null)
 						htmltext = (st2.isCompleted()) ? "31961-02a.htm" : "31961-02b.htm";
 					else
-						htmltext = (player.getLevel() > 18) ? "31961-01.htm" : "31961-02.htm";
+						htmltext = (player.getStatus().getLevel() > 18) ? "31961-01.htm" : "31961-02.htm";
 				}
 				else if (player.getApprentice() > 0)
 				{

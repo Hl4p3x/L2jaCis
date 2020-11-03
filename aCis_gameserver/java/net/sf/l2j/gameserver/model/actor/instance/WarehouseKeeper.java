@@ -82,106 +82,102 @@ public class WarehouseKeeper extends Folk
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 			player.setActiveWarehouse(player.getWarehouse());
 			player.tempInventoryDisable();
-			
 			player.sendPacket(new WarehouseDepositList(player, WarehouseDepositList.PRIVATE));
 		}
 		else if (command.equals("WithdrawC"))
 		{
 			player.sendPacket(ActionFailed.STATIC_PACKET);
+			
 			if (!player.hasClanPrivileges(Clan.CP_CL_VIEW_WAREHOUSE))
 			{
 				player.sendPacket(SystemMessageId.YOU_DO_NOT_HAVE_THE_RIGHT_TO_USE_CLAN_WAREHOUSE);
 				return;
 			}
 			
-			if (player.getClan().getLevel() == 0)
-				player.sendPacket(SystemMessageId.ONLY_LEVEL_1_CLAN_OR_HIGHER_CAN_USE_WAREHOUSE);
-			else
+			final Clan clan = player.getClan();
+			if (clan == null)
+				return;
+			
+			if (clan.getLevel() == 0)
 			{
-				player.setActiveWarehouse(player.getClan().getWarehouse());
-				player.sendPacket(new WarehouseWithdrawList(player, WarehouseWithdrawList.CLAN));
+				player.sendPacket(SystemMessageId.ONLY_LEVEL_1_CLAN_OR_HIGHER_CAN_USE_WAREHOUSE);
+				return;
 			}
+			
+			player.setActiveWarehouse(player.getClan().getWarehouse());
+			player.sendPacket(new WarehouseWithdrawList(player, WarehouseWithdrawList.CLAN));
 		}
 		else if (command.equals("DepositC"))
 		{
 			player.sendPacket(ActionFailed.STATIC_PACKET);
-			if (player.getClan() != null)
+			
+			final Clan clan = player.getClan();
+			if (clan == null)
+				return;
+			
+			if (clan.getLevel() == 0)
 			{
-				if (player.getClan().getLevel() == 0)
-					player.sendPacket(SystemMessageId.ONLY_LEVEL_1_CLAN_OR_HIGHER_CAN_USE_WAREHOUSE);
-				else
-				{
-					player.setActiveWarehouse(player.getClan().getWarehouse());
-					player.tempInventoryDisable();
-					player.sendPacket(new WarehouseDepositList(player, WarehouseDepositList.CLAN));
-				}
+				player.sendPacket(SystemMessageId.ONLY_LEVEL_1_CLAN_OR_HIGHER_CAN_USE_WAREHOUSE);
+				return;
 			}
+			
+			player.setActiveWarehouse(player.getClan().getWarehouse());
+			player.tempInventoryDisable();
+			player.sendPacket(new WarehouseDepositList(player, WarehouseDepositList.CLAN));
 		}
 		else if (command.startsWith("WithdrawF"))
 		{
-			if (Config.ALLOW_FREIGHT)
+			if (!Config.ALLOW_FREIGHT)
+				return;
+			
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			
+			final PcFreight freight = player.getFreight();
+			if (freight == null || freight.getSize() <= 0)
 			{
-				player.sendPacket(ActionFailed.STATIC_PACKET);
-				PcFreight freight = player.getFreight();
-				
-				if (freight != null)
-				{
-					if (freight.getSize() > 0)
-					{
-						if (Config.ALT_GAME_FREIGHTS)
-							freight.setActiveLocation(0);
-						else
-							freight.setActiveLocation(getRegion().hashCode());
-						
-						player.setActiveWarehouse(freight);
-						player.sendPacket(new WarehouseWithdrawList(player, WarehouseWithdrawList.FREIGHT));
-					}
-					else
-						player.sendPacket(SystemMessageId.NO_ITEM_DEPOSITED_IN_WH);
-				}
+				player.sendPacket(SystemMessageId.NO_ITEM_DEPOSITED_IN_WH);
+				return;
 			}
+			
+			freight.setActiveLocation((Config.REGION_BASED_FREIGHT) ? getRegion().hashCode() : 0);
+			
+			player.setActiveWarehouse(freight);
+			player.sendPacket(new WarehouseWithdrawList(player, WarehouseWithdrawList.FREIGHT));
 		}
 		else if (command.startsWith("DepositF"))
 		{
-			if (Config.ALLOW_FREIGHT)
+			if (!Config.ALLOW_FREIGHT)
+				return;
+			
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			
+			// No other chars in the account of this Player.
+			final Map<Integer, String> chars = player.getAccountChars();
+			if (chars.isEmpty())
 			{
-				// No other chars in the account of this player
-				if (player.getAccountChars().isEmpty())
-					player.sendPacket(SystemMessageId.CHARACTER_DOES_NOT_EXIST);
-				// One or more chars other than this player for this account
-				else
-				{
-					Map<Integer, String> chars = player.getAccountChars();
-					
-					if (chars.size() < 1)
-					{
-						player.sendPacket(ActionFailed.STATIC_PACKET);
-						return;
-					}
-					
-					player.sendPacket(new PackageToList(chars));
-				}
+				player.sendPacket(SystemMessageId.CHARACTER_DOES_NOT_EXIST);
+				return;
 			}
+			
+			// One or more chars other than this Player for this account.
+			if (chars.size() < 1)
+				return;
+			
+			player.sendPacket(new PackageToList(chars));
 		}
 		else if (command.startsWith("FreightChar"))
 		{
-			if (Config.ALLOW_FREIGHT)
-			{
-				String id = command.substring(command.lastIndexOf("_") + 1);
-				
-				player.sendPacket(ActionFailed.STATIC_PACKET);
-				
-				PcFreight freight = player.getDepositedFreight(Integer.parseInt(id));
-				
-				if (Config.ALT_GAME_FREIGHTS)
-					freight.setActiveLocation(0);
-				else
-					freight.setActiveLocation(getRegion().hashCode());
-				
-				player.setActiveWarehouse(freight);
-				player.tempInventoryDisable();
-				player.sendPacket(new WarehouseDepositList(player, WarehouseDepositList.FREIGHT));
-			}
+			if (!Config.ALLOW_FREIGHT)
+				return;
+			
+			final String id = command.substring(command.lastIndexOf("_") + 1);
+			final PcFreight freight = player.getDepositedFreight(Integer.parseInt(id));
+			freight.setActiveLocation((Config.REGION_BASED_FREIGHT) ? getRegion().hashCode() : 0);
+			
+			player.sendPacket(ActionFailed.STATIC_PACKET);
+			player.setActiveWarehouse(freight);
+			player.tempInventoryDisable();
+			player.sendPacket(new WarehouseDepositList(player, WarehouseDepositList.FREIGHT));
 		}
 		else
 			super.onBypassFeedback(player, command);

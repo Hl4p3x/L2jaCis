@@ -83,7 +83,7 @@ public class Q162_CurseOfTheUndergroundFortress extends Quest
 			case STATE_CREATED:
 				if (player.getRace() == ClassRace.DARK_ELF)
 					htmltext = "30147-00.htm";
-				else if (player.getLevel() < 12)
+				else if (player.getStatus().getLevel() < 12)
 					htmltext = "30147-01.htm";
 				else
 					htmltext = "30147-02.htm";

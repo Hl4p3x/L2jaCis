@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.handler.itemhandlers;
 
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
@@ -10,7 +9,6 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.actor.instance.Servitor;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -76,7 +74,7 @@ public class ItemSkills implements IItemHandler
 					player.getSummon().getCast().doInstantCast(itemSkill, item);
 			}
 			else
-				playable.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(playable, target, itemSkill, forceUse, false), (item.isEtcItem() ? item : null));
+				playable.getAI().tryToCast(target, itemSkill, forceUse, false, (item.isEtcItem() ? item.getObjectId() : 0));
 			
 			// Send message to owner.
 			if (isPet)

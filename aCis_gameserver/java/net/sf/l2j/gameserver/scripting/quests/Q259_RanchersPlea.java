@@ -98,7 +98,7 @@ public class Q259_RanchersPlea extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30497-01.htm" : "30497-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30497-01.htm" : "30497-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -62,7 +62,7 @@ public class Q601_WatchingEyes extends Quest
 		
 		if (event.equalsIgnoreCase("31683-03.htm"))
 		{
-			if (player.getLevel() < 71)
+			if (player.getStatus().getLevel() < 71)
 				htmltext = "31683-02.htm";
 			else
 			{

@@ -20,7 +20,6 @@ import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.zone.type.BossZone;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
@@ -159,7 +158,7 @@ public class Zaken extends L2AttackableAIScript
 					if (willTeleport)
 					{
 						VICTIMS.clear();
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill(), false, false), null);
+						npc.getAI().tryToCast(npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill());
 					}
 				}
 				
@@ -217,7 +216,7 @@ public class Zaken extends L2AttackableAIScript
 			}
 			
 			if (Rnd.get(40) < 1)
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill(), false, false), null);
+				npc.getAI().tryToCast(npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill());
 		}
 		else if (name.equalsIgnoreCase("1002"))
 		{
@@ -225,7 +224,7 @@ public class Zaken extends L2AttackableAIScript
 			VICTIMS.clear();
 			
 			// Teleport Zaken.
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill(), false, false), null);
+			npc.getAI().tryToCast(npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill());
 			
 			// Flag the teleport as false.
 			_hasTeleported = false;
@@ -408,10 +407,10 @@ public class Zaken extends L2AttackableAIScript
 		if (Rnd.get(10) < 1)
 			callSkills(npc, attacker);
 		
-		if (!GameTimeTaskManager.getInstance().isNight() && (npc.getCurrentHp() < (npc.getMaxHp() * _teleportCheck) / 4))
+		if (!GameTimeTaskManager.getInstance().isNight() && (npc.getStatus().getHp() < (npc.getStatus().getMaxHp() * _teleportCheck) / 4))
 		{
 			_teleportCheck -= 1;
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill(), false, false), null);
+			npc.getAI().tryToCast(npc, FrequentSkill.ZAKEN_SELF_TELE.getSkill());
 		}
 		return super.onAttack(npc, attacker, damage, skill);
 	}
@@ -421,7 +420,7 @@ public class Zaken extends L2AttackableAIScript
 	{
 		if (caller.getNpcId() == ZAKEN && GameTimeTaskManager.getInstance().isNight())
 		{
-			if (npc.getAI().getCurrentIntention().getType() == IntentionType.IDLE && !_hasTeleported && caller.getCurrentHp() < (0.9 * caller.getMaxHp()) && Rnd.get(450) < 1)
+			if (npc.getAI().getCurrentIntention().getType() == IntentionType.IDLE && !_hasTeleported && caller.getStatus().getHpRatio() < 0.9 && Rnd.get(450) < 1)
 			{
 				// Set the teleport flag as true.
 				_hasTeleported = true;
@@ -528,21 +527,21 @@ public class Zaken extends L2AttackableAIScript
 	{
 		final int chance = Rnd.get(225);
 		if (chance < 1)
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, FrequentSkill.ZAKEN_TELE.getSkill(), false, false), null);
+			npc.getAI().tryToCast(target, FrequentSkill.ZAKEN_TELE.getSkill());
 		else if (chance < 2)
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, FrequentSkill.ZAKEN_MASS_TELE.getSkill(), false, false), null);
+			npc.getAI().tryToCast(target, FrequentSkill.ZAKEN_MASS_TELE.getSkill());
 		else if (chance < 4)
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, FrequentSkill.ZAKEN_HOLD.getSkill(), false, false), null);
+			npc.getAI().tryToCast(target, FrequentSkill.ZAKEN_HOLD.getSkill());
 		else if (chance < 8)
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, FrequentSkill.ZAKEN_DRAIN.getSkill(), false, false), null);
+			npc.getAI().tryToCast(target, FrequentSkill.ZAKEN_DRAIN.getSkill());
 		else if (chance < 15)
 		{
 			if (target != ((Attackable) npc).getMostHated() && npc.isIn3DRadius(target, 100))
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, FrequentSkill.ZAKEN_MASS_DUAL_ATTACK.getSkill(), false, false), null);
+				npc.getAI().tryToCast(target, FrequentSkill.ZAKEN_MASS_DUAL_ATTACK.getSkill());
 		}
 		
 		if (Rnd.nextBoolean() && target == ((Attackable) npc).getMostHated())
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, target, FrequentSkill.ZAKEN_DUAL_ATTACK.getSkill(), false, false), null);
+			npc.getAI().tryToCast(target, FrequentSkill.ZAKEN_DUAL_ATTACK.getSkill());
 	}
 	
 	/**
@@ -564,7 +563,7 @@ public class Zaken extends L2AttackableAIScript
 			final StatsSet info = GrandBossManager.getInstance().getStatsSet(ZAKEN);
 			
 			zaken = (GrandBoss) addSpawn(ZAKEN, info.getInteger("loc_x"), info.getInteger("loc_y"), info.getInteger("loc_z"), info.getInteger("heading"), false, 0, false);
-			zaken.setCurrentHpMp(info.getInteger("currentHP"), info.getInteger("currentMP"));
+			zaken.getStatus().setHpMp(info.getInteger("currentHP"), info.getInteger("currentMP"));
 		}
 		
 		GrandBossManager.getInstance().addBoss(zaken);

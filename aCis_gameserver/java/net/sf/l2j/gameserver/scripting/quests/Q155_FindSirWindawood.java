@@ -57,7 +57,7 @@ public class Q155_FindSirWindawood extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 3) ? "30042-01a.htm" : "30042-01.htm";
+				htmltext = (player.getStatus().getLevel() < 3) ? "30042-01a.htm" : "30042-01.htm";
 				break;
 			
 			case STATE_STARTED:

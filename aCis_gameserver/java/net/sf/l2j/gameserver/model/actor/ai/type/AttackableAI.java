@@ -6,7 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
@@ -34,7 +34,6 @@ import net.sf.l2j.gameserver.model.actor.instance.FriendlyMonster;
 import net.sf.l2j.gameserver.model.actor.instance.Guard;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.actor.instance.RiftInvader;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
@@ -83,31 +82,37 @@ public class AttackableAI extends CreatureAI implements Runnable
 	}
 	
 	@Override
-	protected void onIntentionIdle()
+	protected void thinkIdle()
 	{
-		super.onIntentionIdle();
+		// If the region is active and actor isn't dead, set the intention as ACTIVE.
+		if (!_actor.isAlikeDead() && _actor.getRegion().isActive())
+		{
+			doActiveIntention();
+			return;
+		}
+		
+		// The intention is still IDLE ; we detach the AI and stop both AI and follow tasks.
+		stopAITask();
+		
+		super.thinkIdle();
 		
 		_isInCombatMode = false;
 	}
 	
 	@Override
-	protected void onIntentionActive()
+	protected void thinkActive()
 	{
-		super.onIntentionActive();
+		super.thinkActive();
+		
+		// Create an AI task (schedule onEvtThink every second).
+		if (_aiTask == null)
+			_aiTask = ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
 		
 		getActor().startRandomAnimationTimer();
 	}
 	
-	// Minions following their master
 	@Override
-	protected void onIntentionFollow(Creature target, boolean isShiftPressed)
-	{
-		setCurrentIntention(IntentionType.FOLLOW, target, isShiftPressed);
-		notifyEvent(AiEventType.THINK, null, null);
-	}
-	
-	@Override
-	protected void onIntentionAttack(Creature target, boolean isShiftPressed)
+	protected void thinkAttack()
 	{
 		if (!_isInCombatMode)
 		{
@@ -117,7 +122,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		
 		canSelfBuff();
 		
-		super.onIntentionAttack(target, isShiftPressed);
+		super.thinkAttack();
 	}
 	
 	@Override
@@ -127,12 +132,12 @@ public class AttackableAI extends CreatureAI implements Runnable
 	}
 	
 	@Override
-	protected void onEvtBowAttackReused()
+	protected void onEvtBowAttackReuse()
 	{
 		if (_nextIntention.isBlank())
 			notifyEvent(AiEventType.THINK, null, null);
 		else
-			changeCurrentIntention(_nextIntention);
+			doIntention(_nextIntention);
 	}
 	
 	@Override
@@ -148,13 +153,13 @@ public class AttackableAI extends CreatureAI implements Runnable
 				if (getActor().isReturningToSpawnPoint())
 					getActor().setIsReturningToSpawnPoint(false);
 				
-				changeCurrentIntention(IntentionType.ACTIVE, null, null);
+				doActiveIntention();
 			}
 			else
 				notifyEvent(AiEventType.THINK, null, null);
 		}
 		else
-			changeCurrentIntention(_nextIntention);
+			doIntention(_nextIntention);
 	}
 	
 	@Override
@@ -182,7 +187,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		if (!me.isCoreAiDisabled() && !_isInCombatMode)
 		{
 			me.forceRunStance();
-			tryTo(IntentionType.ATTACK, target, false);
+			tryToAttack(target);
 		}
 		
 		if (me instanceof Monster)
@@ -242,37 +247,11 @@ public class AttackableAI extends CreatureAI implements Runnable
 					{
 						// TODO Clan calling onto an Attackable attacker?
 						called.addDamageHate(target, 0, me.getHating(target));
-						called.getAI().tryTo(IntentionType.ATTACK, target, false);
+						called.getAI().tryToAttack(target);
 					}
 				}
 			}
 		}
-	}
-	
-	@Override
-	public synchronized void changeCurrentIntention(IntentionType intention, Object arg0, Object arg1)
-	{
-		if (intention == IntentionType.IDLE)
-		{
-			// If the region is active and actor isn't dead, set the intention as ACTIVE.
-			if (!_actor.isAlikeDead() && _actor.getRegion().isActive())
-				intention = IntentionType.ACTIVE;
-			
-			// The intention is still IDLE ; we detach the AI and stop both AI and follow tasks.
-			if (intention == IntentionType.IDLE)
-			{
-				super.changeCurrentIntention(IntentionType.IDLE, null, null);
-				stopAITask();
-				return;
-			}
-		}
-		
-		// Update the intention.
-		super.changeCurrentIntention(intention, arg0, arg1);
-		
-		// Create an AI task (schedule onEvtThink every second).
-		if (_aiTask == null)
-			_aiTask = ThreadPool.scheduleAtFixedRate(this, 1000, 1000);
 	}
 	
 	/**
@@ -322,29 +301,26 @@ public class AttackableAI extends CreatureAI implements Runnable
 			}
 		}
 		
-		// Check if the actor is a Guard
 		if (me instanceof Guard)
 		{
-			// Check if the Player target has karma (=PK)
-			if (target instanceof Player && ((Player) target).getKarma() > 0)
+			// Check if the Playable target has karma.
+			if (target instanceof Playable && target.getActingPlayer().getKarma() > 0)
 				return GeoEngine.getInstance().canSeeTarget(me, target);
 			
-			// Check if the Monster target is aggressive
+			// Check if the Monster target is aggressive.
 			if (target instanceof Monster && Config.GUARD_ATTACK_AGGRO_MOB)
 				return (((Monster) target).isAggressive() && GeoEngine.getInstance().canSeeTarget(me, target));
 			
 			return false;
 		}
-		// The actor is a FriendlyMonster
 		else if (me instanceof FriendlyMonster)
 		{
-			// Check if the Player target has karma (=PK)
-			if (target instanceof Player && ((Player) target).getKarma() > 0)
-				return GeoEngine.getInstance().canSeeTarget(me, target); // Los Check
-				
+			// Check if the Playable target has karma.
+			if (target instanceof Playable && target.getActingPlayer().getKarma() > 0)
+				return GeoEngine.getInstance().canSeeTarget(me, target);
+			
 			return false;
 		}
-		// The actor is a Npc
 		else
 		{
 			if (target instanceof Attackable && me.isConfused())
@@ -352,10 +328,9 @@ public class AttackableAI extends CreatureAI implements Runnable
 			
 			if (target instanceof Npc)
 				return false;
-				
-			// depending on config, do not allow mobs to attack _new_ players in peacezones,
-			// unless they are already following those players from outside the peacezone.
-			if (!Config.ALT_MOB_AGRO_IN_PEACEZONE && target.isInsideZone(ZoneId.PEACE))
+			
+			// Depending on Config, do not allow mobs to attack players in PEACE zones, unless they are already following those players outside.
+			if (!Config.MOB_AGGRO_IN_PEACEZONE && target.isInsideZone(ZoneId.PEACE))
 				return false;
 			
 			// Check if the actor is Aggressive
@@ -441,7 +416,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			if (!npc.isCoreAiDisabled())
 			{
 				// Chose a obj from its aggroList and order to attack the obj
-				final Creature target = (npc.isConfused()) ? (Creature) getCurrentIntention().getFirstParameter() : npc.getMostHated();
+				final Creature target = (npc.isConfused()) ? getCurrentIntention().getFinalTarget() : npc.getMostHated();
 				if (target != null)
 				{
 					// Get the hate level of the L2Attackable against this Creature obj contained in _aggroList
@@ -451,7 +426,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 						npc.forceRunStance();
 						
 						// Set the AI Intention to ATTACK
-						tryTo(IntentionType.ATTACK, target, false);
+						tryToAttack(target);
 					}
 					return;
 				}
@@ -498,7 +473,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 						y1 = master.getY() - y1 + minRadius;
 					
 					// Move the actor to Location (x,y,z) server side AND client side by sending Server->Client packet CharMoveToLocation (broadcast)
-					npc.getAI().tryTo(IntentionType.MOVE_TO, new Location(x1, y1, master.getZ()), null);
+					npc.getAI().tryToMoveTo(new Location(x1, y1, master.getZ()), null);
 				}
 			}
 		}
@@ -542,7 +517,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			_isInCombatMode = false;
 			
 			_globalAggro = -10;
-			tryTo(IntentionType.ACTIVE, null, null);
+			tryToActive();
 			npc.forceWalkStance();
 			return;
 		}
@@ -582,7 +557,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			// -------------------------------------------------------------------------------
 			// Suicide possibility if HPs are < 15%.
 			defaultList = npc.getTemplate().getSkills(NpcSkillType.SUICIDE);
-			if (!defaultList.isEmpty() && (npc.getCurrentHp() / npc.getMaxHp() < 0.15))
+			if (!defaultList.isEmpty() && npc.getStatus().getHpRatio() < 0.15)
 			{
 				final L2Skill skill = Rnd.get(defaultList);
 				
@@ -597,7 +572,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			{
 				// First priority is to heal the master.
 				final Attackable master = npc.getMaster();
-				if (master != null && !master.isDead() && (master.getCurrentHp() / master.getMaxHp() < 0.75))
+				if (master != null && !master.isDead() && master.getStatus().getHpRatio() < 0.75)
 				{
 					for (final L2Skill sk : defaultList)
 					{
@@ -610,7 +585,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 				}
 				
 				// Second priority is to heal self.
-				if (npc.getCurrentHp() / npc.getMaxHp() < 0.75)
+				if (npc.getStatus().getHpRatio() < 0.75)
 				{
 					for (final L2Skill sk : defaultList)
 					{
@@ -633,7 +608,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 							if (!ArraysUtil.contains(actorClans, obj.getTemplate().getClans()))
 								continue;
 							
-							if (obj.getCurrentHp() / obj.getMaxHp() < 0.75)
+							if (obj.getStatus().getHpRatio() < 0.75)
 							{
 								useMagic(sk, obj, dist, range + sk.getSkillRadius());
 								return;
@@ -703,7 +678,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		 */
 		
 		// The range takes now in consideration physical attack range.
-		range += npc.getPhysicalAttackRange();
+		range += npc.getStatus().getPhysicalAttackRange();
 		
 		if (npc.isMovementDisabled())
 		{
@@ -713,7 +688,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			
 			// Any AI type, even healer or mage, will try to melee attack if it can't do anything else (desperate situation).
 			if (target != null)
-				tryTo(IntentionType.ATTACK, target, false);
+				tryToAttack(target);
 			
 			return;
 		}
@@ -743,7 +718,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 					newY = target.getY() - newY;
 				
 				if (!npc.isIn2DRadius(newX, newY, actorCollision))
-					tryTo(IntentionType.MOVE_TO, new Location(newX, newY, npc.getZ() + 30), null);
+					tryToMoveTo(new Location(newX, newY, npc.getZ() + 30), null);
 				
 				return;
 			}
@@ -764,7 +739,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		 * BASIC MELEE ATTACK
 		 */
 		
-		tryTo(IntentionType.ATTACK, target, false);
+		tryToAttack(target);
 	}
 	
 	protected boolean useMagic(L2Skill sk, Creature originalTarget, double distance, int range)
@@ -780,8 +755,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			{
 				if (caster.getFirstEffect(sk) == null)
 				{
-					final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
-					tryTo(IntentionType.CAST, skillUseHolder, null);
+					tryToCast(originalTarget, sk);
 					return true;
 				}
 				
@@ -795,16 +769,14 @@ public class AttackableAI extends CreatureAI implements Runnable
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, target, sk, false, false);
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(target, sk);
 						return true;
 					}
 				}
 				
 				if (canParty(sk))
 				{
-					final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
-					tryTo(IntentionType.CAST, skillUseHolder, null);
+					tryToCast(originalTarget, sk);
 					return true;
 				}
 				break;
@@ -820,20 +792,18 @@ public class AttackableAI extends CreatureAI implements Runnable
 				if (sk.getTargetType() != SkillTargetType.SELF)
 				{
 					final Attackable master = caster.getMaster();
-					if (master != null && !master.isDead() && Rnd.get(100) > (master.getCurrentHp() / master.getMaxHp() * 100))
+					if (master != null && !master.isDead() && Rnd.get(100) > (master.getStatus().getHpRatio() * 100))
 					{
-						final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, master, sk, false, false);
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(master, sk);
 						return true;
 					}
 				}
 				
 				// Personal case.
-				double percentage = caster.getCurrentHp() / caster.getMaxHp() * 100;
+				double percentage = caster.getStatus().getHpRatio() * 100;
 				if (Rnd.get(100) < (100 - percentage) / 3)
 				{
-					final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, caster, sk, false, false);
-					tryTo(IntentionType.CAST, skillUseHolder, null);
+					tryToCast(caster, sk);
 					return true;
 				}
 				
@@ -847,13 +817,12 @@ public class AttackableAI extends CreatureAI implements Runnable
 						if (!ArraysUtil.contains(caster.getTemplate().getClans(), obj.getTemplate().getClans()))
 							continue;
 						
-						percentage = obj.getCurrentHp() / obj.getMaxHp() * 100;
+						percentage = obj.getStatus().getHpRatio() * 100;
 						if (Rnd.get(100) < (100 - percentage) / 10)
 						{
 							if (GeoEngine.getInstance().canSeeTarget(caster, obj))
 							{
-								final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, obj, sk, false, false);
-								tryTo(IntentionType.CAST, skillUseHolder, null);
+								tryToCast(obj, sk);
 								return true;
 							}
 						}
@@ -867,10 +836,9 @@ public class AttackableAI extends CreatureAI implements Runnable
 						if (!ArraysUtil.contains(caster.getTemplate().getClans(), obj.getTemplate().getClans()))
 							continue;
 						
-						if (obj.getCurrentHp() < obj.getMaxHp() && Rnd.get(100) <= 20)
+						if (obj.getStatus().getHpRatio() < 1.0 && Rnd.get(100) < 20)
 						{
-							final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, caster, sk, false, false);
-							tryTo(IntentionType.CAST, skillUseHolder, null);
+							tryToCast(caster, sk);
 							return true;
 						}
 					}
@@ -884,12 +852,11 @@ public class AttackableAI extends CreatureAI implements Runnable
 			case MDOT:
 			case BLEED:
 			{
-				final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
 				if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !canAOE(sk, originalTarget) && !originalTarget.isDead() && distance <= range)
 				{
 					if (originalTarget.getFirstEffect(sk) == null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -897,13 +864,13 @@ public class AttackableAI extends CreatureAI implements Runnable
 				{
 					if (sk.getTargetType() == SkillTargetType.AURA || sk.getTargetType() == SkillTargetType.BEHIND_AURA || sk.getTargetType() == SkillTargetType.FRONT_AURA)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					
 					if ((sk.getTargetType() == SkillTargetType.AREA || sk.getTargetType() == SkillTargetType.FRONT_AREA) && GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -912,7 +879,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -921,7 +888,6 @@ public class AttackableAI extends CreatureAI implements Runnable
 			
 			case SLEEP:
 			{
-				final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
 				if (sk.getTargetType() == SkillTargetType.ONE)
 				{
 					if (!originalTarget.isDead() && distance <= range)
@@ -930,7 +896,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 						{
 							if (originalTarget.getFirstEffect(sk) == null)
 							{
-								tryTo(IntentionType.CAST, skillUseHolder, null);
+								tryToCast(originalTarget, sk);
 								return true;
 							}
 						}
@@ -939,7 +905,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -947,13 +913,13 @@ public class AttackableAI extends CreatureAI implements Runnable
 				{
 					if (sk.getTargetType() == SkillTargetType.AURA || sk.getTargetType() == SkillTargetType.BEHIND_AURA || sk.getTargetType() == SkillTargetType.FRONT_AURA)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					
 					if ((sk.getTargetType() == SkillTargetType.AREA || sk.getTargetType() == SkillTargetType.FRONT_AREA) && GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -964,12 +930,11 @@ public class AttackableAI extends CreatureAI implements Runnable
 			case STUN:
 			case PARALYZE:
 			{
-				final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
 				if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !canAOE(sk, originalTarget) && distance <= range)
 				{
 					if (originalTarget.getFirstEffect(sk) == null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -977,12 +942,12 @@ public class AttackableAI extends CreatureAI implements Runnable
 				{
 					if (sk.getTargetType() == SkillTargetType.AURA || sk.getTargetType() == SkillTargetType.BEHIND_AURA || sk.getTargetType() == SkillTargetType.FRONT_AURA)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					else if ((sk.getTargetType() == SkillTargetType.AREA || sk.getTargetType() == SkillTargetType.FRONT_AREA) && GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -991,7 +956,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -1001,12 +966,11 @@ public class AttackableAI extends CreatureAI implements Runnable
 			case MUTE:
 			case FEAR:
 			{
-				final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
 				if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !canAOE(sk, originalTarget) && distance <= range)
 				{
 					if (originalTarget.getFirstEffect(sk) == null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -1014,13 +978,13 @@ public class AttackableAI extends CreatureAI implements Runnable
 				{
 					if (sk.getTargetType() == SkillTargetType.AURA || sk.getTargetType() == SkillTargetType.BEHIND_AURA || sk.getTargetType() == SkillTargetType.FRONT_AURA)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					
 					if ((sk.getTargetType() == SkillTargetType.AREA || sk.getTargetType() == SkillTargetType.FRONT_AREA) && GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -1029,7 +993,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -1047,31 +1011,28 @@ public class AttackableAI extends CreatureAI implements Runnable
 				{
 					if (originalTarget.getFirstEffect(EffectType.BUFF) != null && GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, target, sk, false, false);
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(target, sk);
 						caster.setTarget(originalTarget);
 						return true;
 					}
 				}
 				else if (canAOE(sk, originalTarget))
 				{
-					final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
 					if ((sk.getTargetType() == SkillTargetType.AURA || sk.getTargetType() == SkillTargetType.BEHIND_AURA || sk.getTargetType() == SkillTargetType.FRONT_AURA) && GeoEngine.getInstance().canSeeTarget(caster, originalTarget))
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					else if ((sk.getTargetType() == SkillTargetType.AREA || sk.getTargetType() == SkillTargetType.FRONT_AREA) && GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 				}
@@ -1084,24 +1045,21 @@ public class AttackableAI extends CreatureAI implements Runnable
 				{
 					if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
 					{
-						final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(originalTarget, sk);
 						return true;
 					}
 					
 					final Creature target = targetReconsider(sk.getCastRange(), true);
 					if (target != null)
 					{
-						final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, target, sk, false, false);
-						tryTo(IntentionType.CAST, skillUseHolder, null);
+						tryToCast(target, sk);
 						caster.setTarget(originalTarget);
 						return true;
 					}
 				}
 				else
 				{
-					final SkillUseHolder skillUseHolder = new SkillUseHolder(caster, originalTarget, sk, false, false);
-					tryTo(IntentionType.CAST, skillUseHolder, null);
+					tryToCast(originalTarget, sk);
 					return true;
 				}
 			}
@@ -1230,7 +1188,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		{
 			// Add most hated aggro to the victim aggro.
 			actor.addDamageHate(target, 0, actor.getHating(mostHated));
-			tryTo(IntentionType.ATTACK, target, false);
+			tryToAttack(target);
 		}
 	}
 	
@@ -1249,7 +1207,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 			if (getActor().getFirstEffect(sk) != null)
 				continue;
 			
-			tryTo(IntentionType.CAST, new SkillUseHolder(_actor, _actor, sk, false, false), null);
+			tryToCast(_actor, sk);
 			return true;
 		}
 		

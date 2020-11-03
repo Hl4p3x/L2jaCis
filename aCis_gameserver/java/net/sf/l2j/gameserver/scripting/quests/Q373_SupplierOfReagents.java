@@ -366,7 +366,7 @@ public class Q373_SupplierOfReagents extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 57) ? "30166-01.htm" : "30166-02.htm";
+				htmltext = (player.getStatus().getLevel() < 57) ? "30166-01.htm" : "30166-02.htm";
 				break;
 			
 			case STATE_STARTED:

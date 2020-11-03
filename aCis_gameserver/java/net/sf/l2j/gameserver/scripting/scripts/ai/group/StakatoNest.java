@@ -1,15 +1,12 @@
 package net.sf.l2j.gameserver.scripting.scripts.ai.group;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -55,23 +52,20 @@ public class StakatoNest extends L2AttackableAIScript
 	@Override
 	public String onAttack(Npc npc, Creature attacker, int damage, L2Skill skill)
 	{
-		if (npc.getCurrentHp() / npc.getMaxHp() < 0.3 && Rnd.get(100) < 5)
+		if (npc.getStatus().getHpRatio() < 0.3 && Rnd.get(100) < 5)
 		{
 			for (Monster follower : npc.getKnownTypeInRadius(Monster.class, 400))
 			{
 				if (follower.getNpcId() == STAKATO_FOLLOWER && !follower.isDead())
 				{
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, follower, SkillTable.getInstance().getInfo((npc.getNpcId() == CANNIBALISTIC_STAKATO_LEADER_2) ? 4072 : 4073, 1), false, false), null);
+					npc.getAI().tryToCast(follower, (npc.getNpcId() == CANNIBALISTIC_STAKATO_LEADER_2) ? 4072 : 4073, 1);
 					
 					ThreadPool.schedule(() ->
 					{
-						if (npc.isDead())
+						if (npc.isDead() || follower.isDead())
 							return;
 						
-						if (follower.isDead())
-							return;
-						
-						npc.setCurrentHp(npc.getCurrentHp() + (follower.getCurrentHp() / 2));
+						npc.getStatus().addHp(follower.getStatus().getHp() / 2);
 						follower.doDie(follower);
 					}, 3000L);
 					

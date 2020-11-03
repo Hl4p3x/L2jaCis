@@ -1,10 +1,10 @@
 package net.sf.l2j.gameserver.model.itemcontainer;
 
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
 
 public class PetInventory extends Inventory
 {
@@ -56,9 +56,12 @@ public class PetInventory extends Inventory
 	}
 	
 	@Override
-	public boolean validateCapacity(int slots)
+	public boolean validateCapacity(int slotCount)
 	{
-		return _items.size() + slots <= _owner.getInventoryLimit();
+		if (slotCount == 0)
+			return true;
+		
+		return _items.size() + slotCount <= _owner.getInventoryLimit();
 	}
 	
 	public boolean validateWeight(ItemInstance item, int count)
@@ -69,7 +72,7 @@ public class PetInventory extends Inventory
 	@Override
 	public boolean validateWeight(int weight)
 	{
-		return _totalWeight + weight <= _owner.getMaxLoad();
+		return _totalWeight + weight <= _owner.getWeightLimit();
 	}
 	
 	@Override

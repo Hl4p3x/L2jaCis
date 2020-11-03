@@ -40,10 +40,10 @@ public class ConditionPlayerState extends Condition
 				return effector.isFlying() == _required;
 			
 			case BEHIND:
-				return effector.isBehindTarget() == _required;
+				return effector.isBehind(effected) == _required;
 			
 			case FRONT:
-				return effector.isInFrontOfTarget() == _required;
+				return effector.isInFrontOf(effected) == _required;
 			
 			case OLYMPIAD:
 				return (player == null) ? !_required : player.isInOlympiadMode() == _required;

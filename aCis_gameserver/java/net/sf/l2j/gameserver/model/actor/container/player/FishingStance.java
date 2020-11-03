@@ -2,8 +2,8 @@ package net.sf.l2j.gameserver.model.actor.container.player;
 
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.manager.FishingChampionshipManager;
@@ -611,10 +611,10 @@ public class FishingStance
 		{
 			if (Rnd.get(100) < 5)
 			{
-				int npcId = 18319 + Math.min(_fisher.getLevel() / 11, 7); // 18319-18326
+				int npcId = 18319 + Math.min(_fisher.getStatus().getLevel() / 11, 7); // 18319-18326
 				
 				PenaltyMonster npc = new PenaltyMonster(IdFactory.getInstance().getNextId(), NpcData.getInstance().getTemplate(npcId));
-				npc.setCurrentHpMp(npc.getMaxHp(), npc.getMaxMp());
+				npc.getStatus().setMaxHpMp();
 				npc.spawnMe(_fisher.getPosition());
 				npc.setPlayerToKill(_fisher);
 				

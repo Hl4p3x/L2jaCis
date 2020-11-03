@@ -580,7 +580,7 @@ public class SecondClassChange extends Quest
 			final int[] array = CLASSES.get(event);
 			if (player.getClassId().getId() == array[1] && player.getRace().ordinal() == array[2])
 			{
-				if (player.getLevel() < 40)
+				if (player.getStatus().getLevel() < 40)
 					suffix = "-" + ((st.hasQuestItems(array[7], array[8], array[9])) ? array[4] : array[3]);
 				else
 				{
@@ -643,7 +643,7 @@ public class SecondClassChange extends Quest
 			case 32096:
 				if (player.getRace() == ClassRace.DARK_ELF)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.PALUS_KNIGHT)
 							htmltext = "master_de-01.htm";
@@ -655,7 +655,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_de-19.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_de-55.htm" : "master_de-54.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_de-55.htm" : "master_de-54.htm";
 				}
 				else
 					htmltext = "master_de-56.htm";
@@ -671,7 +671,7 @@ public class SecondClassChange extends Quest
 			case 31977:
 				if (player.getRace() == ClassRace.ORC)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.MONK)
 							htmltext = "master_orc-01.htm";
@@ -681,7 +681,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_orc-09.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_orc-33.htm" : "master_orc-32.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_orc-33.htm" : "master_orc-32.htm";
 				}
 				else
 					htmltext = "master_orc-34.htm";
@@ -697,7 +697,7 @@ public class SecondClassChange extends Quest
 			case 31958:
 				if (player.getRace() == ClassRace.DWARF)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.SCAVENGER)
 							htmltext = "master_dwarf-01.htm";
@@ -705,7 +705,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_dwarf-15.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_dwarf-13.htm" : "master_dwarf-14.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_dwarf-13.htm" : "master_dwarf-14.htm";
 				}
 				else
 					htmltext = "master_dwarf-15.htm";
@@ -721,7 +721,7 @@ public class SecondClassChange extends Quest
 			case 31961:
 				if (player.getRace() == ClassRace.DWARF)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.SCAVENGER)
 							htmltext = "master_dwarf-22.htm";
@@ -729,7 +729,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_dwarf-05.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_dwarf-20.htm" : "master_dwarf-21.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_dwarf-20.htm" : "master_dwarf-21.htm";
 				}
 				else
 					htmltext = "master_dwarf-22.htm";
@@ -744,7 +744,7 @@ public class SecondClassChange extends Quest
 			case 32094:
 				if (player.getRace() == ClassRace.HUMAN || player.getRace() == ClassRace.ELF)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.ELVEN_KNIGHT)
 							htmltext = "master_human_elf_fighter-01.htm";
@@ -760,7 +760,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_human_elf_fighter-78.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_human_elf_fighter-76.htm" : "master_human_elf_fighter-77.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_human_elf_fighter-76.htm" : "master_human_elf_fighter-77.htm";
 				}
 				else
 					htmltext = "master_human_elf_fighter-78.htm";
@@ -774,7 +774,7 @@ public class SecondClassChange extends Quest
 			case 31996:
 				if (player.getRace() == ClassRace.ELF || player.getRace() == ClassRace.HUMAN)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.ELVEN_WIZARD)
 							htmltext = "master_human_elf_mystic-01.htm";
@@ -784,7 +784,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_human_elf_mystic-40.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_human_elf_mystic-38.htm" : "master_human_elf_mystic-39.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_human_elf_mystic-38.htm" : "master_human_elf_mystic-39.htm";
 				}
 				else
 					htmltext = "master_human_elf_mystic-40.htm";
@@ -803,7 +803,7 @@ public class SecondClassChange extends Quest
 			case 31336:
 				if (player.getRace() == ClassRace.HUMAN || player.getRace() == ClassRace.ELF)
 				{
-					if (player.getClassId().level() == 1)
+					if (player.getClassId().getLevel() == 1)
 					{
 						if (player.getClassId() == ClassId.ELVEN_ORACLE)
 							htmltext = "master_human_elf_buffer-01.htm";
@@ -813,7 +813,7 @@ public class SecondClassChange extends Quest
 							htmltext = "master_human_elf_buffer-26.htm";
 					}
 					else
-						htmltext = (player.getClassId().level() == 0) ? "master_human_elf_buffer-24.htm" : "master_human_elf_buffer-25.htm";
+						htmltext = (player.getClassId().getLevel() == 0) ? "master_human_elf_buffer-24.htm" : "master_human_elf_buffer-25.htm";
 				}
 				else
 					htmltext = "master_human_elf_buffer-26.htm";
@@ -851,7 +851,7 @@ public class SecondClassChange extends Quest
 				if (player.isMageClass())
 				{
 					// Retrieve associated first class.
-					final ClassId testedClass = (player.getClassId().level() == 1) ? player.getClassId() : player.getClassId().getParent();
+					final ClassId testedClass = (player.getClassId().getLevel() == 1) ? player.getClassId() : player.getClassId().getParent();
 					
 					// Test if this class is Human Wizard or Elven Wizard. Send proper path.
 					change = (testedClass == ClassId.HUMAN_WIZARD || testedClass == ClassId.ELVEN_WIZARD) ? "master_human_elf_mystic" : "master_human_elf_buffer";

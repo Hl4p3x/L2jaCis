@@ -307,18 +307,18 @@ public class OracleTeleport extends Quest
 		}
 		else if (event.equalsIgnoreCase("zigurratDimensional"))
 		{
-			int playerLevel = player.getLevel();
-			if (playerLevel >= 20 && playerLevel < 30)
+			final int level = player.getStatus().getLevel();
+			if (level >= 20 && level < 30)
 				st.takeItems(57, 2000);
-			else if (playerLevel >= 30 && playerLevel < 40)
+			else if (level >= 30 && level < 40)
 				st.takeItems(57, 4500);
-			else if (playerLevel >= 40 && playerLevel < 50)
+			else if (level >= 40 && level < 50)
 				st.takeItems(57, 8000);
-			else if (playerLevel >= 50 && playerLevel < 60)
+			else if (level >= 50 && level < 60)
 				st.takeItems(57, 12500);
-			else if (playerLevel >= 60 && playerLevel < 70)
+			else if (level >= 60 && level < 70)
 				st.takeItems(57, 18000);
-			else if (playerLevel >= 70)
+			else if (level >= 70)
 				st.takeItems(57, 24500);
 			
 			int i = 0;
@@ -384,7 +384,7 @@ public class OracleTeleport extends Quest
 		}
 		else if (npcId >= 31494 && npcId <= 31507)
 		{
-			if (player.getLevel() < 20)
+			if (player.getStatus().getLevel() < 20)
 			{
 				htmltext = "1.htm";
 				st.exitQuest(true);
@@ -404,8 +404,8 @@ public class OracleTeleport extends Quest
 		}
 		else if ((npcId >= 31095 && npcId <= 31111) || (npcId >= 31114 && npcId <= 31126))
 		{
-			int playerLevel = player.getLevel();
-			if (playerLevel < 20)
+			final int level = player.getStatus().getLevel();
+			if (level < 20)
 			{
 				htmltext = "ziggurat_lowlevel.htm";
 				st.exitQuest(true);
@@ -420,32 +420,32 @@ public class OracleTeleport extends Quest
 				htmltext = "ziggurat_nofrag.htm";
 				st.exitQuest(true);
 			}
-			else if (playerLevel >= 20 && playerLevel < 30 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 2000)
+			else if (level >= 20 && level < 30 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 2000)
 			{
 				htmltext = "ziggurat_noadena.htm";
 				st.exitQuest(true);
 			}
-			else if (playerLevel >= 30 && playerLevel < 40 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 4500)
+			else if (level >= 30 && level < 40 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 4500)
 			{
 				htmltext = "ziggurat_noadena.htm";
 				st.exitQuest(true);
 			}
-			else if (playerLevel >= 40 && playerLevel < 50 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 8000)
+			else if (level >= 40 && level < 50 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 8000)
 			{
 				htmltext = "ziggurat_noadena.htm";
 				st.exitQuest(true);
 			}
-			else if (playerLevel >= 50 && playerLevel < 60 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 12500)
+			else if (level >= 50 && level < 60 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 12500)
 			{
 				htmltext = "ziggurat_noadena.htm";
 				st.exitQuest(true);
 			}
-			else if (playerLevel >= 60 && playerLevel < 70 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 18000)
+			else if (level >= 60 && level < 70 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 18000)
 			{
 				htmltext = "ziggurat_noadena.htm";
 				st.exitQuest(true);
 			}
-			else if (playerLevel >= 70 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 24500)
+			else if (level >= 70 && st.getQuestItemsCount(PcInventory.ADENA_ID) < 24500)
 			{
 				htmltext = "ziggurat_noadena.htm";
 				st.exitQuest(true);

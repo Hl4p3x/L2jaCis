@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
@@ -118,14 +118,14 @@ public class RaidBoss extends Monster
 				{
 					for (Player member : party.getMembers())
 					{
-						RaidPointManager.getInstance().addPoints(member, getNpcId(), (getLevel() / 2) + Rnd.get(-5, 5));
+						RaidPointManager.getInstance().addPoints(member, getNpcId(), (getStatus().getLevel() / 2) + Rnd.get(-5, 5));
 						if (member.isNoble())
 							HeroManager.getInstance().setRBkilled(member.getObjectId(), getNpcId());
 					}
 				}
 				else
 				{
-					RaidPointManager.getInstance().addPoints(player, getNpcId(), (getLevel() / 2) + Rnd.get(-5, 5));
+					RaidPointManager.getInstance().addPoints(player, getNpcId(), (getStatus().getLevel() / 2) + Rnd.get(-5, 5));
 					if (player.isNoble())
 						HeroManager.getInstance().setRBkilled(player.getObjectId(), getNpcId());
 				}

@@ -1,5 +1,6 @@
 package net.sf.l2j.gameserver.model.itemcontainer.listeners;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
@@ -19,7 +20,7 @@ public class ItemPassiveSkillsListener implements OnEquipListener
 	}
 	
 	@Override
-	public void onEquip(int slot, ItemInstance item, Playable actor)
+	public void onEquip(Paperdoll slot, ItemInstance item, Playable actor)
 	{
 		final Player player = (Player) actor;
 		final Item it = item.getItem();
@@ -90,7 +91,7 @@ public class ItemPassiveSkillsListener implements OnEquipListener
 	}
 	
 	@Override
-	public void onUnequip(int slot, ItemInstance item, Playable actor)
+	public void onUnequip(Paperdoll slot, ItemInstance item, Playable actor)
 	{
 		final Player player = (Player) actor;
 		final Item it = item.getItem();
@@ -130,7 +131,7 @@ public class ItemPassiveSkillsListener implements OnEquipListener
 					
 					for (ItemInstance pItem : player.getInventory().getPaperdollItems())
 					{
-						if (pItem != null && it.getItemId() == pItem.getItemId())
+						if (it.getItemId() == pItem.getItemId())
 						{
 							found = true;
 							break;

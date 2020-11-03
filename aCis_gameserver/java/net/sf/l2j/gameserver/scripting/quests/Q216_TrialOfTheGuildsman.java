@@ -177,7 +177,7 @@ public class Q216_TrialOfTheGuildsman extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.SCAVENGER && player.getClassId() != ClassId.ARTISAN)
 					htmltext = "30103-01.htm";
-				else if (player.getLevel() < 35)
+				else if (player.getStatus().getLevel() < 35)
 					htmltext = "30103-02.htm";
 				else
 					htmltext = "30103-03.htm";
@@ -281,7 +281,7 @@ public class Q216_TrialOfTheGuildsman extends SecondClassQuest
 						if (cond == 5)
 						{
 							if (st.hasQuestItems(ALTRAN_RECOMMENDATION_2))
-								htmltext = (player.getLevel() < 36) ? "30298-01.htm" : "30298-02.htm";
+								htmltext = (player.getStatus().getLevel() < 36) ? "30298-01.htm" : "30298-02.htm";
 							else if (st.hasQuestItems(PINTER_INSTRUCTIONS))
 							{
 								if (st.getQuestItemsCount(AMBER_BEAD) < 70)

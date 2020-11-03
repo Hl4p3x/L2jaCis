@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.model.actor.ai.type;
 
-import net.sf.l2j.commons.random.Rnd;
-
 import net.sf.l2j.gameserver.data.manager.CursedWeaponManager;
 import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.LootRule;
@@ -10,6 +8,7 @@ import net.sf.l2j.gameserver.enums.items.EtcItemType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
+import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
@@ -20,12 +19,12 @@ import net.sf.l2j.gameserver.network.serverpackets.AutoAttackStart;
 import net.sf.l2j.gameserver.network.serverpackets.AutoAttackStop;
 import net.sf.l2j.gameserver.network.serverpackets.PetItemList;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
+import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.taskmanager.AttackStanceTaskManager;
 import net.sf.l2j.gameserver.taskmanager.ItemsOnGroundTaskManager;
 
 public class SummonAI extends PlayableAI
 {
-	private static final int AVOID_RADIUS = 70;
 	private volatile boolean _followOwner = true;
 	
 	public SummonAI(Summon summon)
@@ -34,31 +33,32 @@ public class SummonAI extends PlayableAI
 	}
 	
 	@Override
-	protected void onIntentionIdle()
+	protected void thinkIdle()
 	{
-		super.onIntentionIdle();
+		super.thinkIdle();
+		
 		_followOwner = false;
 	}
 	
 	@Override
-	protected void onIntentionActive()
+	protected void thinkActive()
 	{
 		if (_nextIntention.isBlank())
 		{
 			if (_followOwner)
-				changeCurrentIntention(IntentionType.FOLLOW, getOwner(), false);
+				doFollowIntention(getOwner(), false);
 			else
-				onIntentionIdle();
+				doIdleIntention();
 		}
 		else
-			super.onIntentionActive();
+			super.thinkActive();
 	}
 	
 	@Override
 	protected void onEvtTeleported()
 	{
 		_followOwner = true;
-		changeCurrentIntention(IntentionType.FOLLOW, getOwner(), false);
+		doFollowIntention(getOwner(), false);
 	}
 	
 	@Override
@@ -67,12 +67,12 @@ public class SummonAI extends PlayableAI
 		if (_nextIntention.isBlank())
 		{
 			if (_previousIntention.getType() == IntentionType.ATTACK)
-				changeCurrentIntention(_previousIntention);
+				doIntention(_previousIntention);
 			else
-				changeCurrentIntention(IntentionType.ACTIVE, null, null);
+				doActiveIntention();
 		}
 		else
-			changeCurrentIntention(_nextIntention);
+			doIntention(_nextIntention);
 	}
 	
 	@Override
@@ -80,7 +80,7 @@ public class SummonAI extends PlayableAI
 	{
 		super.onEvtAttacked(attacker);
 		
-		avoidAttack(attacker);
+		getActor().getMove().avoidAttack(attacker);
 	}
 	
 	@Override
@@ -88,7 +88,63 @@ public class SummonAI extends PlayableAI
 	{
 		super.onEvtEvaded(attacker);
 		
-		avoidAttack(attacker);
+		getActor().getMove().avoidAttack(attacker);
+	}
+	
+	@Override
+	protected void thinkAttack()
+	{
+		if (getActor().denyAiAction())
+		{
+			doActiveIntention();
+			return;
+		}
+		
+		final Creature target = _currentIntention.getFinalTarget();
+		if (isTargetLost(target))
+		{
+			doActiveIntention();
+			return;
+		}
+		
+		final boolean isShiftPressed = _currentIntention.isShiftPressed();
+		if (getActor().getMove().maybeStartOffensiveFollow(target, getActor().getStatus().getPhysicalAttackRange()))
+		{
+			if (isShiftPressed)
+				doActiveIntention();
+			
+			return;
+		}
+		
+		getActor().getMove().stop();
+		
+		if (!getActor().getAttack().canDoAttack(target))
+		{
+			doActiveIntention();
+			return;
+		}
+		
+		getActor().getAttack().doAttack(target);
+	}
+	
+	@Override
+	protected void thinkInteract()
+	{
+		final WorldObject target = _currentIntention.getTarget();
+		if (isTargetLost(target))
+		{
+			doActiveIntention();
+			return;
+		}
+		
+		final boolean isShiftPressed = _currentIntention.isShiftPressed();
+		if (getActor().getMove().maybeMoveToLocation(target.getPosition(), getActor().getStatus().getPhysicalAttackRange(), true, isShiftPressed))
+		{
+			if (isShiftPressed)
+				doActiveIntention();
+			
+			return;
+		}
 	}
 	
 	@Override
@@ -119,12 +175,6 @@ public class SummonAI extends PlayableAI
 			if (!getActor().getInventory().validateCapacity(item))
 			{
 				getOwner().sendPacket(SystemMessageId.YOUR_PET_CANNOT_CARRY_ANY_MORE_ITEMS);
-				return null;
-			}
-			
-			if (!getActor().getInventory().validateWeight(item, item.getCount()))
-			{
-				getOwner().sendPacket(SystemMessageId.UNABLE_TO_PLACE_ITEM_YOUR_PET_IS_TOO_ENCUMBERED);
 				return null;
 			}
 			
@@ -159,7 +209,7 @@ public class SummonAI extends PlayableAI
 				handler.useItem(getActor(), item, false);
 			
 			item.destroyMe("Consume", getActor().getOwner(), null);
-			getActor().broadcastStatusUpdate();
+			getActor().getStatus().broadcastStatusUpdate();
 		}
 		else
 		{
@@ -188,9 +238,6 @@ public class SummonAI extends PlayableAI
 			getActor().getInventory().addItem("Pickup", item, getOwner(), getActor());
 			getOwner().sendPacket(new PetItemList(getActor()));
 		}
-		
-		if (_followOwner)
-			getActor().followOwner();
 		
 		return item;
 	}
@@ -224,29 +271,6 @@ public class SummonAI extends PlayableAI
 		getActor().broadcastPacket(new AutoAttackStop(getActor().getObjectId()));
 	}
 	
-	private void avoidAttack(Creature attacker)
-	{
-		final Player owner = getOwner();
-		
-		if (owner == null || owner == attacker || !owner.isIn3DRadius(_actor, 2 * AVOID_RADIUS) || !AttackStanceTaskManager.getInstance().isInAttackStance(owner))
-			return;
-		
-		if (_currentIntention.getType() != IntentionType.ACTIVE && _currentIntention.getType() != IntentionType.FOLLOW)
-			return;
-		
-		if (_actor.isMoving() || _actor.isDead() || _actor.isMovementDisabled())
-			return;
-		
-		final int ownerX = owner.getX();
-		final int ownerY = owner.getY();
-		final double angle = Math.toRadians(Rnd.get(-90, 90)) + Math.atan2(ownerY - _actor.getY(), ownerX - _actor.getX());
-		
-		final int targetX = ownerX + (int) (AVOID_RADIUS * Math.cos(angle));
-		final int targetY = ownerY + (int) (AVOID_RADIUS * Math.sin(angle));
-		
-		_actor.getMove().moveToLocation(targetX, targetY, _actor.getZ());
-	}
-	
 	public void switchFollowStatus()
 	{
 		setFollowStatus(!_followOwner);
@@ -258,14 +282,34 @@ public class SummonAI extends PlayableAI
 		_followOwner = state;
 		
 		if (_followOwner)
-			tryTo(IntentionType.FOLLOW, getOwner(), false);
+			tryToFollow(getOwner(), false);
 		else
-			tryTo(IntentionType.IDLE, null, null);
+			tryToIdle();
 	}
 	
 	@Override
 	public boolean getFollowStatus()
 	{
 		return _followOwner;
+	}
+	
+	@Override
+	public boolean isTargetLost(WorldObject object)
+	{
+		final boolean isTargetLost = super.isTargetLost(object);
+		if (isTargetLost)
+			setFollowStatus(true);
+		
+		return isTargetLost;
+	}
+	
+	@Override
+	public boolean isTargetLost(WorldObject object, L2Skill skill)
+	{
+		final boolean isTargetLost = super.isTargetLost(object, skill);
+		if (isTargetLost)
+			setFollowStatus(true);
+		
+		return isTargetLost;
 	}
 }

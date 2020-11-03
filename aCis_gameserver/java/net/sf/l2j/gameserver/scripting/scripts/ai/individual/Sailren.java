@@ -9,7 +9,6 @@ import net.sf.l2j.commons.util.StatsSet;
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
@@ -75,7 +74,7 @@ public class Sailren extends L2AttackableAIScript
 				GrandBossManager.getInstance().addBoss((GrandBoss) sailren);
 				_mobs.add(sailren);
 				
-				sailren.setCurrentHpMp(hp, mp);
+				sailren.getStatus().setHpMp(hp, mp);
 				sailren.forceRunStance();
 				
 				// Don't need to edit _timeTracker, as it's initialized to 0.
@@ -101,7 +100,7 @@ public class Sailren extends L2AttackableAIScript
 			for (int i = 0; i < 3; i++)
 			{
 				final Npc temp = addSpawn(VELOCIRAPTOR, SAILREN_LOC, true, 0, false);
-				temp.getAI().tryTo(IntentionType.ACTIVE, null, null);
+				temp.getAI().tryToActive();
 				temp.forceRunStance();
 				_mobs.add(temp);
 			}
@@ -202,7 +201,7 @@ public class Sailren extends L2AttackableAIScript
 				{
 					final Npc temp = addSpawn(PTEROSAUR, SAILREN_LOC, false, 0, false);
 					temp.forceRunStance();
-					temp.getAI().tryTo(IntentionType.ATTACK, killer, false);
+					temp.getAI().tryToAttack(killer);
 					_mobs.add(temp);
 				}
 				break;
@@ -213,7 +212,7 @@ public class Sailren extends L2AttackableAIScript
 				{
 					final Npc temp = addSpawn(TREX, SAILREN_LOC, false, 0, false);
 					temp.forceRunStance();
-					temp.getAI().tryTo(IntentionType.ATTACK, killer, false);
+					temp.getAI().tryToAttack(killer);
 					temp.broadcastNpcSay("?");
 					_mobs.add(temp);
 				}

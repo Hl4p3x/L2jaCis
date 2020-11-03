@@ -7,6 +7,7 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.geoengine.geodata.ABlock;
 import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
+import net.sf.l2j.gameserver.geoengine.geodata.IGeoObject;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -16,11 +17,7 @@ import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
-import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
-/**
- * @author -Nemesiss-, Hasha
- */
 public class AdminGeoEngine implements IAdminCommandHandler
 {
 	private final String Y = "x ";
@@ -32,6 +29,7 @@ public class AdminGeoEngine implements IAdminCommandHandler
 		"admin_geo_pos",
 		"admin_geo_see",
 		"admin_geo_move",
+		"admin_geo_fly",
 		"admin_path_find",
 		"admin_path_info",
 	};
@@ -84,22 +82,33 @@ public class AdminGeoEngine implements IAdminCommandHandler
 		else if (command.equals("admin_geo_see"))
 		{
 			WorldObject target = activeChar.getTarget();
-			if (target != null)
+			if (target instanceof Creature)
 			{
 				ExServerPrimitive debug = activeChar.getDebugPacket("CAN_SEE");
 				debug.reset();
 				
-				boolean canSee = GeoEngine.getInstance().canSeeTarget(activeChar, target, debug);
-				if (canSee)
-					activeChar.sendMessage("Can see target.");
-				else
-					activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_SEE_TARGET));
+				int ox = activeChar.getX();
+				int oy = activeChar.getY();
+				int oz = activeChar.getZ();
+				int oh = (int) (2 * activeChar.getCollisionHeight());
+				debug.addLine("origin", Color.BLUE, true, ox, oy, oz, ox, oy, oz + oh);
+				oh = (oh * Config.PART_OF_CHARACTER_HEIGHT) / 100;
 				
-				int oh = activeChar.getZ() - 32 + (int) (activeChar.getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100);
-				int th = target.getZ() - 32 + (int) (target instanceof Creature ? ((Creature) target).getCollisionHeight() * 2 * Config.PART_OF_CHARACTER_HEIGHT / 100 : 0);
+				Creature t = (Creature) target;
+				int tx = t.getX();
+				int ty = t.getY();
+				int tz = t.getZ();
+				int th = (int) (2 * t.getCollisionHeight());
+				debug.addLine("target", Color.BLUE, true, tx, ty, tz, tx, ty, tz + th);
+				th = (th * Config.PART_OF_CHARACTER_HEIGHT) / 100;
 				
-				debug.addLine("Line-of-Sight", canSee ? Color.GREEN : Color.RED, true, activeChar.getX(), activeChar.getY(), oh, target.getX(), target.getY(), th);
-				debug.addLine("Geodata limit", Color.MAGENTA, true, activeChar.getX(), activeChar.getY(), oh + Config.MAX_OBSTACLE_HEIGHT, target.getX(), target.getY(), th + Config.MAX_OBSTACLE_HEIGHT);
+				IGeoObject ignore = (target instanceof IGeoObject) ? (IGeoObject) target : null;
+				boolean canSee = GeoEngine.getInstance().canSee(ox, oy, oz, oh, tx, ty, tz, th, ignore, debug);
+				
+				oh += oz;
+				th += tz;
+				debug.addLine("Line-of-Sight", canSee ? Color.GREEN : Color.RED, true, ox, oy, oh, tx, ty, th);
+				debug.addLine("Geodata limit", Color.MAGENTA, true, ox, oy, oh + Config.MAX_OBSTACLE_HEIGHT, tx, ty, th + Config.MAX_OBSTACLE_HEIGHT);
 				
 				debug.sendTo(activeChar);
 			}
@@ -125,11 +134,58 @@ public class AdminGeoEngine implements IAdminCommandHandler
 				}
 				else
 				{
-					debug.addLine(Color.WHITE, aLoc.getX(), aLoc.getY(), aLoc.getZ(), tLoc.getX(), tLoc.getY(), tLoc.getZ());
+					debug.addLine(Color.WHITE, aLoc, tLoc);
 					debug.addLine("Inaccessible", Color.RED, true, loc, tLoc);
-					debug.addPoint("Limit", Color.RED, true, loc.getX(), loc.getY(), loc.getZ() - 24);
+					debug.addPoint("Limit", Color.RED, true, loc);
 					activeChar.sendMessage("Can not move beeline!");
 				}
+				
+				debug.sendTo(activeChar);
+			}
+			else
+				activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
+		}
+		else if (command.equals("admin_geo_fly"))
+		{
+			WorldObject target = activeChar.getTarget();
+			if (target != null)
+			{
+				ExServerPrimitive debug = activeChar.getDebugPacket("CAN_FLY");
+				debug.reset();
+				
+				int ox = activeChar.getX();
+				int oy = activeChar.getY();
+				int oz = activeChar.getZ();
+				int oh = (int) (2 * activeChar.getCollisionHeight());
+				debug.addLine("origin", Color.BLUE, true, ox, oy, oz - 32, ox, oy, oz + oh - 32);
+				
+				Creature t = (Creature) target;
+				int tx = t.getX();
+				int ty = t.getY();
+				int tz = t.getZ();
+				
+				Location loc = GeoEngine.getInstance().getValidFloatLocation(ox, oy, oz, oh, tx, ty, tz, debug);
+				int x = loc.getX();
+				int y = loc.getY();
+				int z = loc.getZ();
+				
+				boolean canFly = x == tx && y == ty && z == tz;
+				
+				debug.addLine("Can fly", Color.GREEN, true, ox, oy, oz - 32, x, y, z - 32);
+				if (canFly)
+				{
+					activeChar.sendMessage("Can fly beeline.");
+				}
+				else
+				{
+					debug.addLine(Color.WHITE, ox, oy, oz - 32, tx, ty, tz - 32);
+					debug.addLine("Inaccessible", Color.RED, true, x, y, z - 32, tx, ty, tz - 32);
+					debug.addLine("Last position", Color.RED, true, x, y, z - 32, x, y, z + oh - 32);
+					activeChar.sendMessage("Can not fly beeline!");
+				}
+				
+				debug.addLine("Line-of-Flight MIN", canFly ? Color.GREEN : Color.RED, true, ox, oy, oz - 32, tx, ty, tz - 32);
+				debug.addLine("Line-of-Fligth MAX", canFly ? Color.GREEN : Color.RED, true, ox, oy, oz + oh - 32, tx, ty, tz + oh - 32);
 				
 				debug.sendTo(activeChar);
 			}

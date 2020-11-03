@@ -104,7 +104,7 @@ public class L2AttackableAIScript extends Quest
 				if (npcTarget == skillTarget || npc == skillTarget)
 				{
 					final Creature originalCaster = isPet ? caster.getSummon() : caster;
-					attackable.addDamageHate(originalCaster, 0, (skillAggroPoints * 150) / (attackable.getLevel() + 7));
+					attackable.addDamageHate(originalCaster, 0, (skillAggroPoints * 150) / (attackable.getStatus().getLevel() + 7));
 				}
 			}
 		}
@@ -132,7 +132,7 @@ public class L2AttackableAIScript extends Quest
 			// Set the Creature movement type to run and send Server->Client packet ChangeMoveType to all others Player
 			attackable.forceRunStance();
 			
-			attackable.getAI().tryTo(IntentionType.ATTACK, target, false);
+			attackable.getAI().tryToAttack(target);
 		}
 		return null;
 	}
@@ -150,7 +150,7 @@ public class L2AttackableAIScript extends Quest
 	@Override
 	public String onAttack(Npc npc, Creature attacker, int damage, L2Skill skill)
 	{
-		((Attackable) npc).addDamageHate(attacker, damage, (damage * 100) / (npc.getLevel() + 7));
+		((Attackable) npc).addDamageHate(attacker, damage, (damage * 100) / (npc.getStatus().getLevel() + 7));
 		return null;
 	}
 	
@@ -271,7 +271,7 @@ public class L2AttackableAIScript extends Quest
 	{
 		npc.forceRunStance();
 		npc.addDamageHate(victim, 0, (aggro <= 0) ? 999 : aggro);
-		npc.getAI().tryTo(IntentionType.ATTACK, victim, false);
+		npc.getAI().tryToAttack(victim);
 	}
 	
 	protected static void attack(Attackable npc, Creature victim)
@@ -294,7 +294,7 @@ public class L2AttackableAIScript extends Quest
 			return false;
 		
 		// Petrification curse.
-		if (attacker.getLevel() - npc.getLevel() > 8)
+		if (attacker.getStatus().getLevel() - npc.getStatus().getLevel() > 8)
 		{
 			final L2Skill curse = FrequentSkill.RAID_CURSE2.getSkill();
 			if (attacker.getFirstEffect(curse) == null)

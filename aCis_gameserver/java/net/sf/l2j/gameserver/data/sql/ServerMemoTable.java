@@ -5,8 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.model.memo.AbstractMemo;
 
 /**
@@ -30,7 +30,7 @@ public class ServerMemoTable extends AbstractMemo
 	public boolean restoreMe()
 	{
 		// Restore previous variables.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SELECT_QUERY);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -57,7 +57,7 @@ public class ServerMemoTable extends AbstractMemo
 		if (!hasChanges())
 			return false;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			// Clear previous entries.
 			try (PreparedStatement ps = con.prepareStatement(DELETE_QUERY))

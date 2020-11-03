@@ -62,17 +62,17 @@ public class Q422_RepentYourSins extends Quest
 		if (event.equalsIgnoreCase("Start"))
 		{
 			st.set("cond", "1");
-			if (player.getLevel() <= 20)
+			if (player.getStatus().getLevel() <= 20)
 			{
 				htmltext = "30981-03.htm";
 				st.set("cond", "2");
 			}
-			else if (player.getLevel() >= 20 && player.getLevel() <= 30)
+			else if (player.getStatus().getLevel() >= 20 && player.getStatus().getLevel() <= 30)
 			{
 				htmltext = "30981-04.htm";
 				st.set("cond", "3");
 			}
-			else if (player.getLevel() >= 30 && player.getLevel() <= 40)
+			else if (player.getStatus().getLevel() >= 30 && player.getStatus().getLevel() <= 40)
 			{
 				htmltext = "30981-05.htm";
 				st.set("cond", "4");
@@ -95,7 +95,7 @@ public class Q422_RepentYourSins extends Quest
 				if (cond == 15)
 				{
 					st.set("cond", "16");
-					st.set("level", String.valueOf(player.getLevel()));
+					st.set("level", String.valueOf(player.getStatus().getLevel()));
 					st.playSound(QuestState.SOUND_ITEMGET);
 					st.takeItems(QITEM_PENITENT_MANACLES, -1);
 					st.giveItems(PENITENT_MANACLES, 1);
@@ -103,7 +103,7 @@ public class Q422_RepentYourSins extends Quest
 				// Case you return back to Black Judge with leftover of previous quest.
 				else if (cond == 16)
 				{
-					st.set("level", String.valueOf(player.getLevel()));
+					st.set("level", String.valueOf(player.getStatus().getLevel()));
 					st.playSound(QuestState.SOUND_ITEMGET);
 					st.takeItems(LEFT_PENITENT_MANACLES, -1);
 					st.giveItems(PENITENT_MANACLES, 1);
@@ -148,7 +148,7 @@ public class Q422_RepentYourSins extends Quest
 				else
 				{
 					htmltext = "30981-14.htm";
-					st.set("level", String.valueOf(player.getLevel()));
+					st.set("level", String.valueOf(player.getStatus().getLevel()));
 					st.playSound(QuestState.SOUND_MIDDLE);
 					
 					player.setPkKills(player.getPkKills() - removePkAmount);

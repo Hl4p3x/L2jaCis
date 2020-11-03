@@ -82,7 +82,7 @@ public class Q007_ATripBegins extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30146-01.htm";
-				else if (player.getLevel() < 3)
+				else if (player.getStatus().getLevel() < 3)
 					htmltext = "30146-01a.htm";
 				else
 					htmltext = "30146-02.htm";

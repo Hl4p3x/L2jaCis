@@ -91,7 +91,7 @@ public class Q044_HelpTheSon extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 24) ? "30827-00a.htm" : "30827-00.htm";
+				htmltext = (player.getStatus().getLevel() < 24) ? "30827-00a.htm" : "30827-00.htm";
 				break;
 			
 			case STATE_STARTED:

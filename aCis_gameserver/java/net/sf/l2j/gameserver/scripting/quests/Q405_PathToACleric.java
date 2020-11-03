@@ -79,7 +79,7 @@ public class Q405_PathToACleric extends Quest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.HUMAN_MYSTIC)
 					htmltext = (player.getClassId() == ClassId.CLERIC) ? "30022-02a.htm" : "30022-02.htm";
-				else if (player.getLevel() < 19)
+				else if (player.getStatus().getLevel() < 19)
 					htmltext = "30022-03.htm";
 				else if (st.hasQuestItems(MARK_OF_FATE))
 					htmltext = "30022-04.htm";

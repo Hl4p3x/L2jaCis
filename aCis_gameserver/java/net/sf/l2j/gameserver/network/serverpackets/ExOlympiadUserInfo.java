@@ -19,10 +19,10 @@ public class ExOlympiadUserInfo extends L2GameServerPacket
 		_objectId = player.getObjectId();
 		_name = player.getName();
 		_classId = player.getClassId().getId();
-		_curHp = (int) player.getCurrentHp();
-		_maxHp = player.getMaxHp();
-		_curCp = (int) player.getCurrentCp();
-		_maxCp = player.getMaxCp();
+		_curHp = (int) player.getStatus().getHp();
+		_maxHp = player.getStatus().getMaxHp();
+		_curCp = (int) player.getStatus().getCp();
+		_maxCp = player.getStatus().getMaxCp();
 	}
 	
 	@Override

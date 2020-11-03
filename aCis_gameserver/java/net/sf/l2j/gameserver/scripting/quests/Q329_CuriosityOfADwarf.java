@@ -60,7 +60,7 @@ public class Q329_CuriosityOfADwarf extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 33) ? "30437-01.htm" : "30437-02.htm";
+				htmltext = (player.getStatus().getLevel() < 33) ? "30437-01.htm" : "30437-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.skills.effects;
 
 import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.FlyType;
@@ -72,7 +71,7 @@ public class EffectThrowUp extends AbstractEffect
 		// Abort attack, cast and move.
 		getEffected().abortAll(false);
 		
-		getEffected().getAI().tryTo(IntentionType.IDLE, null, null);
+		getEffected().getAI().tryToIdle();
 		
 		// Refresh abnormal effects.
 		getEffected().updateAbnormalEffect();

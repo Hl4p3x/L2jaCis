@@ -49,7 +49,7 @@ public class Cancel implements ISkillHandler
 			int count = skill.getMaxNegatedEffects();
 			
 			// Calculate the difference of level between skill level and victim, and retrieve the vuln/prof.
-			final int diffLevel = skill.getMagicLevel() - target.getLevel();
+			final int diffLevel = skill.getMagicLevel() - target.getStatus().getLevel();
 			final double skillVuln = Formulas.calcSkillVulnerability(activeChar, target, skill, skill.getSkillType());
 			
 			final List<AbstractEffect> list = Arrays.asList(target.getAllEffects());

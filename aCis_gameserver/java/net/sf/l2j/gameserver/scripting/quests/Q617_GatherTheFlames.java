@@ -137,7 +137,7 @@ public class Q617_GatherTheFlames extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = npc.getNpcId() + ((player.getLevel() >= 74) ? "-01.htm" : "-02.htm");
+				htmltext = npc.getNpcId() + ((player.getStatus().getLevel() >= 74) ? "-01.htm" : "-02.htm");
 				break;
 			
 			case STATE_STARTED:

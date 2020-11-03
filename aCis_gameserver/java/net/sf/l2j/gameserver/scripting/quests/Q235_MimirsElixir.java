@@ -127,7 +127,7 @@ public class Q235_MimirsElixir extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 75)
+				if (player.getStatus().getLevel() < 75)
 					htmltext = "30721-01b.htm";
 				else if (!st.hasQuestItems(STAR_OF_DESTINY))
 					htmltext = "30721-01a.htm";

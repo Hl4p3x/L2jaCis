@@ -81,7 +81,7 @@ public class Q030_ChestCaughtWithABaitOfFire extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 60)
+				if (player.getStatus().getLevel() < 60)
 					htmltext = "31577-02.htm";
 				else
 				{

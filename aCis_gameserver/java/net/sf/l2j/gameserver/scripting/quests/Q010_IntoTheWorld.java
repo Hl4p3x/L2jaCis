@@ -85,7 +85,7 @@ public class Q010_IntoTheWorld extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 3 && player.getRace() == ClassRace.DWARF)
+				if (player.getStatus().getLevel() >= 3 && player.getRace() == ClassRace.DWARF)
 					htmltext = "30533-01.htm";
 				else
 					htmltext = "30533-01a.htm";

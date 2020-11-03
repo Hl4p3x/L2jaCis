@@ -43,11 +43,12 @@ public class AdminHeal implements IAdminCommandHandler
 					final int radius = Integer.parseInt(nameOrRadius);
 					for (Creature creature : player.getKnownTypeInRadius(Creature.class, radius))
 					{
-						creature.setCurrentHpMp(creature.getMaxHp(), creature.getMaxMp());
 						if (creature instanceof Player)
-							creature.setCurrentCp(creature.getMaxCp());
+							((Player) creature).getStatus().setMaxCpHpMp();
+						else
+							creature.getStatus().setMaxHpMp();
 					}
-					player.sendMessage("You instant healed all characters within " + radius + " unit radius.");
+					player.sendMessage("You instant healed all creatures within " + radius + " unit radius.");
 					return true;
 				}
 			}
@@ -58,10 +59,10 @@ public class AdminHeal implements IAdminCommandHandler
 			if (object instanceof Creature)
 			{
 				final Creature creature = (Creature) object;
-				creature.setCurrentHpMp(creature.getMaxHp(), creature.getMaxMp());
-				
 				if (creature instanceof Player)
-					creature.setCurrentCp(creature.getMaxCp());
+					((Player) creature).getStatus().setMaxCpHpMp();
+				else
+					creature.getStatus().setMaxHpMp();
 				
 				player.sendMessage("You instant healed " + creature.getName() + ".");
 			}

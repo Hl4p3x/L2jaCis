@@ -146,7 +146,7 @@ public class Q616_MagicalPowerOfFire_Part2 extends Quest
 			case STATE_CREATED:
 				if (!st.hasQuestItems(RED_TOTEM))
 					htmltext = "31379-02.htm";
-				else if (player.getLevel() < 75 && player.getAllianceWithVarkaKetra() > -2)
+				else if (player.getStatus().getLevel() < 75 && player.getAllianceWithVarkaKetra() > -2)
 					htmltext = "31379-03.htm";
 				else
 					htmltext = "31379-01.htm";

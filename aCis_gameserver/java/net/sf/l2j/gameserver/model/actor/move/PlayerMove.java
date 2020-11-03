@@ -3,13 +3,11 @@ package net.sf.l2j.gameserver.model.actor.move;
 import java.awt.Color;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
+import java.util.LinkedList;
 
 import net.sf.l2j.commons.math.MathUtil;
 
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.MoveType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.World;
@@ -22,113 +20,85 @@ import net.sf.l2j.gameserver.network.FloodProtectors;
 import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
-import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.MoveToLocation;
 import net.sf.l2j.gameserver.network.serverpackets.MoveToPawn;
-import net.sf.l2j.gameserver.network.serverpackets.StopMove;
 
 /**
  * This class groups all movement data related to a {@link Player}.
  */
-public class PlayerMove extends CreatureMove
+public class PlayerMove extends CreatureMove<Player>
 {
 	private volatile Instant _instant;
 	
-	public PlayerMove(Creature creature)
+	private int _moveTimeStamp;
+	
+	private double _zAccurate;
+	
+	public PlayerMove(Player actor)
 	{
-		super(creature);
+		super(actor);
 	}
 	
 	@Override
-	public void moveToPawn(WorldObject pawn, int offset)
+	public void cancelMoveTask()
 	{
-		if (!FloodProtectors.performAction(((Player) _creature).getClient(), Action.MOVE))
+		super.cancelMoveTask();
+		
+		_moveTimeStamp = 0;
+	}
+	
+	private void moveToPawn(WorldObject pawn, int offset)
+	{
+		if (!FloodProtectors.performAction(_actor.getClient(), Action.MOVE))
 		{
-			_creature.sendPacket(ActionFailed.STATIC_PACKET);
+			_actor.sendPacket(ActionFailed.STATIC_PACKET);
 			return;
 		}
 		
-		// Get the movement speed of the Creature.
-		final float speed = _creature.getStat().getMoveSpeed();
-		if (speed <= 0 || _creature.isMovementDisabled())
-		{
-			_creature.sendPacket(ActionFailed.STATIC_PACKET);
-			return;
-		}
-		
-		if (_task != null)
-			updatePosition();
-		
-		_instant = Instant.now();
-		
-		int tx = pawn.getX();
-		int ty = pawn.getY();
-		int tz = pawn.getZ();
-		
-		// If a movement already exists with the exact destination and offset, don't bother calculate anything.
-		if (_task != null && _destination.equals(tx, ty, _destination.getZ()) && _offset == offset)
-			return;
-		
-		// Get the current position of the Creature.
-		final int ox = _creature.getX();
-		final int oy = _creature.getY();
-		final int oz = _creature.getZ();
-		
-		// Set the current x/y.
-		_xAccurate = ox;
-		_yAccurate = oy;
-		
-		// Initialize variables.
-		_geoPath.clear();
+		// Get the current position of the pawn.
+		final int tx = pawn.getX();
+		final int ty = pawn.getY();
+		final int tz = pawn.getZ();
 		
 		// Set the pawn and offset.
 		_pawn = pawn;
 		_offset = offset;
 		
-		// Retain some informations fur future use.
-		final MoveType moveType = getMoveType();
-		final int oDestX = tx;
-		final int oDestY = ty;
-		final int oDestZ = tz;
+		if (_task != null)
+			updatePosition(true);
 		
-		Location moveOk = Location.DUMMY_LOC;
-		boolean isPathClear = true;
+		_instant = Instant.now();
 		
-		// SWIM and FLY don't bother with Z checks.
-		if (moveType == MoveType.GROUND) // TODO handle canMoveToTargetLoc for SWIM and FLY to avoid going through walls.
-		{
-			moveOk = GeoEngine.getInstance().getValidLocation(ox, oy, oz, tx, ty, tz, null);
-			isPathClear = MathUtil.checkIfInRange(offset, pawn, moveOk, true);
-			if (!isPathClear)
-			{
-				tx = moveOk.getX();
-				ty = moveOk.getY();
-				tz = moveOk.getZ();
-			}
-		}
+		// Get the current position of the actor.
+		final int ox = _actor.getX();
+		final int oy = _actor.getY();
+		final int oz = _actor.getZ();
+		
+		// Set the current x/y/z.
+		_xAccurate = ox;
+		_yAccurate = oy;
+		_zAccurate = oz;
+		
+		// Initialize variables.
+		_geoPath.clear();
 		
 		// Draw a debug of this movement if activated.
 		if (_isDebugMove)
 		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
-			gms.add((Player) _creature);
-			
-			// Draw debug packet to all players.
-			for (Player p : gms)
+			// Draw debug packet to surrounding GMs.
+			for (Player p : _actor.getSurroundingGMs())
 			{
 				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("MOVE" + _creature.getObjectId());
+				final ExServerPrimitive debug = p.getDebugPacket("MOVE" + _actor.getObjectId());
 				
 				// Reset the packet lines and points.
 				debug.reset();
 				
-				// Add a WHITE line corresponding to the initial click release.
-				debug.addLine("MoveToPawn (" + _offset + "): " + oDestX + " " + oDestY + " " + oDestZ, Color.WHITE, true, ox, oy, oz, oDestX, oDestY, oDestZ);
+				// Add a RED point corresponding to initial start location.
+				debug.addPoint(Color.RED, ox, oy, oz);
 				
-				// Add a PURPLE line corresponding to the first encountered obstacle, if any.
-				if (moveOk != Location.DUMMY_LOC)
-					debug.addLine(Color.MAGENTA, ox, oy, oz, moveOk);
+				// Add a WHITE line corresponding to the initial click release.
+				debug.addLine("MoveToPawn (" + _offset + "): " + tx + " " + ty + " " + tz, Color.WHITE, true, ox, oy, oz, tx, ty, tz);
 				
 				p.sendMessage("Moving from " + ox + " " + oy + " " + oz + " to " + tx + " " + ty + " " + tz);
 			}
@@ -137,134 +107,79 @@ public class PlayerMove extends CreatureMove
 		// Set the destination.
 		_destination.set(tx, ty, tz);
 		
-		// Calculate the heading.
-		_creature.getPosition().setHeadingTo(tx, ty);
+		_actor.getPosition().setHeadingTo(tx, ty);
 		
-		// Start a follow task if no path found.
-		if (!isPathClear)
-		{
-			// Start a new follow, on the pawn with correct offset.
-			startFollow(_pawn, _offset);
-		}
-		else
-		{
-			registerMoveTask();
-			
-			// Broadcast the good packet giving the situation.
-			_creature.broadcastPacket(new MoveToPawn(_creature, _pawn, _offset));
-		}
+		registerMoveTask();
+		
+		_actor.broadcastPacket(new MoveToPawn(_actor, pawn, offset));
 	}
 	
 	@Override
-	public void moveToLocation(int tx, int ty, int tz)
+	protected void moveToLocation(Location dLoc, boolean pathfinding)
 	{
-		if (!FloodProtectors.performAction(((Player) _creature).getClient(), Action.MOVE))
+		if (!FloodProtectors.performAction(_actor.getClient(), Action.MOVE))
 		{
-			_creature.sendPacket(ActionFailed.STATIC_PACKET);
-			return;
-		}
-		
-		// Get the movement speed of the Creature.
-		final float speed = _creature.getStat().getMoveSpeed();
-		if (speed <= 0 || _creature.isMovementDisabled())
-		{
-			_creature.sendPacket(ActionFailed.STATIC_PACKET);
+			_actor.sendPacket(ActionFailed.STATIC_PACKET);
 			return;
 		}
 		
 		if (_task != null)
-			updatePosition();
+			updatePosition(true);
 		
 		_instant = Instant.now();
 		
-		// If a movement already exists with the exact destination, don't bother calculate anything.
-		if (_task != null && _destination.equals(tx, ty, tz))
-		{
-			_creature.sendPacket(ActionFailed.STATIC_PACKET);
-			return;
-		}
-		
 		// Get the current position of the Creature.
-		final int ox = _creature.getX();
-		final int oy = _creature.getY();
-		final int oz = _creature.getZ();
+		final Location position = _actor.getPosition().clone();
 		
-		// If no distance to go through, the movement is canceled.
-		if (ox == tx && oy == ty && oz == tz)
-		{
-			cancelMoveTask();
-			
-			_creature.revalidateZone(true);
-			_creature.getAI().notifyEvent(AiEventType.ARRIVED, false, null);
-			return;
-		}
-		
-		if (_task != null && _pawn != null)
-			_creature.sendPacket(ActionFailed.STATIC_PACKET);
-		
-		// Set the current x/y.
-		_xAccurate = ox;
-		_yAccurate = oy;
+		// Set the current x/y/z.
+		_xAccurate = position.getX();
+		_yAccurate = position.getY();
+		_zAccurate = position.getZ();
 		
 		// Initialize variables.
 		_geoPath.clear();
-		_pawn = null;
-		_offset = 0;
 		
-		// Retain some informations fur future use.
-		final MoveType moveType = getMoveType();
-		final int oDestX = tx;
-		final int oDestY = ty;
-		final int oDestZ = tz;
+		// Visual destination isn't the same than computed destination. Remove collision radius out of it.
+		final Location destination = new Location(position);
+		destination.setLocationMinusOffset(dLoc, _actor.getCollisionRadius());
 		
-		// While flying we stop at the first encountered obstacle directly. No geopath involved.
-		if (moveType == MoveType.FLY)
+		if (pathfinding)
 		{
-			// TODO : needs to implement canFlyToTargetLoc
-		}
-		else
-		{
-			final boolean canBypassGeodata = (_creature instanceof Player && ((Player) _creature).getBoat() != null) || moveType != MoveType.GROUND;
-			if (!canBypassGeodata)
+			// Calculate the path.
+			final Location loc = calculatePath(position.getX(), position.getY(), position.getZ(), destination.getX(), destination.getY(), destination.getZ());
+			if (loc != null)
 			{
-				// Calculate the path.
-				final Location loc = calculatePath(ox, oy, oz, tx, ty, tz);
-				if (loc != null)
-				{
-					tx = loc.getX();
-					ty = loc.getY();
-					tz = loc.getZ();
-				}
+				destination.set(loc);
+				dLoc.set(loc);
 			}
 		}
 		
 		// Draw a debug of this movement if activated.
 		if (_isDebugMove)
 		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
-			gms.add((Player) _creature);
-			
-			// Draw debug packet to all players.
-			for (Player p : gms)
+			// Draw debug packet to surrounding GMs.
+			for (Player p : _actor.getSurroundingGMs())
 			{
 				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("MOVE" + _creature.getObjectId());
+				final ExServerPrimitive debug = p.getDebugPacket("MOVE" + _actor.getObjectId());
 				
 				// Reset the packet lines and points.
 				debug.reset();
 				
 				// Add a WHITE line corresponding to the initial click release.
-				debug.addLine("MoveToLocation: " + oDestX + " " + oDestY + " " + oDestZ, Color.WHITE, true, ox, oy, oz, oDestX, oDestY, oDestZ);
+				debug.addLine("MoveToLocation: " + destination.toString(), Color.WHITE, true, position, destination);
 				
-				// Add BLUE lines corresponding to the geo path, if any. Add a single BLUE line if no geoPath encountered.
+				// Add a RED point corresponding to initial start location.
+				debug.addPoint(Color.RED, position);
+				
+				// Add YELLOW lines corresponding to the geo path, if any. Add a single YELLOW line if no geoPath encountered.
 				if (!_geoPath.isEmpty())
 				{
 					// Add manually a segment, since poll() was executed.
-					debug.addLine("Segment #1", Color.YELLOW, true, ox, oy, oz, tx, ty, tz);
+					debug.addLine("Segment #1", Color.YELLOW, true, position, destination);
 					
 					// Initialize a Location based on target location.
-					final Location curPos = new Location(tx, ty, tz);
+					final Location curPos = new Location(destination);
 					int i = 2;
 					
 					// Iterate geo path.
@@ -279,28 +194,31 @@ public class PlayerMove extends CreatureMove
 					}
 				}
 				else
-					debug.addLine("No geopath", Color.YELLOW, true, ox, oy, oz, tx, ty, tz);
+					debug.addLine("No geopath", Color.YELLOW, true, position, destination);
 				
-				p.sendMessage("Moving from " + ox + " " + oy + " " + oz + " to " + tx + " " + ty + " " + tz);
+				p.sendMessage("Moving from " + position.toString() + " to " + destination.toString());
 			}
 		}
 		
 		// Set the destination.
-		_destination.set(tx, ty, tz);
+		_destination.set(destination);
 		
 		// Calculate the heading.
-		_creature.getPosition().setHeadingTo(tx, ty);
+		_actor.getPosition().setHeadingTo(destination);
 		
 		registerMoveTask();
 		
-		// Broadcast MoveToLocation packet to known objects.
-		_creature.broadcastPacket(new MoveToLocation(_creature));
+		_actor.broadcastPacket(new MoveToLocation(_actor, dLoc));
 	}
 	
 	@Override
-	public boolean updatePosition()
+	public boolean updatePosition(boolean firstRun)
 	{
-		if (_task == null || !_creature.isVisible())
+		if (_task == null || !_actor.isVisible())
+			return true;
+		
+		// We got a pawn target, but it is not known anymore - stop the movement.
+		if (_pawn != null && !_actor.knows(_pawn))
 			return true;
 		
 		// Save current Instant.
@@ -314,22 +232,28 @@ public class PlayerMove extends CreatureMove
 		_instant = instant;
 		
 		final MoveType type = getMoveType();
-		final boolean canBypassZCheck = (_creature instanceof Player && ((Player) _creature).getBoat() != null) || type == MoveType.FLY;
+		final boolean canBypassZCheck = _actor.getBoat() != null || type == MoveType.FLY;
 		
-		final int curX = _creature.getX();
-		final int curY = _creature.getY();
-		final int curZ = _creature.getZ();
+		// Increment the timestamp.
+		_moveTimeStamp++;
+		
+		final int curX = _actor.getX();
+		final int curY = _actor.getY();
+		final int curZ = _actor.getZ();
+		
+		if (_pawn != null && !firstRun)
+			_destination.set(_pawn.getPosition());
 		
 		if (type == MoveType.GROUND)
 			_destination.setZ(GeoEngine.getInstance().getHeight(_destination));
 		
-		final double dx = _destination.getX() - _xAccurate;
-		final double dy = _destination.getY() - _yAccurate;
+		final double dx = _destination.getX() - curX;
+		final double dy = _destination.getY() - curY;
 		final double dz = _destination.getZ() - curZ;
 		
 		// We use Z for delta calculation only if different of GROUND MoveType.
 		final double leftDistance = (type == MoveType.GROUND) ? Math.sqrt(dx * dx + dy * dy) : Math.sqrt(dx * dx + dy * dy + dz * dz);
-		final double passedDistance = _creature.getStat().getMoveSpeed() / (1000 / timePassed);
+		final double passedDistance = _actor.getStatus().getRealMoveSpeed(type != MoveType.FLY && _moveTimeStamp <= 5) / (1000d / timePassed);
 		
 		// Calculate the current distance fraction based on the delta.
 		double fraction = 1;
@@ -354,10 +278,11 @@ public class PlayerMove extends CreatureMove
 		{
 			_xAccurate += dx * fraction;
 			_yAccurate += dy * fraction;
+			_zAccurate += dz * fraction;
 			
-			nextX = (int) _xAccurate;
-			nextY = (int) _yAccurate;
-			nextZ = Math.min((type == MoveType.GROUND) ? GeoEngine.getInstance().getHeight(nextX, nextY, curZ) : (curZ + (int) (dz * fraction + 0.5)), maxZ);
+			nextX = (int) Math.round(_xAccurate);
+			nextY = (int) Math.round(_yAccurate);
+			nextZ = Math.min((type == MoveType.GROUND) ? GeoEngine.getInstance().getHeight(nextX, nextY, curZ) : (int) Math.round(_zAccurate), maxZ);
 		}
 		// Already there : set the position to the destination.
 		else
@@ -369,78 +294,191 @@ public class PlayerMove extends CreatureMove
 		
 		// Check if location can be reached (case of dynamic objects, such as opening doors/fences).
 		if (type == MoveType.GROUND && !GeoEngine.getInstance().canMoveToTarget(curX, curY, curZ, nextX, nextY, nextZ))
+		{
+			_blocked = true;
 			return true;
+		}
+		
+		// Calculate the heading. Must be computed BEFORE setting setXYZ, otherwise ends to 0.
+		if (_pawn != null)
+			_actor.getPosition().setHeadingTo(nextX, nextY);
 		
 		// Set the position of the Creature.
-		_creature.setXYZ(nextX, nextY, nextZ);
+		_actor.setXYZ(nextX, nextY, nextZ);
 		
 		// Draw a debug of this movement if activated.
 		if (_isDebugMove)
 		{
-			// Get surrounding GMs and add self.
-			List<Player> gms = _creature.getKnownTypeInRadius(Player.class, 1500, Player::isGM);
-			gms.add((Player) _creature);
+			final String heading = "" + _actor.getHeading();
 			
-			// Draw debug packet to all players.
-			for (Player p : gms)
+			// Draw debug packet to surrounding GMs.
+			for (Player p : _actor.getSurroundingGMs())
 			{
 				// Get debug packet.
-				ExServerPrimitive debug = p.getDebugPacket("MOVE" + _creature.getObjectId());
+				final ExServerPrimitive debug = p.getDebugPacket("MOVE" + _actor.getObjectId());
 				
-				debug.addPoint(Color.RED, curX, curY, curZ);
-				debug.addPoint(Color.GREEN, _creature.getPosition());
+				// Draw a RED point for current position.
+				debug.addPoint(heading, Color.RED, true, _actor.getPosition());
 				
+				// Send the packet to the Player.
 				debug.sendTo(p);
 				
 				// We are supposed to run, but the difference of Z is way too high.
-				if (type == MoveType.GROUND && Math.abs(curZ - _creature.getPosition().getZ()) > 100)
-					p.sendMessage("Falling/Climb bug found when moving from " + curX + ", " + curY + ", " + curZ + " to " + _creature.getPosition().toString());
+				if (type == MoveType.GROUND && Math.abs(curZ - _actor.getPosition().getZ()) > 100)
+					p.sendMessage("Falling/Climb bug found when moving from " + curX + ", " + curY + ", " + curZ + " to " + _actor.getPosition().toString());
 			}
 		}
 		
-		_creature.revalidateZone(false);
+		_actor.revalidateZone(false);
 		
 		if (isOnLastPawnMoveGeoPath())
 		{
-			final int offset = (int) (_offset + _creature.getCollisionRadius() + ((_pawn instanceof Creature) ? ((Creature) _pawn).getCollisionRadius() : 0));
-			return (type == MoveType.GROUND) ? _creature.isIn2DRadius(_destination, offset) : _creature.isIn3DRadius(_destination, offset);
+			final boolean stopMovementPrematurely = (type == MoveType.GROUND) ? _actor.isIn2DRadius(_pawn, _offset) : _actor.isIn3DRadius(_pawn, _offset);
+			if (stopMovementPrematurely)
+				return true;
 		}
 		
 		return (passedDistance >= leftDistance);
 	}
 	
+	/**
+	 * @param target : The WorldObject we try to reach.
+	 * @param offset : The interact area radius.
+	 * @param isShiftPressed : If movement is necessary, it disallows it.
+	 * @return true if a movement must be done to reach the {@link WorldObject}, based on an offset.
+	 */
 	@Override
-	protected void followTask(WorldObject pawn, int offset)
+	public boolean maybeMoveToPawn(WorldObject target, int offset, boolean isShiftPressed)
+	{
+		if (offset < 0 || _actor == target)
+			return false;
+		
+		double collisionOffset = _actor.getCollisionRadius();
+		if (target instanceof Creature)
+			collisionOffset += ((Creature) target).getCollisionRadius();
+		
+		if (!_actor.isIn3DRadius(target, offset + (int) collisionOffset))
+		{
+			if (!_actor.isMovementDisabled() && !isShiftPressed)
+			{
+				_pawn = target;
+				_offset = offset;
+				moveToPawn(target, offset);
+			}
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	@Override
+	protected void offensiveFollowTask(Creature target, int offset)
+	{
+		if (_followTask == null)
+			return;
+		
+		// Pawn isn't registered on knownlist.
+		if (!_actor.knows(target))
+		{
+			_actor.getAI().tryToActive();
+			return;
+		}
+		
+		final int realOffset = (int) (offset + _actor.getCollisionRadius() + target.getCollisionRadius());
+		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(target, realOffset) : _actor.isIn3DRadius(target, realOffset))
+			return;
+		
+		// If an obstacle is/appears while the _followTask is running (ex: door closing) between the Player and the pawn, move to latest good location.
+		final Location moveOk = GeoEngine.getInstance().getValidLocation(_actor, target);
+		final boolean isPathClear = MathUtil.checkIfInRange(offset, target, moveOk, true);
+		if (isPathClear)
+		{
+			_pawn = target;
+			_offset = offset;
+			moveToPawn(target, offset);
+		}
+		else
+		{
+			_pawn = null;
+			_offset = 0;
+			moveToLocation(moveOk, false);
+		}
+	}
+	
+	@Override
+	protected void friendlyFollowTask(Creature target, int offset)
 	{
 		if (_followTask == null)
 			return;
 		
 		// Invalid pawn to follow, or the pawn isn't registered on knownlist.
-		if (!_creature.knows(pawn))
+		if (!_actor.knows(target))
 		{
-			_creature.getAI().tryTo(IntentionType.IDLE, null, null);
+			_actor.getAI().tryToActive();
 			return;
 		}
 		
-		final int realOffset = (int) (offset + _creature.getCollisionRadius() + ((_pawn instanceof Creature) ? ((Creature) _pawn).getCollisionRadius() : 0));
 		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _creature.isIn2DRadius(pawn, realOffset) : _creature.isIn3DRadius(pawn, realOffset))
+		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(target, offset) : _actor.isIn3DRadius(target, offset))
 			return;
 		
-		// If an obstacle is/appears while the _followTask is running (ex: door closing) between the Player and the pawn, move to latest good location.
-		final Location moveOk = GeoEngine.getInstance().getValidLocation(_creature, pawn);
-		final boolean isPathClear = MathUtil.checkIfInRange(offset, pawn, moveOk, true);
-		if (isPathClear)
-			moveToPawn(pawn, offset);
-		else
-			moveToLocation(moveOk);
+		if (_task == null)
+		{
+			_pawn = target;
+			_offset = offset;
+			moveToPawn(target, offset);
+		}
 	}
 	
-	// TODO not 100% correct for all cases
 	@Override
-	protected L2GameServerPacket packetToStopMove()
+	protected Location calculatePath(int ox, int oy, int oz, int tx, int ty, int tz)
 	{
-		return new StopMove(_creature);
-		// return ActionFailed.STATIC_PACKET;
+		// Retain some informations fur future use.
+		final MoveType moveType = getMoveType();
+		
+		// We can process to next point without extra help ; return directly.
+		if (moveType != MoveType.GROUND)
+		{
+			if (GeoEngine.getInstance().canFloatToTarget(ox, oy, oz, 32, tx, ty, tz))
+				return null;
+		}
+		else if (GeoEngine.getInstance().canMoveToTarget(ox, oy, oz, tx, ty, tz))
+			return null;
+		
+		// Create dummy packet.
+		final ExServerPrimitive dummy = _isDebugPath ? new ExServerPrimitive() : null;
+		
+		if (moveType != MoveType.GROUND)
+			return GeoEngine.getInstance().getValidFloatLocation(ox, oy, oz, 32, tx, ty, tz, dummy);
+		
+		// Calculate the path. If no path or too short, calculate the first valid location.
+		final LinkedList<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, true, dummy);
+		if (path == null || path.size() < 2)
+			return GeoEngine.getInstance().getValidLocation(ox, oy, oz, tx, ty, tz, null);
+		
+		// Draw a debug of this movement if activated.
+		if (_isDebugPath)
+		{
+			// Draw debug packet to all players.
+			for (Player p : _actor.getSurroundingGMs())
+			{
+				// Get debug packet.
+				final ExServerPrimitive debug = p.getDebugPacket("PATH" + _actor.getObjectId());
+				
+				// Reset the packet and add all lines and points.
+				debug.reset();
+				debug.addAll(dummy);
+				
+				// Send.
+				debug.sendTo(p);
+			}
+		}
+		
+		// Feed the geopath with whole path.
+		_geoPath.addAll(path);
+		
+		// Retrieve first Location.
+		return _geoPath.poll();
 	}
 }

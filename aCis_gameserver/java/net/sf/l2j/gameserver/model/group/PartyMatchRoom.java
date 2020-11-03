@@ -7,7 +7,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.sf.l2j.gameserver.data.manager.PartyMatchRoomManager;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.ExClosePartyRoom;
@@ -73,7 +72,7 @@ public class PartyMatchRoom extends AbstractGroup
 	{
 		for (Player member : _members)
 		{
-			if (!BlockList.isBlocked(member, broadcaster))
+			if (!member.getBlockList().isInBlockList(broadcaster))
 				member.sendPacket(msg);
 		}
 	}
@@ -283,6 +282,6 @@ public class PartyMatchRoom extends AbstractGroup
 	 */
 	public boolean checkEntrance(Player player)
 	{
-		return player.getLevel() >= _minLvl && player.getLevel() <= _maxLvl && _members.size() < _maxMembersCount;
+		return player.getStatus().getLevel() >= _minLvl && player.getStatus().getLevel() <= _maxLvl && _members.size() < _maxMembersCount;
 	}
 }

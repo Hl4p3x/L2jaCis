@@ -1,15 +1,21 @@
 package net.sf.l2j.gameserver.model.actor.attack;
 
+import java.util.List;
+
+import net.sf.l2j.gameserver.enums.ScriptEventType;
+import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.scripting.Quest;
 
 /**
  * This class groups all attack data related to a {@link Creature}.
  */
-public class AttackableAttack extends CreatureAttack
+public class AttackableAttack extends CreatureAttack<Attackable>
 {
-	public AttackableAttack(Creature creature)
+	public AttackableAttack(Attackable actor)
 	{
-		super(creature);
+		super(actor);
 	}
 	
 	@Override
@@ -21,10 +27,25 @@ public class AttackableAttack extends CreatureAttack
 		if (target.isFakeDeath())
 			return false;
 		
-		// TODO2 check if needed
-		if (_isBow && !isBowAttackReused())
-			return false;
-		
 		return true;
+	}
+	
+	@Override
+	public boolean doAttack(Creature target)
+	{
+		final boolean isHit = super.doAttack(target);
+		if (isHit)
+		{
+			// Bypass behavior if the victim isn't a player
+			final Player victim = target.getActingPlayer();
+			if (victim != null)
+			{
+				final List<Quest> scripts = _actor.getTemplate().getEventQuests(ScriptEventType.ON_ATTACK_ACT);
+				if (scripts != null)
+					for (final Quest quest : scripts)
+						quest.notifyAttackAct(_actor, victim);
+			}
+		}
+		return isHit;
 	}
 }

@@ -27,12 +27,11 @@ public final class TamedBeast extends FeedableBeast
 		super(objectId, template);
 		
 		disableCoreAi(true);
-		setCurrentHp(getMaxHp());
-		setCurrentMp(getMaxMp());
+		getStatus().setMaxHpMp();
 		setTitle(owner.getName());
 		
 		_owner = owner;
-		owner.setTamedBeast(this);
+		_owner.setTamedBeast(this);
 		
 		_foodId = foodId;
 		

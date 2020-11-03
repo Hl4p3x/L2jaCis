@@ -66,7 +66,7 @@ public class Q271_ProofOfValor extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30577-00.htm";
-				else if (player.getLevel() < 4)
+				else if (player.getStatus().getLevel() < 4)
 					htmltext = "30577-01.htm";
 				else
 					htmltext = (st.hasAtLeastOneQuestItem(NECKLACE_OF_COURAGE, NECKLACE_OF_VALOR)) ? "30577-06.htm" : "30577-02.htm";

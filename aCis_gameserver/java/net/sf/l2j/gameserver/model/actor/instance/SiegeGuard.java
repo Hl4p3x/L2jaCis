@@ -1,9 +1,9 @@
 package net.sf.l2j.gameserver.model.actor.instance;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.ai.type.CreatureAI;
 import net.sf.l2j.gameserver.model.actor.ai.type.SiegeGuardAI;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
@@ -40,16 +40,19 @@ public final class SiegeGuard extends Attackable
 		if (!super.isAttackableBy(attacker))
 			return false;
 		
-		if (getCastle() == null)
+		if (!(attacker instanceof Playable))
 			return false;
 		
-		if (!getCastle().getSiege().isInProgress())
-			return false;
+		if (getCastle() != null && getCastle().getSiege().isInProgress())
+			return getCastle().getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.ATTACKER);
 		
-		if (getCastle().getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.DEFENDER, SiegeSide.OWNER))
-			return false;
-		
-		return true;
+		return false;
+	}
+	
+	@Override
+	public boolean isAttackableWithoutForceBy(Playable attacker)
+	{
+		return isAttackableBy(attacker);
 	}
 	
 	@Override
@@ -74,7 +77,7 @@ public final class SiegeGuard extends Attackable
 		// TODO amount is not taken into consideration
 		stopHating(target);
 		setTarget(null);
-		getAI().tryTo(IntentionType.ACTIVE, null, null);
+		getAI().tryToActive();
 	}
 	
 	/**
@@ -94,7 +97,7 @@ public final class SiegeGuard extends Attackable
 			
 			setIsReturningToSpawnPoint(true);
 			forceRunStance();
-			getAI().tryTo(IntentionType.MOVE_TO, getSpawn().getLoc(), null);
+			getAI().tryToMoveTo(getSpawn().getLoc(), null);
 			return true;
 		}
 		

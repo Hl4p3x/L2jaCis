@@ -59,7 +59,7 @@ public class Q353_PowerOfDarkness extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 55) ? "31044-01.htm" : "31044-02.htm";
+				htmltext = (player.getStatus().getLevel() < 55) ? "31044-01.htm" : "31044-02.htm";
 				break;
 			
 			case STATE_STARTED:

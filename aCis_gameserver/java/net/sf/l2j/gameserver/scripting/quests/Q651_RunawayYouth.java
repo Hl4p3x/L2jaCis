@@ -101,7 +101,7 @@ public class Q651_RunawayYouth extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 26) ? "32014-01.htm" : "32014-02.htm";
+				htmltext = (player.getStatus().getLevel() < 26) ? "32014-01.htm" : "32014-02.htm";
 				break;
 			
 			case STATE_STARTED:

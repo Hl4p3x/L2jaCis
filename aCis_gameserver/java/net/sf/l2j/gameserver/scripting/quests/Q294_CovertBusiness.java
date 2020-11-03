@@ -62,7 +62,7 @@ public class Q294_CovertBusiness extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DWARF)
 					htmltext = "30534-00.htm";
-				else if (player.getLevel() < 10)
+				else if (player.getStatus().getLevel() < 10)
 					htmltext = "30534-01.htm";
 				else
 					htmltext = "30534-02.htm";

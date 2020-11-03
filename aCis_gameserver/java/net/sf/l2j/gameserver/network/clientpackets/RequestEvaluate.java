@@ -39,7 +39,7 @@ public final class RequestEvaluate extends L2GameClientPacket
 			return;
 		}
 		
-		if (player.getLevel() < 10)
+		if (player.getStatus().getLevel() < 10)
 		{
 			player.sendPacket(SystemMessageId.ONLY_LEVEL_SUP_10_CAN_RECOMMEND);
 			return;

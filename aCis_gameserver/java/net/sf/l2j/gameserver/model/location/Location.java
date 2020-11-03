@@ -140,18 +140,20 @@ public class Location extends Point2D
 	/**
 	 * Set the current {@link Location} as {@link Location} set as parameter, minus the offset.
 	 * @param loc : The {@link Location} used as destination.
-	 * @param offset : The offset used to impact X and Y.
+	 * @param offset : The offset used to impact the {@link Location}.
 	 */
-	public void addOffsetBasedOnLocation(Location loc, int offset)
+	public void setLocationMinusOffset(Location loc, double offset)
 	{
-		int dx = loc.getX() - _x;
-		int dy = loc.getY() - _y;
+		final int dx = loc.getX() - _x;
+		final int dy = loc.getY() - _y;
+		final int dz = loc.getZ() - _z;
 		
-		double fraction = Math.sqrt(dx * dx + dy * dy);
+		double fraction = Math.sqrt(dx * dx + dy * dy + dz * dz);
 		fraction = 1 - (offset / fraction);
 		
 		_x += (int) (dx * fraction);
 		_y += (int) (dy * fraction);
+		_z += (int) (dz * fraction);
 	}
 	
 	/**
@@ -162,9 +164,9 @@ public class Location extends Point2D
 	 */
 	public double distance3D(int x, int y, int z)
 	{
-		double dx = (double) _x - x;
-		double dy = (double) _y - y;
-		double dz = (double) _z - z;
+		final double dx = (double) _x - x;
+		final double dy = (double) _y - y;
+		final double dz = (double) _z - z;
 		
 		return Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
 	}

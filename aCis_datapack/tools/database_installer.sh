@@ -84,6 +84,7 @@ $MYG < ../sql/castle.sql &> /dev/null
 $MYG < ../sql/castle_doorupgrade.sql &> /dev/null
 $MYG < ../sql/castle_manor_procure.sql &> /dev/null
 $MYG < ../sql/castle_manor_production.sql &> /dev/null
+$MYG < ../sql/castle_siege_guards.sql &> /dev/null
 $MYG < ../sql/castle_trapupgrade.sql &> /dev/null
 $MYG < ../sql/character_friends.sql &> /dev/null
 $MYG < ../sql/character_hennas.sql &> /dev/null

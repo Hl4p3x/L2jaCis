@@ -433,7 +433,7 @@ public class Q663_SeductiveWhispers extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 50) ? "30846-02.htm" : "30846-01.htm";
+				htmltext = (player.getStatus().getLevel() < 50) ? "30846-02.htm" : "30846-01.htm";
 				break;
 			
 			case STATE_STARTED:

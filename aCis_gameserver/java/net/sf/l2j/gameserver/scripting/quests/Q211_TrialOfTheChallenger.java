@@ -6,12 +6,15 @@ import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
 public class Q211_TrialOfTheChallenger extends SecondClassQuest
 {
 	private static final String qn = "Q211_TrialOfTheChallenger";
+	
+	private static final Location MITHRIL_MINES_LOC = new Location(176560, -184969, -3729);
 	
 	// Items
 	private static final int LETTER_OF_KASH = 2628;
@@ -143,7 +146,7 @@ public class Q211_TrialOfTheChallenger extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.WARRIOR && player.getClassId() != ClassId.ELVEN_KNIGHT && player.getClassId() != ClassId.PALUS_KNIGHT && player.getClassId() != ClassId.ORC_RAIDER && player.getClassId() != ClassId.MONK)
 					htmltext = "30644-02.htm";
-				else if (player.getLevel() < 35)
+				else if (player.getStatus().getLevel() < 35)
 					htmltext = "30644-01.htm";
 				else
 					htmltext = "30644-03.htm";
@@ -214,7 +217,7 @@ public class Q211_TrialOfTheChallenger extends SecondClassQuest
 					case FILAUR:
 						if (cond == 8)
 						{
-							if (player.getLevel() >= 36)
+							if (player.getStatus().getLevel() >= 36)
 							{
 								htmltext = "30535-01.htm";
 								st.set("cond", "9");
@@ -226,7 +229,7 @@ public class Q211_TrialOfTheChallenger extends SecondClassQuest
 						else if (cond == 9)
 						{
 							htmltext = "30535-02.htm";
-							st.addRadar(176560, -184969, -3729);
+							st.addRadar(MITHRIL_MINES_LOC);
 						}
 						else if (cond == 10)
 							htmltext = "30535-04.htm";

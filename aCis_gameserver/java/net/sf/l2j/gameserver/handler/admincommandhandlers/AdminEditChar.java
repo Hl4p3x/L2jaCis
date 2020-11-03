@@ -12,8 +12,8 @@ import java.util.StringTokenizer;
 
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.ClanHallManager;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
@@ -54,7 +54,6 @@ public class AdminEditChar implements IAdminCommandHandler
 		"admin_find_account",
 		"admin_find_dualbox",
 		"admin_set",
-		"admin_summon_info",
 		"admin_unsummon",
 		"admin_summon_setlvl",
 		"admin_show_pet_inv",
@@ -87,11 +86,11 @@ public class AdminEditChar implements IAdminCommandHandler
 						target = activeChar;
 				}
 				
-				gatherCharacterInfo(activeChar, target);
+				gatherPlayerInfo(activeChar, target);
 			}
 			catch (Exception e)
 			{
-				gatherCharacterInfo(activeChar, activeChar);
+				gatherPlayerInfo(activeChar, activeChar);
 			}
 		}
 		else if (command.startsWith("admin_show_characters"))
@@ -213,7 +212,7 @@ public class AdminEditChar implements IAdminCommandHandler
 							}
 							else
 							{
-								try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+								try (Connection con = ConnectionPool.getConnection();
 									PreparedStatement ps = con.prepareStatement("UPDATE characters SET accesslevel=? WHERE char_name=?"))
 								{
 									ps.setInt(1, lvl);
@@ -237,7 +236,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						activeChar.sendMessage("Usage: //set access <level> | <name> <level>");
 					}
 					break;
-					
+				
 				case "class":
 					try
 					{
@@ -248,29 +247,41 @@ public class AdminEditChar implements IAdminCommandHandler
 						if (newClassId < 0 || newClassId > ClassId.VALUES.length)
 							return false;
 						
-						final Player player = (Player) target;
 						final ClassId newClass = ClassId.VALUES[newClassId];
 						
-						if (player.getClassId() != newClass)
+						// Don't bother with dummy classes.
+						if (newClass.getLevel() == -1)
 						{
-							player.setClassId(newClass.getId());
-							if (!player.isSubClassActive())
-								player.setBaseClass(newClass);
-							
-							player.refreshOverloaded();
-							player.store();
-							player.sendPacket(new HennaInfo(player));
-							player.broadcastUserInfo();
-							
-							activeChar.sendMessage("You successfully set " + player.getName() + " class to " + newClass.toString() + ".");
+							activeChar.sendMessage("You tried to set an invalid class for " + target.getName() + ".");
+							return false;
 						}
+						
+						final Player player = (Player) target;
+						
+						// Don't bother edit ClassId if already set the same.
+						if (player.getClassId() == newClass)
+						{
+							activeChar.sendMessage(target.getName() + " is already a(n) " + newClass.toString() + ".");
+							return false;
+						}
+						
+						player.setClassId(newClass.getId());
+						if (!player.isSubClassActive())
+							player.setBaseClass(newClass);
+						
+						player.refreshWeightPenalty();
+						player.store();
+						player.sendPacket(new HennaInfo(player));
+						player.broadcastUserInfo();
+						
+						activeChar.sendMessage("You successfully set " + player.getName() + " class to " + newClass.toString() + ".");
 					}
 					catch (Exception e)
 					{
 						AdminHelpPage.showHelpPage(activeChar, "charclasses.htm");
 					}
 					break;
-					
+				
 				case "color":
 					try
 					{
@@ -288,7 +299,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						activeChar.sendMessage("Usage: //set color <number>");
 					}
 					break;
-					
+				
 				case "exp":
 					try
 					{
@@ -298,7 +309,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						final Player player = ((Player) target);
 						
 						final long newExp = Long.parseLong(st.nextToken());
-						final long currentExp = player.getExp();
+						final long currentExp = player.getStatus().getExp();
 						
 						if (currentExp < newExp)
 							player.addExpAndSp(newExp - currentExp, 0);
@@ -307,7 +318,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						
 						player.broadcastUserInfo();
 						
-						activeChar.sendMessage("You successfully set " + player.getName() +"'s XP to " + newExp + ".");
+						activeChar.sendMessage("You successfully set " + player.getName() + "'s XP to " + newExp + ".");
 					}
 					catch (Exception e)
 					{
@@ -337,7 +348,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						activeChar.sendMessage("Usage: //set karma <number>");
 					}
 					break;
-					
+				
 				case "level":
 					try
 					{
@@ -352,7 +363,7 @@ public class AdminEditChar implements IAdminCommandHandler
 							return false;
 						}
 						
-						final long pXp = ((Player) target).getExp();
+						final long pXp = ((Player) target).getStatus().getExp();
 						final long tXp = pl.getRequiredExpToLevelUp();
 						
 						if (pXp > tXp)
@@ -469,7 +480,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						activeChar.sendMessage("Usage: //set sex <sex>");
 					}
 					break;
-					
+				
 				case "sp":
 					try
 					{
@@ -479,7 +490,7 @@ public class AdminEditChar implements IAdminCommandHandler
 						final Player player = ((Player) target);
 						
 						final int newSp = Integer.parseInt(st.nextToken());
-						final int currentSp = player.getSp();
+						final int currentSp = player.getStatus().getSp();
 						
 						if (currentSp < newSp)
 							player.addExpAndSp(0, newSp - currentSp);
@@ -488,14 +499,14 @@ public class AdminEditChar implements IAdminCommandHandler
 						
 						player.broadcastUserInfo();
 						
-						activeChar.sendMessage("You successfully set " + player.getName() +"'s SP to " + newSp + ".");
+						activeChar.sendMessage("You successfully set " + player.getName() + "'s SP to " + newSp + ".");
 					}
 					catch (Exception e)
 					{
 						activeChar.sendMessage("Usage: //set sp <number>");
 					}
 					break;
-					
+				
 				case "tcolor":
 					try
 					{
@@ -552,25 +563,6 @@ public class AdminEditChar implements IAdminCommandHandler
 					break;
 			}
 		}
-		else if (command.startsWith("admin_summon_info"))
-		{
-			final WorldObject target = activeChar.getTarget();
-			if (!(target instanceof Playable))
-			{
-				activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-				return false;
-			}
-			
-			final Player targetPlayer = target.getActingPlayer();
-			if (targetPlayer != null)
-			{
-				final Summon summon = targetPlayer.getSummon();
-				if (summon != null)
-					gatherSummonInfo(summon, activeChar);
-				else
-					activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-			}
-		}
 		else if (command.startsWith("admin_unsummon"))
 		{
 			final WorldObject target = activeChar.getTarget();
@@ -611,13 +603,13 @@ public class AdminEditChar implements IAdminCommandHandler
 					return false;
 				}
 				
-				final long oldExp = pet.getStat().getExp();
+				final long oldExp = pet.getStatus().getExp();
 				final long newExp = pde.getMaxExp();
 				
 				if (oldExp > newExp)
-					pet.getStat().removeExp(oldExp - newExp);
+					pet.getStatus().removeExp(oldExp - newExp);
 				else if (oldExp < newExp)
-					pet.getStat().addExp(newExp - oldExp);
+					pet.getStatus().addExp(newExp - oldExp);
 			}
 			catch (Exception e)
 			{
@@ -686,9 +678,9 @@ public class AdminEditChar implements IAdminCommandHandler
 			for (Player member : party.getMembers())
 			{
 				if (!party.isLeader(member))
-					StringUtil.append(sb, "<tr><td width=150><a action=\"bypass -h admin_debug ", member.getName(), "\">", member.getName(), " (", member.getLevel(), ")</a></td><td width=120 align=right>", member.getClassId().toString(), "</td></tr>");
+					StringUtil.append(sb, "<tr><td width=150><a action=\"bypass -h admin_debug ", member.getName(), "\">", member.getName(), " (", member.getStatus().getLevel(), ")</a></td><td width=120 align=right>", member.getClassId().toString(), "</td></tr>");
 				else
-					StringUtil.append(sb, "<tr><td width=150><a action=\"bypass -h admin_debug ", member.getName(), "\"><font color=\"LEVEL\">", member.getName(), " (", member.getLevel(), ")</font></a></td><td width=120 align=right>", member.getClassId().toString(), "</td></tr>");
+					StringUtil.append(sb, "<tr><td width=150><a action=\"bypass -h admin_debug ", member.getName(), "\"><font color=\"LEVEL\">", member.getName(), " (", member.getStatus().getLevel(), ")</font></a></td><td width=120 align=right>", member.getClassId().toString(), "</td></tr>");
 			}
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(0);
@@ -752,7 +744,7 @@ public class AdminEditChar implements IAdminCommandHandler
 				Player player = World.getInstance().getPlayer(playerName);
 				if (player == null)
 				{
-					try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+					try (Connection con = ConnectionPool.getConnection();
 						PreparedStatement ps = con.prepareStatement("UPDATE characters SET " + (changeCreateExpiryTime ? "clan_create_expiry_time" : "clan_join_expiry_time") + " WHERE char_name=? LIMIT 1"))
 					{
 						ps.setString(1, playerName);
@@ -809,56 +801,67 @@ public class AdminEditChar implements IAdminCommandHandler
 		
 		// Second use of sb, add player info into new table row.
 		for (Player player : players)
-			StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_debug ", player.getName(), "\">", player.getName(), "</a></td><td width=110>", player.getTemplate().getClassName(), "</td><td width=40>", player.getLevel(), "</td></tr>");
+			StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_debug ", player.getName(), "\">", player.getName(), "</a></td><td width=110>", player.getTemplate().getClassName(), "</td><td width=40>", player.getStatus().getLevel(), "</td></tr>");
 		
 		html.replace("%players%", sb.toString());
 		activeChar.sendPacket(html);
 	}
 	
 	/**
-	 * Gather character informations.
-	 * @param activeChar The player who requested that action.
-	 * @param player The target to gather informations from.
+	 * Gather {@link Player} informations and send them on an existing {@link NpcHtmlMessage}. Additionally, set the target to this {@link Player}.
+	 * @param activeChar : The {@link Player} who requested that action.
+	 * @param player : The {@link Player} target to gather informations from.
+	 * @param html : The {@link NpcHtmlMessage} used as reference.
 	 */
-	public static void gatherCharacterInfo(Player activeChar, Player player)
+	public static void gatherPlayerInfo(Player activeChar, Player player, NpcHtmlMessage html)
 	{
 		activeChar.setTarget(player);
 		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
 		html.setFile("data/html/admin/charinfo.htm");
 		html.replace("%name%", player.getName());
-		html.replace("%level%", player.getLevel());
+		html.replace("%level%", player.getStatus().getLevel());
 		html.replace("%clan%", (player.getClan() != null) ? "<a action=\"bypass -h admin_clan_info " + player.getName() + "\">" + player.getClan().getName() + "</a>" : "none");
-		html.replace("%xp%", player.getExp());
-		html.replace("%sp%", player.getSp());
+		html.replace("%xp%", player.getStatus().getExp());
+		html.replace("%sp%", player.getStatus().getSp());
 		html.replace("%class%", player.getTemplate().getClassName());
 		html.replace("%baseclass%", PlayerData.getInstance().getClassNameById(player.getBaseClass()));
-		html.replace("%currenthp%", (int) player.getCurrentHp());
-		html.replace("%maxhp%", player.getMaxHp());
+		html.replace("%currenthp%", (int) player.getStatus().getHp());
+		html.replace("%maxhp%", player.getStatus().getMaxHp());
 		html.replace("%karma%", player.getKarma());
-		html.replace("%currentmp%", (int) player.getCurrentMp());
-		html.replace("%maxmp%", player.getMaxMp());
+		html.replace("%currentmp%", (int) player.getStatus().getMp());
+		html.replace("%maxmp%", player.getStatus().getMaxMp());
 		html.replace("%pvpflag%", player.getPvpFlag());
-		html.replace("%currentcp%", (int) player.getCurrentCp());
-		html.replace("%maxcp%", player.getMaxCp());
+		html.replace("%currentcp%", (int) player.getStatus().getCp());
+		html.replace("%maxcp%", player.getStatus().getMaxCp());
 		html.replace("%pvpkills%", player.getPvpKills());
 		html.replace("%pkkills%", player.getPkKills());
-		html.replace("%patk%", player.getPAtk(null));
-		html.replace("%matk%", player.getMAtk(null, null));
-		html.replace("%pdef%", player.getPDef(null));
-		html.replace("%mdef%", player.getMDef(null, null));
-		html.replace("%accuracy%", player.getAccuracy());
-		html.replace("%evasion%", player.getEvasionRate(null));
-		html.replace("%critical%", player.getCriticalHit(null, null));
-		html.replace("%runspeed%", player.getMoveSpeed());
-		html.replace("%patkspd%", player.getPAtkSpd());
-		html.replace("%matkspd%", player.getMAtkSpd());
+		html.replace("%patk%", player.getStatus().getPAtk(null));
+		html.replace("%matk%", player.getStatus().getMAtk(null, null));
+		html.replace("%pdef%", player.getStatus().getPDef(null));
+		html.replace("%mdef%", player.getStatus().getMDef(null, null));
+		html.replace("%accuracy%", player.getStatus().getAccuracy());
+		html.replace("%evasion%", player.getStatus().getEvasionRate(null));
+		html.replace("%critical%", player.getStatus().getCriticalHit(null, null));
+		html.replace("%runspeed%", player.getStatus().getMoveSpeed());
+		html.replace("%patkspd%", player.getStatus().getPAtkSpd());
+		html.replace("%matkspd%", player.getStatus().getMAtkSpd());
 		html.replace("%account%", player.getAccountName());
 		html.replace("%ip%", (player.getClient().isDetached()) ? "Disconnected" : player.getClient().getConnection().getInetAddress().getHostAddress());
 		html.replace("%prevai%", player.getAI().getPreviousIntention().getType().name());
 		html.replace("%curai%", player.getAI().getCurrentIntention().getType().name());
 		html.replace("%nextai%", player.getAI().getNextIntention().getType().name());
 		html.replace("%loc%", player.getPosition().toString());
+	}
+	
+	/**
+	 * Gather {@link Player} informations and send them on a new {@link NpcHtmlMessage}. Additionally, set the target to this {@link Player}.
+	 * @param activeChar : The {@link Player} who requested that action.
+	 * @param player : The {@link Player} target to gather informations from.
+	 */
+	private static void gatherPlayerInfo(Player activeChar, Player player)
+	{
+		final NpcHtmlMessage html = new NpcHtmlMessage(0);
+		gatherPlayerInfo(activeChar, player, html);
 		activeChar.sendPacket(html);
 	}
 	
@@ -883,7 +886,7 @@ public class AdminEditChar implements IAdminCommandHandler
 			if (name.toLowerCase().contains(characterToFind.toLowerCase()))
 			{
 				charactersFound++;
-				StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_debug ", name, "\">", name, "</a></td><td width=110>", player.getTemplate().getClassName(), "</td><td width=40>", player.getLevel(), "</td></tr>");
+				StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_debug ", name, "\">", name, "</a></td><td width=110>", player.getTemplate().getClassName(), "</td><td width=40>", player.getStatus().getLevel(), "</td></tr>");
 			}
 			
 			if (charactersFound > 20)
@@ -956,7 +959,7 @@ public class AdminEditChar implements IAdminCommandHandler
 			
 			String name = player.getName();
 			charactersFound++;
-			StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_debug ", name, "\">", name, "</a></td><td width=110>", player.getTemplate().getClassName(), "</td><td width=40>", player.getLevel(), "</td></tr>");
+			StringUtil.append(sb, "<tr><td width=80><a action=\"bypass -h admin_debug ", name, "\">", name, "</a></td><td width=110>", player.getTemplate().getClassName(), "</td><td width=40>", player.getStatus().getLevel(), "</td></tr>");
 			
 			if (charactersFound > 20)
 				break;
@@ -1059,41 +1062,6 @@ public class AdminEditChar implements IAdminCommandHandler
 		html.replace("%multibox%", multibox);
 		html.replace("%results%", sb.toString());
 		html.replace("%strict%", "");
-		activeChar.sendPacket(html);
-	}
-	
-	public static void gatherSummonInfo(Summon target, Player activeChar)
-	{
-		final String name = target.getName();
-		final String owner = target.getActingPlayer().getName();
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/petinfo.htm");
-		html.replace("%name%", (name == null) ? "N/A" : name);
-		html.replace("%level%", target.getLevel());
-		html.replace("%exp%", target.getStat().getExp());
-		html.replace("%owner%", " <a action=\"bypass -h admin_debug " + owner + "\">" + owner + "</a>");
-		html.replace("%class%", target.getClass().getSimpleName());
-		html.replace("%ai%", (target.hasAI()) ? target.getAI().getCurrentIntention().getType().name() : "NULL");
-		html.replace("%hp%", (int) target.getStatus().getCurrentHp() + "/" + target.getStat().getMaxHp());
-		html.replace("%mp%", (int) target.getStatus().getCurrentMp() + "/" + target.getStat().getMaxMp());
-		html.replace("%karma%", target.getKarma());
-		html.replace("%undead%", (target.isUndead()) ? "yes" : "no");
-		
-		if (target instanceof Pet)
-		{
-			final Pet pet = ((Pet) target);
-			
-			html.replace("%inv%", " <a action=\"bypass admin_show_pet_inv " + target.getActingPlayer().getObjectId() + "\">view</a>");
-			html.replace("%food%", pet.getCurrentFed() + "/" + pet.getPetData().getMaxMeal());
-			html.replace("%load%", pet.getInventory().getTotalWeight() + "/" + pet.getMaxLoad());
-		}
-		else
-		{
-			html.replace("%inv%", "none");
-			html.replace("%food%", "N/A");
-			html.replace("%load%", "N/A");
-		}
 		activeChar.sendPacket(html);
 	}
 	

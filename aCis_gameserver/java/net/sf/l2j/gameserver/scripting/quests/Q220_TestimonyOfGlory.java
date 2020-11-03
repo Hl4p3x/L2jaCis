@@ -7,6 +7,7 @@ import net.sf.l2j.gameserver.enums.actors.ClassRace;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.QuestState;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -14,6 +15,12 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 public class Q220_TestimonyOfGlory extends SecondClassQuest
 {
 	private static final String qn = "Q220_TestimonyOfGlory";
+	
+	private static final Location VUKU_CHIEF_DRIKO_LOC = new Location(-2150, 124443, -3724);
+	private static final Location TUREK_CHIEF_BURAI_LOC = new Location(-94294, 110818, -3563);
+	private static final Location LEUNT_CHIEF_HARAK_LOC = new Location(-55217, 200628, -3724);
+	private static final Location BREKA_CHIEF_VOLTAR_LOC = new Location(80100, 119991, -2264);
+	private static final Location ENKU_CHIEF_KEPRA_LOC = new Location(19815, 189703, -3032);
 	
 	// Items
 	private static final int VOKIAN_ORDER_1 = 3204;
@@ -146,7 +153,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 			st.takeItems(SCEPTER_OF_TUREK, 1);
 			st.takeItems(SCEPTER_OF_VUKU, 1);
 			
-			if (player.getLevel() >= 37)
+			if (player.getStatus().getLevel() >= 37)
 			{
 				st.set("cond", "6");
 				st.playSound(QuestState.SOUND_MIDDLE);
@@ -170,7 +177,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 				st.playSound(QuestState.SOUND_ITEMGET);
 				st.giveItems(KASMAN_LETTER_1, 1);
 			}
-			st.addRadar(-2150, 124443, -3724);
+			st.addRadar(VUKU_CHIEF_DRIKO_LOC);
 		}
 		else if (event.equalsIgnoreCase("30501-05.htm") && !st.hasQuestItems(SCEPTER_OF_TUREK))
 		{
@@ -182,7 +189,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 				st.playSound(QuestState.SOUND_ITEMGET);
 				st.giveItems(KASMAN_LETTER_2, 1);
 			}
-			st.addRadar(-94294, 110818, -3563);
+			st.addRadar(TUREK_CHIEF_BURAI_LOC);
 		}
 		else if (event.equalsIgnoreCase("30501-08.htm") && !st.hasQuestItems(SCEPTER_OF_TUNATH))
 		{
@@ -194,7 +201,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 				st.playSound(QuestState.SOUND_ITEMGET);
 				st.giveItems(KASMAN_LETTER_3, 1);
 			}
-			st.addRadar(-55217, 200628, -3724);
+			st.addRadar(LEUNT_CHIEF_HARAK_LOC);
 		}
 		// MANAKIA
 		else if (event.equalsIgnoreCase("30515-02.htm") && !st.hasQuestItems(SCEPTER_OF_BREKA))
@@ -207,7 +214,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 				st.playSound(QuestState.SOUND_ITEMGET);
 				st.giveItems(MANAKIA_LETTER_1, 1);
 			}
-			st.addRadar(80100, 119991, -2264);
+			st.addRadar(BREKA_CHIEF_VOLTAR_LOC);
 		}
 		else if (event.equalsIgnoreCase("30515-05.htm") && !st.hasQuestItems(SCEPTER_OF_ENKU))
 		{
@@ -219,7 +226,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 				st.playSound(QuestState.SOUND_ITEMGET);
 				st.giveItems(MANAKIA_LETTER_2, 1);
 			}
-			st.addRadar(19815, 189703, -3032);
+			st.addRadar(ENKU_CHIEF_KEPRA_LOC);
 		}
 		// VOLTAR
 		else if (event.equalsIgnoreCase("30615-04.htm"))
@@ -308,9 +315,9 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30514-01.htm";
-				else if (player.getLevel() < 37)
+				else if (player.getStatus().getLevel() < 37)
 					htmltext = "30514-02.htm";
-				else if (player.getClassId().level() != 1)
+				else if (player.getClassId().getLevel() != 1)
 					htmltext = "30514-01a.htm";
 				else
 					htmltext = "30514-03.htm";
@@ -350,7 +357,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 						{
 							if (st.hasQuestItems(CHIANTA_ORDER_2))
 							{
-								if (player.getLevel() >= 37)
+								if (player.getStatus().getLevel() >= 37)
 								{
 									htmltext = "30642-09.htm";
 									st.set("cond", "6");
@@ -403,7 +410,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 							if (st.hasQuestItems(MANAKIA_LETTER_1))
 							{
 								htmltext = "30615-02.htm";
-								st.removeRadar(80100, 119991, -2264);
+								st.removeRadar(BREKA_CHIEF_VOLTAR_LOC);
 							}
 							else if (st.hasQuestItems(GLOVE_OF_VOLTAR))
 							{
@@ -444,7 +451,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 							if (st.hasQuestItems(MANAKIA_LETTER_2))
 							{
 								htmltext = "30616-02.htm";
-								st.removeRadar(19815, 189703, -3032);
+								st.removeRadar(ENKU_CHIEF_KEPRA_LOC);
 							}
 							else if (st.hasQuestItems(GLOVE_OF_KEPRA))
 							{
@@ -487,7 +494,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 							if (st.hasQuestItems(KASMAN_LETTER_2))
 							{
 								htmltext = "30617-02.htm";
-								st.removeRadar(-94294, 110818, -3563);
+								st.removeRadar(TUREK_CHIEF_BURAI_LOC);
 							}
 							else if (st.hasQuestItems(GLOVE_OF_BURAI))
 							{
@@ -528,7 +535,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 							if (st.hasQuestItems(KASMAN_LETTER_3))
 							{
 								htmltext = "30618-02.htm";
-								st.removeRadar(-55217, 200628, -3724);
+								st.removeRadar(LEUNT_CHIEF_HARAK_LOC);
 							}
 							else if (st.hasQuestItems(SCEPTER_OF_TUNATH))
 								htmltext = "30618-04.htm";
@@ -545,7 +552,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 							if (st.hasQuestItems(KASMAN_LETTER_1))
 							{
 								htmltext = "30619-02.htm";
-								st.removeRadar(-2150, 124443, -3724);
+								st.removeRadar(VUKU_CHIEF_DRIKO_LOC);
 							}
 							else if (st.hasQuestItems(DRIKO_CONTRACT))
 							{
@@ -649,7 +656,7 @@ public class Q220_TestimonyOfGlory extends SecondClassQuest
 						npc.broadcastNpcSay("How regretful! Unjust dishonor!");
 						npc.setScriptValue(1);
 					}
-					else if (npc.isScriptValue(1) && npc.getCurrentHp() / npc.getMaxHp() < 0.33)
+					else if (npc.isScriptValue(1) && npc.getStatus().getHpRatio() < 0.33)
 					{
 						npc.broadcastNpcSay("Indignant and unfair death!");
 						npc.setScriptValue(2);

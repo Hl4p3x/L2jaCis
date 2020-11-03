@@ -82,7 +82,7 @@ public class Q618_IntoTheFlame extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "31540-01.htm" : "31540-02.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "31540-01.htm" : "31540-02.htm";
 				break;
 			
 			case STATE_STARTED:

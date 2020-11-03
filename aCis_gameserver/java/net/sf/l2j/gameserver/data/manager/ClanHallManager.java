@@ -13,9 +13,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.data.xml.IXmlReader;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.util.StatsSet;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.SpawnType;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -50,7 +50,7 @@ public class ClanHallManager implements IXmlReader
 		final Collection<SiegableHallZone> siegableHallZones = ZoneManager.getInstance().getAllZones(SiegableHallZone.class);
 		
 		// Add dynamic data.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_CLANHALLS);
 			PreparedStatement ps2 = con.prepareStatement(LOAD_FUNCTIONS);
 			ResultSet rs = ps.executeQuery())

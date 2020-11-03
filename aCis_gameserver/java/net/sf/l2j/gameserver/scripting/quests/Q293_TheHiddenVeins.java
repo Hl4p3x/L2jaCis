@@ -18,9 +18,6 @@ public class Q293_TheHiddenVeins extends Quest
 	private static final int TORN_MAP_FRAGMENT = 1489;
 	private static final int HIDDEN_VEIN_MAP = 1490;
 	
-	// Reward
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
-	
 	// NPCs
 	private static final int FILAUR = 30535;
 	private static final int CHINCHIRIN = 30539;
@@ -88,7 +85,7 @@ public class Q293_TheHiddenVeins extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DWARF)
 					htmltext = "30535-00.htm";
-				else if (player.getLevel() < 6)
+				else if (player.getStatus().getLevel() < 6)
 					htmltext = "30535-01.htm";
 				else
 					htmltext = "30535-02.htm";
@@ -98,35 +95,23 @@ public class Q293_TheHiddenVeins extends Quest
 				switch (npc.getNpcId())
 				{
 					case FILAUR:
-						final int chrysoliteOres = st.getQuestItemsCount(CHRYSOLITE_ORE);
-						final int hiddenVeinMaps = st.getQuestItemsCount(HIDDEN_VEIN_MAP);
+						final int ores = st.getQuestItemsCount(CHRYSOLITE_ORE);
+						final int maps = st.getQuestItemsCount(HIDDEN_VEIN_MAP);
 						
-						if (chrysoliteOres + hiddenVeinMaps == 0)
+						if (ores + maps == 0)
 							htmltext = "30535-04.htm";
 						else
 						{
-							if (hiddenVeinMaps > 0)
-							{
-								if (chrysoliteOres > 0)
-									htmltext = "30535-09.htm";
-								else
-									htmltext = "30535-08.htm";
-							}
-							else
-								htmltext = "30535-05.htm";
-							
-							int reward = (chrysoliteOres * 5) + (hiddenVeinMaps * 500) + ((chrysoliteOres >= 10) ? 2000 : 0);
-							
+							htmltext = (maps > 0) ? ((ores > 0) ? "30535-09.htm" : "30535-08.htm") : "30535-05.htm";
 							st.takeItems(CHRYSOLITE_ORE, -1);
 							st.takeItems(HIDDEN_VEIN_MAP, -1);
-							st.rewardItems(57, reward);
 							
-							if (player.isNewbie() && st.getInt("Reward") == 0)
-							{
-								st.giveItems(SOULSHOT_FOR_BEGINNERS, 6000);
-								st.playTutorialVoice("tutorial_voice_026");
-								st.set("Reward", "1");
-							}
+							int reward = (ores * 5) + (maps * 500);
+							if (ores >= 10)
+								reward += 2000;
+							
+							st.rewardItems(57, reward);
+							st.rewardNewbieShots(6000, 0);
 						}
 						break;
 					

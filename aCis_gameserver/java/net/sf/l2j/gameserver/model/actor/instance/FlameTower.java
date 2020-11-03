@@ -6,13 +6,13 @@ import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
 import net.sf.l2j.gameserver.model.zone.type.subtype.CastleZoneType;
 import net.sf.l2j.gameserver.model.zone.type.subtype.ZoneType;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class FlameTower extends Npc
 {
@@ -30,20 +30,19 @@ public class FlameTower extends Npc
 		if (!super.isAttackableBy(attacker))
 			return false;
 		
-		// TODO Summons can't damage?
-		if (!(attacker instanceof Player))
+		if (!(attacker instanceof Playable))
 			return false;
 		
-		if (getCastle() == null)
-			return false;
+		if (getCastle() != null && getCastle().getSiege().isInProgress())
+			return getCastle().getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.ATTACKER);
 		
-		if (!getCastle().getSiege().isInProgress())
-			return false;
-		
-		if (!getCastle().getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.ATTACKER))
-			return false;
-		
-		return true;
+		return false;
+	}
+	
+	@Override
+	public boolean isAttackableWithoutForceBy(Playable attacker)
+	{
+		return isAttackableBy(attacker);
 	}
 	
 	@Override
@@ -60,7 +59,7 @@ public class FlameTower extends Npc
 		{
 			// Message occurs only if the trap was triggered first.
 			if (_zoneList != null && _upgradeLevel != 0)
-				getCastle().getSiege().announceToPlayers(SystemMessage.getSystemMessage(SystemMessageId.A_TRAP_DEVICE_HAS_BEEN_STOPPED), false);
+				getCastle().getSiege().announce(SystemMessageId.A_TRAP_DEVICE_HAS_BEEN_STOPPED, SiegeSide.DEFENDER);
 			
 			// Spawn a little version of it. This version is a simple NPC, cleaned on siege end.
 			try

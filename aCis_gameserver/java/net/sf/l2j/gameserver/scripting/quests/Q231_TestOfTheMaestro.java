@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -122,15 +121,15 @@ public class Q231_TestOfTheMaestro extends SecondClassQuest
 		{
 			final Attackable bugbear1 = (Attackable) addSpawn(KING_BUGBEAR, 140333, -194153, -3138, 0, false, 200000, true);
 			bugbear1.addDamageHate(player, 0, 999);
-			bugbear1.getAI().tryTo(IntentionType.ATTACK, player, false);
+			bugbear1.getAI().tryToAttack(player);
 			
 			final Attackable bugbear2 = (Attackable) addSpawn(KING_BUGBEAR, 140395, -194147, -3146, 0, false, 200000, true);
 			bugbear2.addDamageHate(player, 0, 999);
-			bugbear2.getAI().tryTo(IntentionType.ATTACK, player, false);
+			bugbear2.getAI().tryToAttack(player);
 			
 			final Attackable bugbear3 = (Attackable) addSpawn(KING_BUGBEAR, 140304, -194082, -3157, 0, false, 200000, true);
 			bugbear3.addDamageHate(player, 0, 999);
-			bugbear3.getAI().tryTo(IntentionType.ATTACK, player, false);
+			bugbear3.getAI().tryToAttack(player);
 		}
 		
 		return null;
@@ -149,7 +148,7 @@ public class Q231_TestOfTheMaestro extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.ARTISAN)
 					htmltext = "30531-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30531-02.htm";
 				else
 					htmltext = "30531-03.htm";

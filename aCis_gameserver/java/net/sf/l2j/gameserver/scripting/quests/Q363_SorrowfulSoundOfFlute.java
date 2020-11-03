@@ -83,7 +83,7 @@ public class Q363_SorrowfulSoundOfFlute extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30956-03.htm" : "30956-01.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30956-03.htm" : "30956-01.htm";
 				break;
 			
 			case STATE_STARTED:

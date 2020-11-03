@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import net.sf.l2j.gameserver.enums.LootRule;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.model.group.Party;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.AskJoinParty;
@@ -35,7 +34,13 @@ public final class RequestJoinParty extends L2GameClientPacket
 			return;
 		}
 		
-		if (BlockList.isBlocked(target, requestor))
+		if (target.getBlockList().isBlockingAll())
+		{
+			requestor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addCharName(target));
+			return;
+		}
+		
+		if (target.getBlockList().isInBlockList(requestor))
 		{
 			requestor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_ADDED_YOU_TO_IGNORE_LIST).addCharName(target));
 			return;

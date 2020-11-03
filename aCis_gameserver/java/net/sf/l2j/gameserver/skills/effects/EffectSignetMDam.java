@@ -16,7 +16,6 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
 import net.sf.l2j.gameserver.model.actor.instance.EffectPoint;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillLaunched;
@@ -44,15 +43,15 @@ public class EffectSignetMDam extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		NpcTemplate template;
 		if (getSkill() instanceof L2SkillSignetCasttime)
-			template = NpcData.getInstance().getTemplate(((L2SkillSignetCasttime) getSkill())._effectNpcId);
-		else
+			return false;
+		
+		final NpcTemplate template = NpcData.getInstance().getTemplate(((L2SkillSignetCasttime) getSkill())._effectNpcId);
+		if (template == null)
 			return false;
 		
 		final EffectPoint effectPoint = new EffectPoint(IdFactory.getInstance().getNextId(), template, getEffector());
-		effectPoint.setCurrentHp(effectPoint.getMaxHp());
-		effectPoint.setCurrentMp(effectPoint.getMaxMp());
+		effectPoint.getStatus().setMaxHpMp();
 		
 		Location worldPosition = null;
 		if (getEffector() instanceof Player && getSkill().getTargetType() == SkillTargetType.GROUND)
@@ -62,7 +61,7 @@ public class EffectSignetMDam extends AbstractEffect
 		effectPoint.spawnMe((worldPosition != null) ? worldPosition : getEffector().getPosition());
 		
 		_actor = effectPoint;
-		_isCtrlPressed = ((SkillUseHolder) ((Player) getEffector()).getAI().getCurrentIntention().getFirstParameter()).isCtrlPressed();
+		_isCtrlPressed = ((Player) getEffector()).getAI().getCurrentIntention().isCtrlPressed();
 		return true;
 		
 	}
@@ -76,13 +75,13 @@ public class EffectSignetMDam extends AbstractEffect
 		final Player caster = (Player) getEffector();
 		final int mpConsume = getSkill().getMpConsume();
 		
-		if (mpConsume > caster.getCurrentMp())
+		if (mpConsume > caster.getStatus().getMp())
 		{
 			caster.sendPacket(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP);
 			return false;
 		}
 		
-		caster.reduceCurrentMp(mpConsume);
+		caster.getStatus().reduceMp(mpConsume);
 		
 		final List<Creature> targets = new ArrayList<>();
 		for (Creature cha : _actor.getKnownTypeInRadius(Creature.class, getSkill().getSkillRadius()))
@@ -115,17 +114,17 @@ public class EffectSignetMDam extends AbstractEffect
 		
 		if (!targets.isEmpty())
 		{
-			caster.broadcastPacket(new MagicSkillLaunched(caster, getSkill().getId(), getSkill().getLevel(), targets.toArray(new Creature[targets.size()])));
+			caster.broadcastPacket(new MagicSkillLaunched(caster, getSkill(), targets.toArray(new Creature[targets.size()])));
 			for (Creature target : targets)
 			{
-				final boolean mcrit = Formulas.calcMCrit(caster.getMCriticalHit(target, getSkill()));
+				final boolean mcrit = Formulas.calcMCrit(caster, target, getSkill());
 				final byte shld = Formulas.calcShldUse(caster, target, getSkill());
 				final boolean sps = caster.isChargedShot(ShotType.SPIRITSHOT);
 				final boolean bsps = caster.isChargedShot(ShotType.BLESSED_SPIRITSHOT);
 				final int mdam = (int) Formulas.calcMagicDam(caster, target, getSkill(), shld, sps, bsps, mcrit);
 				
 				if (target instanceof Summon)
-					target.broadcastStatusUpdate();
+					target.getStatus().broadcastStatusUpdate();
 				
 				if (mdam > 0)
 				{

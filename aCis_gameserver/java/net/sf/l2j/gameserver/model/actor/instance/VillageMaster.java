@@ -199,9 +199,9 @@ public class VillageMaster extends Folk
 				return;
 			}
 			
-			if (Config.ALT_CLAN_DISSOLVE_DAYS > 0)
+			if (Config.CLAN_DISSOLVE_DAYS > 0)
 			{
-				clan.setDissolvingExpiryTime(System.currentTimeMillis() + Config.ALT_CLAN_DISSOLVE_DAYS * 86400000L);
+				clan.setDissolvingExpiryTime(System.currentTimeMillis() + Config.CLAN_DISSOLVE_DAYS * 86400000L);
 				clan.updateClanInDB();
 				
 				ClanTable.getInstance().scheduleRemoveClan(clan);
@@ -210,7 +210,7 @@ public class VillageMaster extends Folk
 				ClanTable.getInstance().destroyClan(clan);
 			
 			// The clan leader should take the XP penalty of a full death.
-			player.deathPenalty(false, false, false);
+			player.applyDeathPenalty(false, false);
 		}
 		else if (actualCommand.equalsIgnoreCase("change_clan_leader"))
 		{
@@ -353,7 +353,7 @@ public class VillageMaster extends Folk
 					}
 					
 					// Subclasses may not be added while you are over your weight limit.
-					if (player.getInventoryLimit() * 0.8 <= player.getInventory().getSize() || player.getWeightPenalty() > 2)
+					if (player.getStatus().isOverburden() || player.getWeightPenalty() > 2)
 					{
 						player.sendPacket(SystemMessageId.NOT_SUBCLASS_WHILE_OVERWEIGHT);
 						return;
@@ -390,7 +390,7 @@ public class VillageMaster extends Folk
 					}
 					
 					// Subclasses may not be changed while a you are over your weight limit.
-					if (player.getInventoryLimit() * 0.8 <= player.getInventory().getSize() || player.getWeightPenalty() > 2)
+					if (player.getStatus().isOverburden() || player.getWeightPenalty() > 2)
 					{
 						player.sendPacket(SystemMessageId.NOT_SUBCLASS_WHILE_OVERWEIGHT);
 						return;
@@ -454,7 +454,7 @@ public class VillageMaster extends Folk
 					if (player.getSubClasses().size() >= 3)
 						allowAddition = false;
 					
-					if (player.getLevel() < 75)
+					if (player.getStatus().getLevel() < 75)
 						allowAddition = false;
 					
 					if (allowAddition)
@@ -630,7 +630,7 @@ public class VillageMaster extends Folk
 				// scan for already used subclasses
 				for (SubClass subclass : player.getSubClasses().values())
 				{
-					if (subclass.getClassDefinition().equalsOrChildOf(classId))
+					if (subclass.getClassDefinition().equalsOrIsChildOf(classId))
 					{
 						availSub.remove();
 						break;
@@ -656,7 +656,7 @@ public class VillageMaster extends Folk
 		final ClassId cid = ClassId.VALUES[classId];
 		for (SubClass subclass : player.getSubClasses().values())
 		{
-			if (subclass.getClassDefinition().equalsOrChildOf(cid))
+			if (subclass.getClassDefinition().equalsOrIsChildOf(cid))
 				return false;
 		}
 		

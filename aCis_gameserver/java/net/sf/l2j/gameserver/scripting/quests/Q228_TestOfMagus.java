@@ -151,7 +151,7 @@ public class Q228_TestOfMagus extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.HUMAN_WIZARD && player.getClassId() != ClassId.ELVEN_WIZARD && player.getClassId() != ClassId.DARK_WIZARD)
 					htmltext = "30629-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30629-02.htm";
 				else
 					htmltext = "30629-03.htm";

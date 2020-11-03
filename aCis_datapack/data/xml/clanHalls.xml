@@ -434,27 +434,17 @@
 			<spawn type="BANISH" x="38530" y="-48550" z="896"/>
 		</spawns>
 	</clanhall>
-	<clanhall id="58" name="Eisen Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35586;35587">
+	<clanhall id="58" name="Eisen Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35580;35581">
 		<spawns>
 			<!-- owner_restart_point_list -->
-			<spawn type="OWNER" x="89087" y="-143140" z="-1328"/>
+			<spawn type="OWNER" x="85734" y="-143146" z="-1328"/>
 			<!-- other_restart_village_list -->
 			<spawn type="OTHER" x="87346" y="-140202" z="-1552"/>
 			<!-- banish_point_list -->
 			<spawn type="BANISH" x="87346" y="-140202" z="-1552"/>
 		</spawns>
 	</clanhall>
-	<clanhall id="59" name="Heavy Metal Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35584;35585">
-		<spawns>
-			<!-- owner_restart_point_list -->
-			<spawn type="OWNER" x="88143" y="-141903" z="-1328"/>
-			<!-- other_restart_village_list -->
-			<spawn type="OTHER" x="87346" y="-140202" z="-1552"/>
-			<!-- banish_point_list -->
-			<spawn type="BANISH" x="87346" y="-140202" z="-1552"/>
-		</spawns>
-	</clanhall>
-	<clanhall id="60" name="Molten Ore Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35582;35583">
+	<clanhall id="59" name="Heavy Metal Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35582;35583">
 		<spawns>
 			<!-- owner_restart_point_list -->
 			<spawn type="OWNER" x="86603" y="-141894" z="-1328"/>
@@ -464,10 +454,20 @@
 			<spawn type="BANISH" x="87346" y="-140202" z="-1552"/>
 		</spawns>
 	</clanhall>
-	<clanhall id="61" name="Titan Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35580;35581">
+	<clanhall id="60" name="Molten Ore Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35584;35585">
 		<spawns>
 			<!-- owner_restart_point_list -->
-			<spawn type="OWNER" x="85734" y="-143146" z="-1328"/>
+			<spawn type="OWNER" x="88143" y="-141903" z="-1328"/>
+			<!-- other_restart_village_list -->
+			<spawn type="OTHER" x="87346" y="-140202" z="-1552"/>
+			<!-- banish_point_list -->
+			<spawn type="BANISH" x="87346" y="-140202" z="-1552"/>
+		</spawns>
+	</clanhall>
+	<clanhall id="61" name="Titan Hall" desc="Clan hall located in the Town of Schuttgart" loc="Schuttgart" grade="2" lease="500000" defaultBid="50000000" relatedNpcIds="35586;35587">
+		<spawns>
+			<!-- owner_restart_point_list -->
+			<spawn type="OWNER" x="89087" y="-143140" z="-1328"/>
 			<!-- other_restart_village_list -->
 			<spawn type="OTHER" x="87346" y="-140202" z="-1552"/>
 			<!-- banish_point_list -->

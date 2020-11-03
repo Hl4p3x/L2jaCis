@@ -1,5 +1,7 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import net.sf.l2j.commons.util.ArraysUtil;
+
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.enums.actors.OperateType;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -44,28 +46,41 @@ public final class SetPrivateStoreListSell extends L2GameClientPacket
 		if (player == null)
 			return;
 		
-		// Integrity check.
-		if (!player.getInventory().canPassSellProcess(_items))
-			return;
-		
+		// Retrieve and clear the selllist.
 		final TradeList tradeList = player.getSellList();
 		tradeList.clear();
 		
+		// Integrity check.
+		if (ArraysUtil.isEmpty(_items))
+		{
+			player.setOperateType(OperateType.NONE);
+			player.sendPacket(SystemMessageId.INCORRECT_ITEM_COUNT);
+			return;
+		}
+		
+		// Integrity check.
+		if (!player.getInventory().canPassSellProcess(_items))
+		{
+			player.setOperateType(OperateType.NONE);
+			return;
+		}
+		
 		if (!player.getAccessLevel().allowTransaction())
 		{
+			player.setOperateType(OperateType.NONE);
 			player.sendPacket(SystemMessageId.YOU_ARE_NOT_AUTHORIZED_TO_DO_THAT);
 			return;
 		}
 		
-		// Check multiple conditions. Message is sent directly from the method.
+		// Check multiple conditions. Message and OperateType reset are sent directly from the method.
 		if (!player.canOpenPrivateStore(false))
 			return;
 		
-		// Check maximum number of allowed slots for pvt shops
-		if (_items.length > player.getPrivateSellStoreLimit())
+		// Check maximum number of allowed slots.
+		if (_items.length > player.getStatus().getPrivateSellStoreLimit())
 		{
-			player.sendPacket(SystemMessageId.YOU_HAVE_EXCEEDED_QUANTITY_THAT_CAN_BE_INPUTTED);
-			player.sendPacket(new PrivateStoreManageListSell(player, _packageSale));
+			player.setOperateType(OperateType.NONE);
+			player.sendPacket(SystemMessageId.INCORRECT_ITEM_COUNT);
 			return;
 		}
 		

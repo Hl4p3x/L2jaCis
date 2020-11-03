@@ -84,7 +84,7 @@ public class Q624_TheFinestIngredients_Part1 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 73) ? "31521-03.htm" : "31521-01.htm";
+				htmltext = (player.getStatus().getLevel() < 73) ? "31521-03.htm" : "31521-01.htm";
 				break;
 			
 			case STATE_STARTED:

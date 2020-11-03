@@ -5,7 +5,7 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.location.SpawnLocation;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
@@ -61,11 +61,11 @@ public class Q420_LittleWing extends Quest
 	private static final int COOPER = 30829;
 	
 	// Spawn Points
-	private static final SpawnLocation[] LOCATIONS =
+	private static final Location[] MIMYU_LOCS =
 	{
-		new SpawnLocation(109816, 40854, -4640, 0),
-		new SpawnLocation(108940, 41615, -4643, 0),
-		new SpawnLocation(110395, 41625, -4642, 0)
+		new Location(109816, 40854, -4640),
+		new Location(108940, 41615, -4643),
+		new Location(110395, 41625, -4642)
 	};
 	
 	private static int _counter = 0;
@@ -279,12 +279,12 @@ public class Q420_LittleWing extends Quest
 				switch (npc.getNpcId())
 				{
 					case COOPER:
-						htmltext = (player.getLevel() >= 35) ? "30829-01.htm" : "30829-03.htm";
+						htmltext = (player.getStatus().getLevel() >= 35) ? "30829-01.htm" : "30829-03.htm";
 						break;
 					
 					case MIMYU:
 						_counter += 1;
-						npc.teleportTo(LOCATIONS[_counter % 3], 0);
+						npc.teleportTo(MIMYU_LOCS[_counter % 3], 0);
 						return null;
 				}
 				break;
@@ -395,7 +395,7 @@ public class Q420_LittleWing extends Quest
 						else
 						{
 							_counter += 1;
-							npc.teleportTo(LOCATIONS[_counter % 3], 0);
+							npc.teleportTo(MIMYU_LOCS[_counter % 3], 0);
 							return null;
 						}
 						break;

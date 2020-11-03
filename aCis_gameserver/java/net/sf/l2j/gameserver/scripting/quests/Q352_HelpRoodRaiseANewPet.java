@@ -62,7 +62,7 @@ public class Q352_HelpRoodRaiseANewPet extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 39) ? "31067-00.htm" : "31067-01.htm";
+				htmltext = (player.getStatus().getLevel() < 39) ? "31067-00.htm" : "31067-01.htm";
 				break;
 			
 			case STATE_STARTED:

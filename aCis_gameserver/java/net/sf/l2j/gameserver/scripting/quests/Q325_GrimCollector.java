@@ -166,7 +166,7 @@ public class Q325_GrimCollector extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30336-01.htm" : "30336-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30336-01.htm" : "30336-02.htm";
 				break;
 			
 			case STATE_STARTED:

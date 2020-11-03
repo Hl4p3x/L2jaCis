@@ -95,7 +95,7 @@ public class Q306_CrystalsOfFireAndIce extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 17) ? "30004-01.htm" : "30004-02.htm";
+				htmltext = (player.getStatus().getLevel() < 17) ? "30004-01.htm" : "30004-02.htm";
 				break;
 			
 			case STATE_STARTED:

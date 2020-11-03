@@ -172,7 +172,7 @@ public class Q383_SearchingForTreasure extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 42 || !st.hasQuestItems(PIRATE_TREASURE_MAP)) ? "30890-01.htm" : "30890-02.htm";
+				htmltext = (player.getStatus().getLevel() < 42 || !st.hasQuestItems(PIRATE_TREASURE_MAP)) ? "30890-01.htm" : "30890-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -7,8 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.communitybbs.Manager.PostBBSManager;
 
 public class Post
@@ -24,7 +24,7 @@ public class Post
 	
 	public Post(Topic topic)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_POSTS))
 		{
 			ps.setInt(1, topic.getForumID());
@@ -51,7 +51,7 @@ public class Post
 		_posts.add(post);
 		
 		// Insert it to database.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(ADD_POST))
 		{
 			ps.setInt(1, 0);
@@ -83,7 +83,7 @@ public class Post
 	public void deleteMe(Topic topic)
 	{
 		PostBBSManager.getInstance().deletePostByTopic(topic);
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_POST))
 		{
 			ps.setInt(1, topic.getForumID());
@@ -102,7 +102,7 @@ public class Post
 		if (post == null)
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_TEXT))
 		{
 			ps.setString(1, post.getText());

@@ -6,16 +6,17 @@ import java.util.List;
 import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.entity.Siege;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class ControlTower extends Npc
 {
-	private final List<Spawn> _guards = new ArrayList<>();
+	private final List<Spawn> _spawns = new ArrayList<>();
+	
 	private boolean _isActive = true;
 	
 	public ControlTower(int objectId, NpcTemplate template)
@@ -29,20 +30,19 @@ public class ControlTower extends Npc
 		if (!super.isAttackableBy(attacker))
 			return false;
 		
-		// TODO Summons can't damage?
-		if (!(attacker instanceof Player))
+		if (!(attacker instanceof Playable))
 			return false;
 		
-		if (getCastle() == null)
-			return false;
+		if (getCastle() != null && getCastle().getSiege().isInProgress())
+			return getCastle().getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.ATTACKER);
 		
-		if (!getCastle().getSiege().isInProgress())
-			return false;
-		
-		if (!getCastle().getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.ATTACKER))
-			return false;
-		
-		return true;
+		return false;
+	}
+	
+	@Override
+	public boolean isAttackableWithoutForceBy(Playable attacker)
+	{
+		return isAttackableBy(attacker);
 	}
 	
 	@Override
@@ -60,14 +60,12 @@ public class ControlTower extends Npc
 			{
 				_isActive = false;
 				
-				for (Spawn spawn : _guards)
+				for (Spawn spawn : _spawns)
 					spawn.setRespawnState(false);
-				
-				_guards.clear();
 				
 				// If siege life controls reach 0, broadcast a message to defenders.
 				if (siege.getControlTowerCount() == 0)
-					siege.announceToPlayers(SystemMessage.getSystemMessage(SystemMessageId.TOWER_DESTROYED_NO_RESURRECTION), false);
+					siege.announce(SystemMessageId.TOWER_DESTROYED_NO_RESURRECTION, SiegeSide.DEFENDER);
 				
 				// Spawn a little version of it. This version is a simple NPC, cleaned on siege end.
 				try
@@ -95,14 +93,14 @@ public class ControlTower extends Npc
 		return false;
 	}
 	
-	public void registerGuard(Spawn guard)
+	public final List<Spawn> getSpawns()
 	{
-		_guards.add(guard);
+		return _spawns;
 	}
 	
-	public final List<Spawn> getGuards()
+	public void addSpawn(Spawn spawn)
 	{
-		return _guards;
+		_spawns.add(spawn);
 	}
 	
 	public final boolean isActive()

@@ -4,10 +4,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.List;
 
+import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.enums.OlympiadType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -144,8 +145,8 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 		if (_aborted)
 			return;
 		
-		healPlayer(_playerOne.getPlayer());
-		healPlayer(_playerTwo.getPlayer());
+		_playerOne.getPlayer().getStatus().setMaxCpHpMp();
+		_playerTwo.getPlayer().getStatus().setMaxCpHpMp();
 	}
 	
 	@Override
@@ -263,41 +264,31 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 		if (_aborted)
 			return;
 		
-		final boolean _pOneCrash = (_playerOne.getPlayer() == null || _playerOne.isDisconnected());
-		final boolean _pTwoCrash = (_playerTwo.getPlayer() == null || _playerTwo.isDisconnected());
-		
 		final int playerOnePoints = _playerOne.getStats().getInteger(POINTS);
 		final int playerTwoPoints = _playerTwo.getStats().getInteger(POINTS);
-		
-		int pointDiff = Math.min(playerOnePoints, playerTwoPoints) / getDivider();
-		if (pointDiff <= 0)
-			pointDiff = 1;
-		else if (pointDiff > Config.ALT_OLY_MAX_POINTS)
-			pointDiff = Config.ALT_OLY_MAX_POINTS;
-		
-		int points;
 		
 		// Check for if a player defected before battle started.
 		if (_playerOne.isDefecting() || _playerTwo.isDefecting())
 		{
 			if (_playerOne.isDefecting())
-			{
-				points = Math.min(playerOnePoints / 3, Config.ALT_OLY_MAX_POINTS);
-				removePointsFromParticipant(_playerOne, points);
-			}
+				removePointsFromParticipant(_playerOne, Math.min(playerOnePoints / 3, Config.OLY_MAX_POINTS));
 			
 			if (_playerTwo.isDefecting())
-			{
-				points = Math.min(playerTwoPoints / 3, Config.ALT_OLY_MAX_POINTS);
-				removePointsFromParticipant(_playerTwo, points);
-			}
+				removePointsFromParticipant(_playerTwo, Math.min(playerTwoPoints / 3, Config.OLY_MAX_POINTS));
+			
 			return;
 		}
 		
+		final boolean pOneCrash = (_playerOne.getPlayer() == null || _playerOne.isDisconnected());
+		final boolean pTwoCrash = (_playerTwo.getPlayer() == null || _playerTwo.isDisconnected());
+		
+		final long fightTime = (System.currentTimeMillis() - _startTime);
+		final int pointDiff = MathUtil.limit(Math.min(playerOnePoints, playerTwoPoints) / getDivider(), 1, Config.OLY_MAX_POINTS);
+		
 		// Create results for players if a player crashed
-		if (_pOneCrash || _pTwoCrash)
+		if (pOneCrash || pTwoCrash)
 		{
-			if (_pTwoCrash && !_pOneCrash)
+			if (pTwoCrash && !pOneCrash)
 			{
 				stadium.broadcastPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_WON_THE_GAME).addString(_playerOne.getName()));
 				
@@ -309,7 +300,7 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 				
 				rewardParticipant(_playerOne.getPlayer(), getReward());
 			}
-			else if (_pOneCrash && !_pTwoCrash)
+			else if (pOneCrash && !pTwoCrash)
 			{
 				stadium.broadcastPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_WON_THE_GAME).addString(_playerTwo.getName()));
 				
@@ -321,7 +312,7 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 				
 				rewardParticipant(_playerTwo.getPlayer(), getReward());
 			}
-			else if (_pOneCrash && _pTwoCrash)
+			else if (pOneCrash && pTwoCrash)
 			{
 				stadium.broadcastPacket(SystemMessage.getSystemMessage(SystemMessageId.THE_GAME_ENDED_IN_A_TIE));
 				
@@ -338,13 +329,10 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 			return;
 		}
 		
-		// Calculate Fight time
-		long _fightTime = (System.currentTimeMillis() - _startTime);
-		
 		double playerOneHp = 0;
 		if (_playerOne.getPlayer() != null && !_playerOne.getPlayer().isDead())
 		{
-			playerOneHp = _playerOne.getPlayer().getCurrentHp() + _playerOne.getPlayer().getCurrentCp();
+			playerOneHp = _playerOne.getPlayer().getStatus().getHp() + _playerOne.getPlayer().getStatus().getCp();
 			if (playerOneHp < 0.5)
 				playerOneHp = 0;
 		}
@@ -352,7 +340,7 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 		double playerTwoHp = 0;
 		if (_playerTwo.getPlayer() != null && !_playerTwo.getPlayer().isDead())
 		{
-			playerTwoHp = _playerTwo.getPlayer().getCurrentHp() + _playerTwo.getPlayer().getCurrentCp();
+			playerTwoHp = _playerTwo.getPlayer().getStatus().getHp() + _playerTwo.getPlayer().getStatus().getCp();
 			if (playerTwoHp < 0.5)
 				playerTwoHp = 0;
 		}
@@ -378,7 +366,7 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 			removePointsFromParticipant(_playerTwo, pointDiff);
 			
 			// Save Fight Result
-			saveResults(_playerOne, _playerTwo, 1, _startTime, _fightTime, getType());
+			saveResults(_playerOne, _playerTwo, 1, _startTime, fightTime, getType());
 			rewardParticipant(_playerOne.getPlayer(), getReward());
 		}
 		else if (_playerOne.getPlayer() == null || !_playerOne.getPlayer().isOnline() || (playerOneHp == 0 && playerTwoHp != 0) || (_damageP2 > _damageP1 && playerOneHp != 0 && playerTwoHp != 0))
@@ -392,18 +380,18 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 			removePointsFromParticipant(_playerOne, pointDiff);
 			
 			// Save Fight Result
-			saveResults(_playerOne, _playerTwo, 2, _startTime, _fightTime, getType());
+			saveResults(_playerOne, _playerTwo, 2, _startTime, fightTime, getType());
 			rewardParticipant(_playerTwo.getPlayer(), getReward());
 		}
 		else
 		{
 			// Save Fight Result
-			saveResults(_playerOne, _playerTwo, 0, _startTime, _fightTime, getType());
+			saveResults(_playerOne, _playerTwo, 0, _startTime, fightTime, getType());
 			
 			stadium.broadcastPacket(SystemMessage.getSystemMessage(SystemMessageId.THE_GAME_ENDED_IN_A_TIE));
 			
-			removePointsFromParticipant(_playerOne, Math.min(playerOnePoints / getDivider(), Config.ALT_OLY_MAX_POINTS));
-			removePointsFromParticipant(_playerTwo, Math.min(playerTwoPoints / getDivider(), Config.ALT_OLY_MAX_POINTS));
+			removePointsFromParticipant(_playerOne, Math.min(playerOnePoints / getDivider(), Config.OLY_MAX_POINTS));
+			removePointsFromParticipant(_playerTwo, Math.min(playerTwoPoints / getDivider(), Config.OLY_MAX_POINTS));
 		}
 		
 		_playerOne.updateStat(COMP_DONE, 1);
@@ -464,18 +452,18 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 		_damageP2 = 0;
 	}
 	
-	protected static final void saveResults(Participant one, Participant two, int _winner, long _startTime, long _fightTime, OlympiadType type)
+	protected static final void saveResults(Participant one, Participant two, int winner, long startTime, long fightTime, OlympiadType type)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_RESULT))
 		{
 			ps.setInt(1, one.getObjectId());
 			ps.setInt(2, two.getObjectId());
 			ps.setInt(3, one.getBaseClass());
 			ps.setInt(4, two.getBaseClass());
-			ps.setInt(5, _winner);
-			ps.setLong(6, _startTime);
-			ps.setLong(7, _fightTime);
+			ps.setInt(5, winner);
+			ps.setLong(6, startTime);
+			ps.setLong(7, fightTime);
 			ps.setInt(8, (type == OlympiadType.CLASSED ? 1 : 0));
 			ps.execute();
 		}

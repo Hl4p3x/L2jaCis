@@ -14,7 +14,7 @@ public final class SubClass
 	private final int _classIndex;
 	private long _exp;
 	private int _sp;
-	private byte _level;
+	private int _level;
 	
 	/**
 	 * Implicit constructor with all parameters to be set.
@@ -87,13 +87,13 @@ public final class SubClass
 		_sp = sp;
 	}
 	
-	public byte getLevel()
+	public int getLevel()
 	{
 		return _level;
 	}
 	
-	public void setLevel(byte level)
+	public void setLevel(int level)
 	{
-		_level = (byte) MathUtil.limit(level, 40, PlayerLevelData.getInstance().getRealMaxLevel());
+		_level = MathUtil.limit(level, 40, PlayerLevelData.getInstance().getRealMaxLevel());
 	}
 }

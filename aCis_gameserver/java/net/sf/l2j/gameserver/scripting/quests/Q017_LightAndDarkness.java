@@ -103,7 +103,7 @@ public class Q017_LightAndDarkness extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 61) ? "31517-03.htm" : "31517-01.htm";
+				htmltext = (player.getStatus().getLevel() < 61) ? "31517-03.htm" : "31517-01.htm";
 				break;
 			
 			case STATE_STARTED:

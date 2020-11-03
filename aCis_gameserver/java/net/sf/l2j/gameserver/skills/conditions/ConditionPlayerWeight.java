@@ -18,11 +18,8 @@ public class ConditionPlayerWeight extends Condition
 	public boolean testImpl(Creature effector, Creature effected, L2Skill skill, Item item)
 	{
 		if (effector instanceof Player)
-		{
-			final Player player = (Player) effector;
-			if (player.getMaxLoad() > 0)
-				return player.getCurrentLoad() * 100 / player.getMaxLoad() < _weight;
-		}
+			return ((Player) effector).getWeightPenalty() < _weight;
+		
 		return true;
 	}
 }

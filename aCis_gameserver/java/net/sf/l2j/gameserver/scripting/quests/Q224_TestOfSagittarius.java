@@ -2,11 +2,11 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.random.Rnd;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
@@ -144,7 +144,7 @@ public class Q224_TestOfSagittarius extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.ROGUE && player.getClassId() != ClassId.ELVEN_SCOUT && player.getClassId() != ClassId.ASSASSIN)
 					htmltext = "30702-02.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30702-01.htm";
 				else
 					htmltext = "30702-03.htm";
@@ -334,7 +334,7 @@ public class Q224_TestOfSagittarius extends SecondClassQuest
 			case SERPENT_DEMON_KADESH:
 				if (st.getInt("cond") == 13)
 				{
-					if (st.getItemEquipped(Inventory.PAPERDOLL_RHAND) == CRESCENT_MOON_BOW)
+					if (st.getItemIdFrom(Paperdoll.RHAND) == CRESCENT_MOON_BOW)
 					{
 						st.set("cond", "14");
 						st.playSound(QuestState.SOUND_MIDDLE);

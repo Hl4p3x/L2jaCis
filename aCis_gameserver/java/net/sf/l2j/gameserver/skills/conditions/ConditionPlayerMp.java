@@ -16,6 +16,6 @@ public class ConditionPlayerMp extends Condition
 	@Override
 	public boolean testImpl(Creature effector, Creature effected, L2Skill skill, Item item)
 	{
-		return effector.getCurrentMp() * 100 / effector.getMaxMp() <= _mp;
+		return effector.getStatus().getMpRatio() * 100 <= _mp;
 	}
 }

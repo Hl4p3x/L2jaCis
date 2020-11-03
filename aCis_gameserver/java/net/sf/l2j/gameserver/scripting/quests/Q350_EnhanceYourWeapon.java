@@ -86,7 +86,7 @@ public class Q350_EnhanceYourWeapon extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 40)
+				if (player.getStatus().getLevel() < 40)
 					htmltext = npc.getNpcId() + "-lvl.htm";
 				else
 					htmltext = npc.getNpcId() + "-01.htm";
@@ -239,7 +239,7 @@ public class Q350_EnhanceYourWeapon extends Quest
 		}
 		
 		// Check level difference limitation, dark blue monsters does not stage.
-		if (player.getLevel() - monster.getLevel() > 8)
+		if (player.getStatus().getLevel() - monster.getStatus().getLevel() > 8)
 		{
 			player.sendPacket(SystemMessageId.SOUL_CRYSTAL_ABSORBING_REFUSED);
 			return;

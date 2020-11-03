@@ -1,10 +1,7 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
@@ -208,7 +205,7 @@ public class Q120_PavelsResearch extends Quest
 			st.playSound(QuestState.SOUND_MIDDLE);
 			
 			st.playSound("AmbSound.ed_drone_02");
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(5073, 5), false, false), null);
+			npc.getAI().tryToCast(player, 5073, 5);
 		}
 		else if (event.equalsIgnoreCase("32045-02.htm"))
 		{
@@ -216,7 +213,7 @@ public class Q120_PavelsResearch extends Quest
 			st.playSound(QuestState.SOUND_MIDDLE);
 			st.giveItems(LOCKUP_RESEARCH_REPORT, 1);
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(5073, 5), false, false), null);
+			npc.getAI().tryToCast(player, 5073, 5);
 		}
 		else if (event.equalsIgnoreCase("32046-04.htm") || event.equalsIgnoreCase("32046-05.htm"))
 		{
@@ -224,7 +221,7 @@ public class Q120_PavelsResearch extends Quest
 		}
 		else if (event.equalsIgnoreCase("32046-06.htm"))
 		{
-			if (player.getLevel() >= 50)
+			if (player.getStatus().getLevel() >= 50)
 			{
 				st.setState(STATE_STARTED);
 				st.set("cond", "1");
@@ -347,7 +344,7 @@ public class Q120_PavelsResearch extends Quest
 			case STATE_CREATED:
 				QuestState st2 = player.getQuestState("Q114_ResurrectionOfAnOldManager");
 				if (st2 != null && st2.isCompleted())
-					htmltext = (player.getLevel() < 50) ? "32046-00.htm" : "32046-01.htm";
+					htmltext = (player.getStatus().getLevel() < 50) ? "32046-00.htm" : "32046-01.htm";
 				else
 					htmltext = "32046-00.htm";
 				break;

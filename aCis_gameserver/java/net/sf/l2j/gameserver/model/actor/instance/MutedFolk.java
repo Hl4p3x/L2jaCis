@@ -18,6 +18,5 @@ public final class MutedFolk extends Folk
 	@Override
 	public void onInteract(Player player)
 	{
-		
 	}
 }

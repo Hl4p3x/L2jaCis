@@ -84,7 +84,7 @@ public class Q124_MeetingTheElroki extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 75) ? "32113-01a.htm" : "32113-01.htm";
+				htmltext = (player.getStatus().getLevel() < 75) ? "32113-01a.htm" : "32113-01.htm";
 				break;
 			
 			case STATE_STARTED:

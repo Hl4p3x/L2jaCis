@@ -71,7 +71,7 @@ public class Q606_WarWithVarkaSilenos extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() >= 74 && player.isAlliedWithKetra()) ? "31370-01.htm" : "31370-02.htm";
+				htmltext = (player.getStatus().getLevel() >= 74 && player.isAlliedWithKetra()) ? "31370-01.htm" : "31370-02.htm";
 				break;
 			
 			case STATE_STARTED:

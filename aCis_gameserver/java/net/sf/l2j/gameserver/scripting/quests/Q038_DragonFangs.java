@@ -28,7 +28,7 @@ public class Q038_DragonFangs extends Quest
 	private static final int ROHMER = 30344;
 	
 	// Reward { item, adena }
-	private static final int REWARD[][] =
+	private static final int[][] REWARDS =
 	{
 		{
 			45,
@@ -151,12 +151,12 @@ public class Q038_DragonFangs extends Quest
 		{
 			if (st.getQuestItemsCount(TOOTH_OF_DRAGON) >= 50)
 			{
-				int position = Rnd.get(REWARD.length);
+				int position = Rnd.get(REWARDS.length);
 				
 				htmltext = "30034-06.htm";
 				st.takeItems(TOOTH_OF_DRAGON, 50);
-				st.giveItems(REWARD[position][0], 1);
-				st.rewardItems(57, REWARD[position][1]);
+				st.giveItems(REWARDS[position][0], 1);
+				st.rewardItems(57, REWARDS[position][1]);
 				st.playSound(QuestState.SOUND_FINISH);
 				st.exitQuest(false);
 			}
@@ -176,7 +176,7 @@ public class Q038_DragonFangs extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 19) ? "30386-01a.htm" : "30386-01.htm";
+				htmltext = (player.getStatus().getLevel() < 19) ? "30386-01a.htm" : "30386-01.htm";
 				break;
 			
 			case STATE_STARTED:

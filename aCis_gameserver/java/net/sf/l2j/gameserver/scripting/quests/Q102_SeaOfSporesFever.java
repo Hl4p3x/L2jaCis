@@ -24,11 +24,11 @@ public class Q102_SeaOfSporesFever extends Quest
 	private static final int COBENDELL_MEDICINE_5 = 1134;
 	
 	// Rewards
-	private static final int SPIRITSHOT_NO_GRADE = 2509;
-	private static final int SOULSHOT_NO_GRADE = 1835;
 	private static final int SWORD_OF_SENTINEL = 743;
 	private static final int STAFF_OF_SENTINEL = 744;
 	private static final int LESSER_HEALING_POT = 1060;
+	private static final int SOULSHOT_NO_GRADE = 1835;
+	private static final int SPIRITSHOT_NO_GRADE = 2509;
 	private static final int ECHO_BATTLE = 4412;
 	private static final int ECHO_LOVE = 4413;
 	private static final int ECHO_SOLITUDE = 4414;
@@ -87,7 +87,7 @@ public class Q102_SeaOfSporesFever extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30284-00.htm";
-				else if (player.getLevel() < 12)
+				else if (player.getStatus().getLevel() < 12)
 					htmltext = "30284-08.htm";
 				else
 					htmltext = "30284-07.htm";
@@ -129,12 +129,13 @@ public class Q102_SeaOfSporesFever extends Quest
 								st.rewardItems(SOULSHOT_NO_GRADE, 1000);
 							}
 							
-							st.giveItems(LESSER_HEALING_POT, 100);
-							st.giveItems(ECHO_BATTLE, 10);
-							st.giveItems(ECHO_LOVE, 10);
-							st.giveItems(ECHO_SOLITUDE, 10);
-							st.giveItems(ECHO_FEAST, 10);
-							st.giveItems(ECHO_CELEBRATION, 10);
+							st.rewardItems(LESSER_HEALING_POT, 100);
+							st.rewardItems(ECHO_BATTLE, 10);
+							st.rewardItems(ECHO_LOVE, 10);
+							st.rewardItems(ECHO_SOLITUDE, 10);
+							st.rewardItems(ECHO_FEAST, 10);
+							st.rewardItems(ECHO_CELEBRATION, 10);
+							
 							player.broadcastPacket(new SocialAction(player, 3));
 							st.playSound(QuestState.SOUND_FINISH);
 							st.exitQuest(false);

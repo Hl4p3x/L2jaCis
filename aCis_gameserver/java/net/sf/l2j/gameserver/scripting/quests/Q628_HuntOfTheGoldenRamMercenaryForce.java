@@ -95,7 +95,7 @@ public class Q628_HuntOfTheGoldenRamMercenaryForce extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 66) ? "31554-01a.htm" : "31554-01.htm";
+				htmltext = (player.getStatus().getLevel() < 66) ? "31554-01a.htm" : "31554-01.htm";
 				break;
 			
 			case STATE_STARTED:

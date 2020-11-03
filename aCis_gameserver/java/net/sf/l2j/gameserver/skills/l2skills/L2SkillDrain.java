@@ -8,9 +8,7 @@ import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.instance.Cubic;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.Formulas;
@@ -51,41 +49,32 @@ public class L2SkillDrain extends L2Skill
 			if (activeChar != target && target.isInvul())
 				continue; // No effect on invulnerable chars unless they cast it themselves.
 				
-			final boolean mcrit = Formulas.calcMCrit(activeChar.getMCriticalHit(target, this));
+			final boolean mcrit = Formulas.calcMCrit(activeChar, target, this);
 			final byte shld = Formulas.calcShldUse(activeChar, target, this);
 			final int damage = (int) Formulas.calcMagicDam(activeChar, target, this, shld, sps, bsps, mcrit);
 			
 			if (damage > 0)
 			{
-				int _drain = 0;
-				int _cp = (int) target.getCurrentCp();
-				int _hp = (int) target.getCurrentHp();
+				int targetCp = 0;
+				if (target instanceof Player)
+					targetCp = (int) ((Player) target).getStatus().getCp();
 				
-				// Drain system is different for L2Playable and monsters.
-				// When playables attack CP of enemies, monsters don't bother about it.
-				if (isPlayable && _cp > 0)
+				final int targetHp = (int) target.getStatus().getHp();
+				
+				int drain = 0;
+				if (isPlayable && targetCp > 0)
 				{
-					if (damage < _cp)
-						_drain = 0;
+					if (damage < targetCp)
+						drain = 0;
 					else
-						_drain = damage - _cp;
+						drain = damage - targetCp;
 				}
-				else if (damage > _hp)
-					_drain = _hp;
+				else if (damage > targetHp)
+					drain = targetHp;
 				else
-					_drain = damage;
+					drain = damage;
 				
-				final double hpAdd = _absorbAbs + _absorbPart * _drain;
-				if (hpAdd > 0)
-				{
-					final double hp = ((activeChar.getCurrentHp() + hpAdd) > activeChar.getMaxHp() ? activeChar.getMaxHp() : (activeChar.getCurrentHp() + hpAdd));
-					
-					activeChar.setCurrentHp(hp);
-					
-					StatusUpdate suhp = new StatusUpdate(activeChar);
-					suhp.addAttribute(StatusUpdate.CUR_HP, (int) hp);
-					activeChar.sendPacket(suhp);
-				}
+				activeChar.getStatus().addHp(_absorbAbs + _absorbPart * drain);
 				
 				// That section is launched for drain skills made on ALIVE targets.
 				if (!target.isDead() || getTargetType() != SkillTargetType.CORPSE_MOB)
@@ -131,48 +120,13 @@ public class L2SkillDrain extends L2Skill
 		activeChar.setChargedShot(bsps ? ShotType.BLESSED_SPIRITSHOT : ShotType.SPIRITSHOT, isStaticReuse());
 	}
 	
-	public void useCubicSkill(Cubic activeCubic, WorldObject[] targets)
+	public float getAbsorbPart()
 	{
-		for (WorldObject obj : targets)
-		{
-			if (!(obj instanceof Creature))
-				continue;
-			
-			final Creature target = ((Creature) obj);
-			if (target.isAlikeDead() && getTargetType() != SkillTargetType.CORPSE_MOB)
-				continue;
-			
-			final boolean mcrit = Formulas.calcMCrit(activeCubic.getMCriticalHit(target, this));
-			final byte shld = Formulas.calcShldUse(activeCubic.getOwner(), target, this);
-			final int damage = (int) Formulas.calcMagicDam(activeCubic, target, this, mcrit, shld);
-			
-			// Check to see if we should damage the target
-			if (damage > 0)
-			{
-				final Player owner = activeCubic.getOwner();
-				final double hpAdd = _absorbAbs + _absorbPart * damage;
-				if (hpAdd > 0)
-				{
-					final double hp = ((owner.getCurrentHp() + hpAdd) > owner.getMaxHp() ? owner.getMaxHp() : (owner.getCurrentHp() + hpAdd));
-					
-					owner.setCurrentHp(hp);
-					
-					StatusUpdate suhp = new StatusUpdate(owner);
-					suhp.addAttribute(StatusUpdate.CUR_HP, (int) hp);
-					owner.sendPacket(suhp);
-				}
-				
-				// That section is launched for drain skills made on ALIVE targets.
-				if (!target.isDead() || getTargetType() != SkillTargetType.CORPSE_MOB)
-				{
-					target.reduceCurrentHp(damage, activeCubic.getOwner(), this);
-					
-					// Manage cast break of the target (calculating rate, sending message...)
-					Formulas.calcCastBreak(target, damage);
-					
-					owner.sendDamageMessage(target, damage, mcrit, false, false);
-				}
-			}
-		}
+		return _absorbPart;
+	}
+	
+	public int getAbsorbAbs()
+	{
+		return _absorbAbs;
 	}
 }

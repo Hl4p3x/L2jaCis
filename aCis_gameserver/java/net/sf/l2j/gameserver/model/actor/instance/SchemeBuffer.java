@@ -54,12 +54,11 @@ public class SchemeBuffer extends Folk
 		}
 		else if (currentCommand.startsWith("heal"))
 		{
-			player.setCurrentHpMp(player.getMaxHp(), player.getMaxMp());
-			player.setCurrentCp(player.getMaxCp());
+			player.getStatus().setMaxCpHpMp();
 			
 			final Summon summon = player.getSummon();
 			if (summon != null)
-				summon.setCurrentHpMp(summon.getMaxHp(), summon.getMaxMp());
+				summon.getStatus().setMaxHpMp();
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(0);
 			html.setFile(getHtmlPath(getNpcId(), 0));

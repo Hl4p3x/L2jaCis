@@ -10,7 +10,6 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.actor.Attackable;
@@ -20,7 +19,6 @@ import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.model.zone.type.BossZone;
 import net.sf.l2j.gameserver.network.serverpackets.Earthquake;
@@ -104,7 +102,7 @@ public class Baium extends L2AttackableAIScript
 			final Npc baium = addSpawn(LIVE_BAIUM, loc_x, loc_y, loc_z, heading, false, 0, false);
 			GrandBossManager.getInstance().addBoss((GrandBoss) baium);
 			
-			baium.setCurrentHpMp(hp, mp);
+			baium.getStatus().setHpMp(hp, mp);
 			baium.forceRunStance();
 			
 			// start monitoring baium's inactivity
@@ -211,8 +209,8 @@ public class Baium extends L2AttackableAIScript
 				BAIUM_LAIR.oustAllPlayers();
 				cancelQuestTimers("baium_despawn");
 			}
-			else if ((_timeTracker + 300000 < System.currentTimeMillis()) && (npc.getCurrentHp() / npc.getMaxHp() < 0.75))
-				npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, SkillTable.getInstance().getInfo(4135, 1), false, false), null);
+			else if ((_timeTracker + 300000 < System.currentTimeMillis()) && npc.getStatus().getHpRatio() < 0.75)
+				npc.getAI().tryToCast(npc, 4135, 1);
 			else if (!BAIUM_LAIR.isInsideZone(npc))
 				npc.teleportTo(116033, 17447, 10104, 0);
 		}
@@ -253,7 +251,7 @@ public class Baium extends L2AttackableAIScript
 					if (target != null && victim != target)
 					{
 						angel.addDamageHate(target, 0, 10000);
-						angel.getAI().tryTo(IntentionType.ATTACK, target, false);
+						angel.getAI().tryToAttack(target);
 					}
 				}
 			}
@@ -411,7 +409,7 @@ public class Baium extends L2AttackableAIScript
 			return;
 		
 		final L2Skill skill = SkillTable.getInstance().getInfo(getRandomSkill(npc), 1);
-		npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, skill.getId() == 4135 ? npc : _actualVictim, skill, false, false), null);
+		npc.getAI().tryToCast(skill.getId() == 4135 ? npc : _actualVictim, skill);
 		
 	}
 	
@@ -423,66 +421,65 @@ public class Baium extends L2AttackableAIScript
 	 */
 	private static int getRandomSkill(Npc npc)
 	{
+		final double hpRatio = npc.getStatus().getHpRatio();
+		
 		// Baium's selfheal. It happens exceptionaly.
-		if (npc.getCurrentHp() / npc.getMaxHp() < 0.1)
-		{
-			if (Rnd.get(10000) == 777) // His lucky day.
-				return 4135;
-		}
+		if (hpRatio < 0.1 && Rnd.get(10000) == 1)
+			return 4135;
 		
 		int skill = 4127; // Default attack if nothing is possible.
-		final int chance = Rnd.get(100); // Remember, it's 0 to 99, not 1 to 100.
+		final int chance = Rnd.get(100);
 		
 		// If Baium feels surrounded or see 2+ angels, he unleashes his wrath upon heads :).
 		if (getPlayersCountInRadius(600, npc, false) >= 20 || npc.getKnownTypeInRadius(Monster.class, 600).size() >= 2)
 		{
 			if (chance < 25)
 				skill = 4130;
-			else if (chance >= 25 && chance < 50)
+			else if (chance < 50)
 				skill = 4131;
-			else if (chance >= 50 && chance < 75)
+			else if (chance < 75)
 				skill = 4128;
-			else if (chance >= 75 && chance < 100)
+			else
 				skill = 4129;
 		}
 		else
 		{
-			if (npc.getCurrentHp() / npc.getMaxHp() > 0.75)
+			if (hpRatio > 0.75)
 			{
 				if (chance < 10)
 					skill = 4128;
-				else if (chance >= 10 && chance < 20)
+				else if (chance < 20)
 					skill = 4129;
 			}
-			else if (npc.getCurrentHp() / npc.getMaxHp() > 0.5)
+			else if (hpRatio > 0.5)
 			{
 				if (chance < 10)
 					skill = 4131;
-				else if (chance >= 10 && chance < 20)
+				else if (chance < 20)
 					skill = 4128;
-				else if (chance >= 20 && chance < 30)
+				else if (chance < 30)
 					skill = 4129;
 			}
-			else if (npc.getCurrentHp() / npc.getMaxHp() > 0.25)
+			else if (hpRatio > 0.25)
 			{
 				if (chance < 10)
 					skill = 4130;
-				else if (chance >= 10 && chance < 20)
+				else if (chance < 20)
 					skill = 4131;
-				else if (chance >= 20 && chance < 30)
+				else if (chance < 30)
 					skill = 4128;
-				else if (chance >= 30 && chance < 40)
+				else if (chance < 40)
 					skill = 4129;
 			}
 			else
 			{
 				if (chance < 10)
 					skill = 4130;
-				else if (chance >= 10 && chance < 20)
+				else if (chance < 20)
 					skill = 4131;
-				else if (chance >= 20 && chance < 30)
+				else if (chance < 30)
 					skill = 4128;
-				else if (chance >= 30 && chance < 40)
+				else if (chance < 40)
 					skill = 4129;
 			}
 		}

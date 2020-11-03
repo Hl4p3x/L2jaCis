@@ -1,7 +1,7 @@
 package net.sf.l2j.loginserver.network.gameserverpackets;
 
 import net.sf.l2j.commons.network.AttributeType;
-import net.sf.l2j.commons.network.StatusType;
+import net.sf.l2j.commons.network.ServerType;
 
 import net.sf.l2j.loginserver.data.manager.GameServerManager;
 import net.sf.l2j.loginserver.model.GameServerInfo;
@@ -27,7 +27,7 @@ public class ServerStatus extends ClientBasePacket
 				switch (AttributeType.VALUES[type])
 				{
 					case STATUS:
-						gsi.setStatus(StatusType.VALUES[value]);
+						gsi.setType(ServerType.VALUES[value]);
 						break;
 					
 					case CLOCK:

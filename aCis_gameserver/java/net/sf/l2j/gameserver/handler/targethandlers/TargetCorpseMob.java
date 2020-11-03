@@ -6,22 +6,11 @@ import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.taskmanager.DecayTaskManager;
 
 public class TargetCorpseMob implements ITargetHandler
 {
-	@Override
-	public Creature[] getTargetList(SkillUseHolder skillUseHolder)
-	{
-		final Creature target = skillUseHolder.getFinalTarget();
-		return new Creature[]
-		{
-			target
-		};
-	}
-	
 	@Override
 	public SkillTargetType getTargetType()
 	{
@@ -29,7 +18,16 @@ public class TargetCorpseMob implements ITargetHandler
 	}
 	
 	@Override
-	public Creature getFinalTarget(Creature target, Creature caster, L2Skill skill, boolean isCtrlPressed)
+	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
+	{
+		return new Creature[]
+		{
+			target
+		};
+	}
+	
+	@Override
+	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		if (!(target instanceof Attackable) || !target.isDead())
 			return null;

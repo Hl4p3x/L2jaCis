@@ -80,7 +80,7 @@ public class Q375_WhisperOfDreams_Part2 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (!st.hasQuestItems(MYSTERIOUS_STONE) || player.getLevel() < 60) ? "30515-01.htm" : "30515-02.htm";
+				htmltext = (!st.hasQuestItems(MYSTERIOUS_STONE) || player.getStatus().getLevel() < 60) ? "30515-01.htm" : "30515-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -4,9 +4,9 @@ import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.handler.IChatHandler;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class ChatTell implements IChatHandler
 {
@@ -34,10 +34,19 @@ public class ChatTell implements IChatHandler
 			return;
 		}
 		
-		if (!activeChar.isGM() && (receiver.isInRefusalMode() || BlockList.isBlocked(receiver, activeChar)))
+		if (!activeChar.isGM())
 		{
-			activeChar.sendPacket(SystemMessageId.THE_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
-			return;
+			if (receiver.getBlockList().isBlockingAll())
+			{
+				activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addCharName(receiver));
+				return;
+			}
+			
+			if (receiver.getBlockList().isInBlockList(activeChar))
+			{
+				activeChar.sendPacket(SystemMessageId.THE_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
+				return;
+			}
 		}
 		
 		receiver.sendPacket(new CreatureSay(activeChar, type, text));

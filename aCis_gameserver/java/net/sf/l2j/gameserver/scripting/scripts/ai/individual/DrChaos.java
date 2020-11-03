@@ -4,7 +4,6 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -86,7 +85,7 @@ public class DrChaos extends L2AttackableAIScript
 			
 			final Npc _golem = golem;
 			
-			_golem.setCurrentHpMp(hp, mp);
+			_golem.getStatus().setHpMp(hp, mp);
 			_golem.forceRunStance();
 			
 			// start monitoring Dr. Chaos's inactivity
@@ -141,7 +140,7 @@ public class DrChaos extends L2AttackableAIScript
 		else if (name.equalsIgnoreCase("4"))
 		{
 			npc.broadcastPacket(new SpecialCamera(npc.getObjectId(), 1, -150, 10, 3500, 5000, 0, 0, 1, 0));
-			npc.getAI().tryTo(IntentionType.MOVE_TO, GROTTO_LOC, null);
+			npc.getAI().tryToMoveTo(GROTTO_LOC, null);
 		}
 		else if (name.equalsIgnoreCase("5"))
 		{
@@ -269,7 +268,7 @@ public class DrChaos extends L2AttackableAIScript
 		cancelQuestTimers("paranoia_activity");
 		
 		// Makes the NPC moves near the Strange Box speaking.
-		npc.getAI().tryTo(IntentionType.MOVE_TO, STRANGE_BOX_LOC, null);
+		npc.getAI().tryToMoveTo(STRANGE_BOX_LOC, null);
 		npc.broadcastNpcSay("Fools! Why haven't you fled yet? Prepare to learn a lesson!");
 		
 		// Delayed animation timers.

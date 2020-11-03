@@ -5,6 +5,7 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -12,6 +13,10 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 public class Q348_AnArrogantSearch extends Quest
 {
 	private static final String qn = "Q348_AnArrogantSearch";
+	
+	private static final Location HOLY_ARK_1_LOC = new Location(-418, 44174, -3568);
+	private static final Location HOLY_ARK_2_LOC = new Location(181472, 7158, -2725);
+	private static final Location HOLY_ARK_3_LOC = new Location(50693, 158674, 376);
 	
 	// Items
 	private static final int TITAN_POWERSTONE = 4287;
@@ -161,7 +166,7 @@ public class Q348_AnArrogantSearch extends Quest
 			case STATE_CREATED:
 				if (st.hasQuestItems(BLOODED_FABRIC))
 					htmltext = "30864-00.htm";
-				else if (player.getLevel() < 60)
+				else if (player.getStatus().getLevel() < 60)
 					htmltext = "30864-01.htm";
 				else
 					htmltext = "30864-02.htm";
@@ -342,12 +347,12 @@ public class Q348_AnArrogantSearch extends Quest
 									st.set("cond", "17");
 									st.playSound(QuestState.SOUND_MIDDLE);
 									st.takeItems(HANELLIN_FIRST_LETTER, 1);
-									st.addRadar(-418, 44174, -3568);
+									st.addRadar(HOLY_ARK_1_LOC);
 								}
 								else if (!st.hasQuestItems(FIRST_KEY_OF_ARK))
 								{
 									htmltext = "30144-03.htm";
-									st.addRadar(-418, 44174, -3568);
+									st.addRadar(HOLY_ARK_1_LOC);
 								}
 								else
 									htmltext = "30144-04.htm";
@@ -368,12 +373,12 @@ public class Q348_AnArrogantSearch extends Quest
 									st.set("cond", "9");
 									st.playSound(QuestState.SOUND_MIDDLE);
 									st.takeItems(HANELLIN_SECOND_LETTER, 1);
-									st.addRadar(181472, 7158, -2725);
+									st.addRadar(HOLY_ARK_2_LOC);
 								}
 								else if (!st.hasQuestItems(SECOND_KEY_OF_ARK))
 								{
 									htmltext = "31001-03.htm";
-									st.addRadar(181472, 7158, -2725);
+									st.addRadar(HOLY_ARK_2_LOC);
 								}
 								else
 									htmltext = "31001-04.htm";
@@ -394,12 +399,12 @@ public class Q348_AnArrogantSearch extends Quest
 									st.set("cond", "13");
 									st.playSound(QuestState.SOUND_MIDDLE);
 									st.takeItems(HANELLIN_THIRD_LETTER, 1);
-									st.addRadar(50693, 158674, 376);
+									st.addRadar(HOLY_ARK_3_LOC);
 								}
 								else if (!st.hasQuestItems(THIRD_KEY_OF_ARK))
 								{
 									htmltext = "30645-03.htm";
-									st.addRadar(50693, 158674, 376);
+									st.addRadar(HOLY_ARK_3_LOC);
 								}
 								else
 									htmltext = "30645-04.htm";
@@ -584,7 +589,7 @@ public class Q348_AnArrogantSearch extends Quest
 					npc.setScriptValue(1);
 				}
 				
-				if (npc.getCurrentHp() / npc.getMaxHp() < 0.50)
+				if (npc.getStatus().getHpRatio() < 0.5)
 				{
 					npc.getAttack().stop();
 					npc.broadcastNpcSay("Can't get rid of you... Did you get the key from the corpse?");

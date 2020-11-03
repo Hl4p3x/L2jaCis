@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
@@ -22,7 +22,6 @@ import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.container.npc.RewardInfo;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.model.actor.instance.Servitor;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
@@ -132,7 +131,7 @@ public class Party extends AbstractGroup
 	{
 		for (Player member : _members)
 		{
-			if (!BlockList.isBlocked(member, broadcaster))
+			if (!member.getBlockList().isInBlockList(broadcaster))
 				member.sendPacket(msg);
 		}
 	}
@@ -143,8 +142,8 @@ public class Party extends AbstractGroup
 		int newLevel = 0;
 		for (Player member : _members)
 		{
-			if (member.getLevel() > newLevel)
-				newLevel = member.getLevel();
+			if (member.getStatus().getLevel() > newLevel)
+				newLevel = member.getStatus().getLevel();
 		}
 		setLevel(newLevel);
 	}
@@ -235,7 +234,7 @@ public class Party extends AbstractGroup
 		final List<Player> availableMembers = new ArrayList<>();
 		for (Player member : _members)
 		{
-			if (member.getInventory().validateCapacityByItemId(itemId) && MathUtil.checkIfInRange(Config.PARTY_RANGE, target, member, true))
+			if (member.getInventory().validateCapacityByItemId(itemId, 1) && MathUtil.checkIfInRange(Config.PARTY_RANGE, target, member, true))
 				availableMembers.add(member);
 		}
 		return (availableMembers.isEmpty()) ? null : Rnd.get(availableMembers);
@@ -255,7 +254,7 @@ public class Party extends AbstractGroup
 				_itemLastLoot = 0;
 			
 			final Player member = _members.get(_itemLastLoot);
-			if (member.getInventory().validateCapacityByItemId(itemId) && MathUtil.checkIfInRange(Config.PARTY_RANGE, target, member, true))
+			if (member.getInventory().validateCapacityByItemId(itemId, 1) && MathUtil.checkIfInRange(Config.PARTY_RANGE, target, member, true))
 				return member;
 		}
 		return null;
@@ -352,8 +351,8 @@ public class Party extends AbstractGroup
 		player.setParty(this);
 		
 		// Adjust party level.
-		if (player.getLevel() > getLevel())
-			setLevel(player.getLevel());
+		if (player.getStatus().getLevel() > getLevel())
+			setLevel(player.getStatus().getLevel());
 		
 		// Update icons.
 		for (Player member : _members)
@@ -636,7 +635,7 @@ public class Party extends AbstractGroup
 		{
 			for (Player member : rewardedMembers)
 			{
-				if (topLvl - member.getLevel() <= Config.PARTY_XP_CUTOFF_LEVEL)
+				if (topLvl - member.getStatus().getLevel() <= Config.PARTY_XP_CUTOFF_LEVEL)
 					validMembers.add(member);
 			}
 		}
@@ -644,11 +643,11 @@ public class Party extends AbstractGroup
 		{
 			int sqLevelSum = 0;
 			for (Player member : rewardedMembers)
-				sqLevelSum += (member.getLevel() * member.getLevel());
+				sqLevelSum += (member.getStatus().getLevel() * member.getStatus().getLevel());
 			
 			for (Player member : rewardedMembers)
 			{
-				int sqLevel = member.getLevel() * member.getLevel();
+				int sqLevel = member.getStatus().getLevel() * member.getStatus().getLevel();
 				if (sqLevel * 100 >= sqLevelSum * Config.PARTY_XP_CUTOFF_PERCENT)
 					validMembers.add(member);
 			}
@@ -657,14 +656,14 @@ public class Party extends AbstractGroup
 		{
 			int sqLevelSum = 0;
 			for (Player member : rewardedMembers)
-				sqLevelSum += (member.getLevel() * member.getLevel());
+				sqLevelSum += (member.getStatus().getLevel() * member.getStatus().getLevel());
 			
 			// Have to use range 1 to 9, since we -1 it : 0 can't be a good number (would lead to a IOOBE). Since 0 and 1 got same values, it's not a problem.
 			final int partySize = MathUtil.limit(rewardedMembers.size(), 1, 9);
 			
 			for (Player member : rewardedMembers)
 			{
-				int sqLevel = member.getLevel() * member.getLevel();
+				int sqLevel = member.getStatus().getLevel() * member.getStatus().getLevel();
 				if (sqLevel >= sqLevelSum * (1 - 1 / (1 + BONUS_EXP_SP[partySize] - BONUS_EXP_SP[partySize - 1])))
 					validMembers.add(member);
 			}
@@ -678,7 +677,7 @@ public class Party extends AbstractGroup
 		
 		int sqLevelSum = 0;
 		for (Player member : validMembers)
-			sqLevelSum += member.getLevel() * member.getLevel();
+			sqLevelSum += member.getStatus().getLevel() * member.getStatus().getLevel();
 		
 		// Go through the players that must be rewarded.
 		for (Player member : rewardedMembers)
@@ -692,7 +691,7 @@ public class Party extends AbstractGroup
 				// The servitor penalty.
 				final float penalty = member.hasServitor() ? ((Servitor) member.getSummon()).getExpPenalty() : 0;
 				
-				final double sqLevel = member.getLevel() * member.getLevel();
+				final double sqLevel = member.getStatus().getLevel() * member.getStatus().getLevel();
 				final double preCalculation = (sqLevel / sqLevelSum) * (1 - penalty);
 				
 				final long xp = Math.round(xpReward * preCalculation);

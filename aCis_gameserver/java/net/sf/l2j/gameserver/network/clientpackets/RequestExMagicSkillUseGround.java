@@ -1,8 +1,6 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.serverpackets.ValidateLocation;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -50,6 +48,6 @@ public final class RequestExMagicSkillUseGround extends L2GameClientPacket
 		player.getPosition().setHeadingTo(_x, _y);
 		player.broadcastPacket(new ValidateLocation(player));
 		
-		player.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(player, player, skill, _ctrlPressed, _shiftPressed), null);
+		player.getAI().tryToCast(player, skill, _ctrlPressed, _shiftPressed, 0);
 	}
 }

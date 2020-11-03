@@ -64,7 +64,7 @@ public class Q154_SacrificeToTheSea extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 2) ? "30312-02.htm" : "30312-03.htm";
+				htmltext = (player.getStatus().getLevel() < 2) ? "30312-02.htm" : "30312-03.htm";
 				break;
 			
 			case STATE_STARTED:

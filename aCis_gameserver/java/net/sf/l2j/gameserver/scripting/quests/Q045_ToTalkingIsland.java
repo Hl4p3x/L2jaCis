@@ -109,7 +109,7 @@ public class Q045_ToTalkingIsland extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getRace() == ClassRace.HUMAN && player.getLevel() >= 3)
+				if (player.getRace() == ClassRace.HUMAN && player.getStatus().getLevel() >= 3)
 				{
 					if (st.hasQuestItems(MARK_OF_TRAVELER))
 						htmltext = "30097-02.htm";

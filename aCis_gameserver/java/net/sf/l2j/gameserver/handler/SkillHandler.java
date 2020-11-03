@@ -30,7 +30,7 @@ import net.sf.l2j.gameserver.handler.skillhandlers.Pdam;
 import net.sf.l2j.gameserver.handler.skillhandlers.Resurrect;
 import net.sf.l2j.gameserver.handler.skillhandlers.Sow;
 import net.sf.l2j.gameserver.handler.skillhandlers.Spoil;
-import net.sf.l2j.gameserver.handler.skillhandlers.StrSiegeAssault;
+import net.sf.l2j.gameserver.handler.skillhandlers.StriderSiegeAssault;
 import net.sf.l2j.gameserver.handler.skillhandlers.SummonCreature;
 import net.sf.l2j.gameserver.handler.skillhandlers.SummonFriend;
 import net.sf.l2j.gameserver.handler.skillhandlers.Sweep;
@@ -69,7 +69,7 @@ public class SkillHandler
 		registerHandler(new Resurrect());
 		registerHandler(new Sow());
 		registerHandler(new Spoil());
-		registerHandler(new StrSiegeAssault());
+		registerHandler(new StriderSiegeAssault());
 		registerHandler(new SummonFriend());
 		registerHandler(new SummonCreature());
 		registerHandler(new Sweep());

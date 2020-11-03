@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.skills.effects;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -28,7 +27,7 @@ public class EffectBetray extends AbstractEffect
 		if (getEffector() instanceof Player && getEffected() instanceof Summon)
 		{
 			Player target = getEffected().getActingPlayer();
-			getEffected().getAI().tryTo(IntentionType.ATTACK, target, false);
+			getEffected().getAI().tryToAttack(target, false, false);
 			return true;
 		}
 		return false;
@@ -38,7 +37,7 @@ public class EffectBetray extends AbstractEffect
 	public void onExit()
 	{
 		Player target = getEffected().getActingPlayer();
-		getEffected().getAI().tryTo(IntentionType.FOLLOW, target, false);
+		getEffected().getAI().tryToFollow(target, false);
 	}
 	
 	@Override

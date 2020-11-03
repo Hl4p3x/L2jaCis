@@ -1382,7 +1382,7 @@
 		<table name="#ench2mpInitialConsume"> 4 4 4 4 4 4 4 4 4 4 4 4 3 3 3 3 3 3 3 3 3 3 3 3 2 2 2 2 2 2 </table>
 		<table name="#mpInitialConsume"> 3 4 5 </table>
 		<table name="#mpConsume"> 12 16 19 </table>
-		<table name="#Weight"> 3000 6000 9000 </table>
+		<table name="#weightPenalty"> 3000 6000 9000 </table>
 		<table name="#stackOrder"> 1 2 3 </table>
 		<table name="#aggro"> 331 418 495 </table>
 		<set name="mpInitialConsume" val="#mpInitialConsume"/>
@@ -1400,12 +1400,12 @@
 		<enchant2 name="mpInitialConsume" val="#ench2mpInitialConsume"/>
 		<for>
 			<effect name="Buff" time="1200" val="0" stackOrder="#stackOrder" stackType="decrease_weight_penalty">
-				<add stat="maxLoad" val="#Weight"/>
+				<add stat="weightPenalty" val="#weightPenalty"/>
 			</effect>
 		</for>
 		<enchant1for>
 			<effect name="Buff" time="#ench1time" val="0" stackOrder="3" stackType="decrease_weight_penalty">
-				<add stat="maxLoad" val="9000"/>
+				<add stat="weightPenalty" val="9000"/>
 			</effect>
 		</enchant1for>
 	</skill>

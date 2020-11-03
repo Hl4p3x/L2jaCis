@@ -55,7 +55,7 @@ public class Q410_PathToAPalusKnight extends Quest
 		{
 			if (player.getClassId() != ClassId.DARK_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.PALUS_KNIGHT) ? "30329-02a.htm" : "30329-03.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30329-02.htm";
 			else if (st.hasQuestItems(GAZE_OF_ABYSS))
 				htmltext = "30329-04.htm";

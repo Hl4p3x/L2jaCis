@@ -9,18 +9,18 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.ItemData;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
+import net.sf.l2j.gameserver.enums.items.ItemState;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemState;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 
 public abstract class ItemContainer
@@ -521,7 +521,7 @@ public abstract class ItemContainer
 	{
 		final Player owner = (getOwner() == null) ? null : getOwner().getActingPlayer();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(RESTORE_ITEMS))
 		{
 			ps.setInt(1, getOwnerId());
@@ -554,7 +554,7 @@ public abstract class ItemContainer
 		refreshWeight();
 	}
 	
-	public boolean validateCapacity(int slots)
+	public boolean validateCapacity(int slotCount)
 	{
 		return true;
 	}

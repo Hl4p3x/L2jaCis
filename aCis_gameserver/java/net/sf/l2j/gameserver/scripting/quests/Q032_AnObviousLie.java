@@ -151,7 +151,7 @@ public class Q032_AnObviousLie extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 45) ? "30120-0a.htm" : "30120-0.htm";
+				htmltext = (player.getStatus().getLevel() < 45) ? "30120-0a.htm" : "30120-0.htm";
 				break;
 			
 			case STATE_STARTED:

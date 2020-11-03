@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.network.AttributeType;
-import net.sf.l2j.commons.network.StatusType;
+import net.sf.l2j.commons.network.ServerType;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
@@ -69,7 +69,7 @@ public class LoginServerThread extends Thread
 	
 	private int _requestId;
 	private int _maxPlayers;
-	private StatusType _status = StatusType.AUTO;
+	private ServerType _type = ServerType.AUTO;
 	
 	protected LoginServerThread()
 	{
@@ -95,9 +95,9 @@ public class LoginServerThread extends Thread
 			try
 			{
 				// Connection
-				LOGGER.info("Connecting to login on {}:{}.", Config.GAME_SERVER_LOGIN_HOST, Config.GAME_SERVER_LOGIN_PORT);
+				LOGGER.info("Connecting to login on {}:{}.", Config.GAMESERVER_LOGIN_HOSTNAME, Config.GAMESERVER_LOGIN_PORT);
 				
-				_loginSocket = new Socket(Config.GAME_SERVER_LOGIN_HOST, Config.GAME_SERVER_LOGIN_PORT);
+				_loginSocket = new Socket(Config.GAMESERVER_LOGIN_HOSTNAME, Config.GAMESERVER_LOGIN_PORT);
 				_in = _loginSocket.getInputStream();
 				_out = new BufferedOutputStream(_loginSocket.getOutputStream());
 				
@@ -175,7 +175,7 @@ public class LoginServerThread extends Thread
 							// now, only accept paket with the new encryption
 							_blowfish = new NewCrypt(_blowfishKey);
 							
-							sendPacket(new AuthRequest(_requestId, Config.ACCEPT_ALTERNATE_ID, _hexId, Config.HOSTNAME, Config.PORT_GAME, Config.RESERVE_HOST_ON_LOGIN, _maxPlayers));
+							sendPacket(new AuthRequest(_requestId, Config.ACCEPT_ALTERNATE_ID, _hexId, Config.HOSTNAME, Config.GAMESERVER_PORT, Config.RESERVE_HOST_ON_LOGIN, _maxPlayers));
 							break;
 						
 						case 0x01:
@@ -194,7 +194,7 @@ public class LoginServerThread extends Thread
 							LOGGER.info("Registered as server: [{}] {}.", _serverId, _serverName);
 							
 							final ServerStatus ss = new ServerStatus();
-							ss.addAttribute(AttributeType.STATUS, (Config.SERVER_GMONLY) ? StatusType.GM_ONLY.getId() : StatusType.AUTO.getId());
+							ss.addAttribute(AttributeType.STATUS, (Config.SERVER_GMONLY) ? ServerType.GM_ONLY.getId() : ServerType.AUTO.getId());
 							ss.addAttribute(AttributeType.CLOCK, Config.SERVER_LIST_CLOCK);
 							ss.addAttribute(AttributeType.BRACKETS, Config.SERVER_LIST_BRACKET);
 							ss.addAttribute(AttributeType.AGE_LIMIT, Config.SERVER_LIST_AGE);
@@ -386,16 +386,16 @@ public class LoginServerThread extends Thread
 		return _serverName;
 	}
 	
-	public StatusType getServerStatus()
+	public ServerType getServerType()
 	{
-		return _status;
+		return _type;
 	}
 	
-	public void setServerStatus(StatusType status)
+	public void setServerType(ServerType type)
 	{
-		sendServerStatus(AttributeType.STATUS, status.getId());
+		sendServerStatus(AttributeType.STATUS, type.getId());
 		
-		_status = status;
+		_type = type;
 	}
 	
 	public static LoginServerThread getInstance()

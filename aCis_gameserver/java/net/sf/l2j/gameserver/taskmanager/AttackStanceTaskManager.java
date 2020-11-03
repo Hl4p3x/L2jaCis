@@ -3,7 +3,7 @@ package net.sf.l2j.gameserver.taskmanager;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
@@ -71,7 +71,7 @@ public final class AttackStanceTaskManager implements Runnable
 	{
 		if (creature instanceof Playable)
 		{
-			for (Cubic cubic : creature.getActingPlayer().getCubics())
+			for (Cubic cubic : creature.getActingPlayer().getCubicList().getCubics())
 				if (cubic.getId() != Cubic.LIFE_CUBIC)
 					cubic.doAction();
 		}

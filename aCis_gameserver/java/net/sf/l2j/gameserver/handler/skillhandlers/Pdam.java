@@ -57,10 +57,10 @@ public class Pdam implements ISkillHandler
 			if (weapon != null && weapon.getItemType() != WeaponType.BOW && Formulas.calcPhysicalSkillEvasion(target, skill))
 			{
 				if (activeChar instanceof Player)
-					((Player) activeChar).sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_DODGES_ATTACK).addCharName(target));
+					activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_DODGES_ATTACK).addCharName(target));
 				
 				if (target instanceof Player)
-					((Player) target).sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AVOIDED_S1_ATTACK).addCharName(activeChar));
+					target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AVOIDED_S1_ATTACK).addCharName(activeChar));
 				
 				// no futher calculations needed.
 				continue;
@@ -123,7 +123,7 @@ public class Pdam implements ISkillHandler
 					if (activeChar instanceof Player)
 						activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_PERFORMING_COUNTERATTACK).addCharName(target));
 					
-					double vegdamage = (700 * target.getPAtk(activeChar) / activeChar.getPDef(target));
+					double vegdamage = (700 * target.getStatus().getPAtk(activeChar) / activeChar.getStatus().getPDef(target));
 					activeChar.reduceCurrentHp(vegdamage, target, skill);
 				}
 			}

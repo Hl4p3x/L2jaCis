@@ -5,7 +5,6 @@ import net.sf.l2j.commons.util.ArraysUtil;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.manager.DuelManager;
 import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
@@ -34,13 +33,11 @@ public class Continuous implements ISkillHandler
 		SkillType.POISON,
 		SkillType.BLEED,
 		SkillType.HOT,
-		SkillType.CPHOT,
 		SkillType.MPHOT,
 		SkillType.FEAR,
 		SkillType.CONT,
 		SkillType.WEAKNESS,
 		SkillType.REFLECT,
-		SkillType.UNDEAD_DEFENSE,
 		SkillType.AGGDEBUFF,
 		SkillType.FUSION
 	};
@@ -89,7 +86,6 @@ public class Continuous implements ISkillHandler
 					break;
 				
 				case HOT:
-				case CPHOT:
 				case MPHOT:
 					if (activeChar.isInvul())
 						continue;
@@ -136,7 +132,7 @@ public class Continuous implements ISkillHandler
 					else if (target instanceof Playable)
 					{
 						if (target.getTarget() == activeChar)
-							target.getAI().tryTo(IntentionType.ATTACK, activeChar, false);
+							target.getAI().tryToAttack(activeChar, false, false);
 						else
 							target.setTarget(activeChar);
 					}

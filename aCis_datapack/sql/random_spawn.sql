@@ -136,4 +136,4 @@ INSERT INTO `random_spawn` VALUES
 (130,31094,1,-1,60,0,'false','false'), -- Orator of Revelations
 (131,31093,1,-1,60,0,'false','false'), -- Preacher of Doom
 (132,31094,1,-1,60,0,'false','false'), -- Orator of Revelations
-(135,32049,1,-1,1200000,1200000,'false','true'); -- Rooney (Blacksmith of wind Rooney)
+(135,32049,1,-1,1800000,1800000,'false','true'); -- Rooney (Blacksmith of wind Rooney)

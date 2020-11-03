@@ -90,7 +90,7 @@ public class Q016_TheComingDarkness extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 62) ? "31517-0a.htm" : "31517-0.htm";
+				htmltext = (player.getStatus().getLevel() < 62) ? "31517-0a.htm" : "31517-0.htm";
 				break;
 			
 			case STATE_STARTED:

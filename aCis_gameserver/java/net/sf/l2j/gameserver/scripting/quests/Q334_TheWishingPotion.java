@@ -674,7 +674,7 @@ public class Q334_TheWishingPotion extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 30) ? "30738-01.htm" : "30738-02.htm";
+				htmltext = (player.getStatus().getLevel() < 30) ? "30738-01.htm" : "30738-02.htm";
 				break;
 			
 			case STATE_STARTED:

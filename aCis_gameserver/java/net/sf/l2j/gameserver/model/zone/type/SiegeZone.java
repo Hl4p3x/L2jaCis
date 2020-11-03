@@ -50,8 +50,6 @@ public class SiegeZone extends ZoneType
 			{
 				final Player player = (Player) character;
 				
-				player.setIsInSiege(true); // in siege
-				
 				player.sendPacket(SystemMessageId.ENTERED_COMBAT_ZONE);
 				player.enterOnNoLandingZone();
 			}
@@ -80,8 +78,6 @@ public class SiegeZone extends ZoneType
 				if (player.getPvpFlag() == 0)
 					player.updatePvPFlag(1);
 			}
-			
-			player.setIsInSiege(false);
 		}
 		else if (character instanceof SiegeSummon)
 			((SiegeSummon) character).unSummon(((SiegeSummon) character).getOwner());
@@ -125,16 +121,6 @@ public class SiegeZone extends ZoneType
 					((SiegeSummon) character).unSummon(((SiegeSummon) character).getOwner());
 			}
 		}
-	}
-	
-	/**
-	 * Sends a message to all players in this zone
-	 * @param message
-	 */
-	public void announceToPlayers(String message)
-	{
-		for (Player player : getKnownTypeInside(Player.class))
-			player.sendMessage(message);
 	}
 	
 	/**

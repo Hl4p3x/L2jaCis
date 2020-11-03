@@ -31,10 +31,12 @@ public final class L2SkillSignet extends L2Skill
 		if (caster.isAlikeDead())
 			return;
 		
-		NpcTemplate template = NpcData.getInstance().getTemplate(_effectNpcId);
-		EffectPoint effectPoint = new EffectPoint(IdFactory.getInstance().getNextId(), template, caster);
-		effectPoint.setCurrentHp(effectPoint.getMaxHp());
-		effectPoint.setCurrentMp(effectPoint.getMaxMp());
+		final NpcTemplate template = NpcData.getInstance().getTemplate(_effectNpcId);
+		if (template == null)
+			return;
+		
+		final EffectPoint effectPoint = new EffectPoint(IdFactory.getInstance().getNextId(), template, caster);
+		effectPoint.getStatus().setMaxHpMp();
 		
 		Location worldPosition = null;
 		if (caster instanceof Player && getTargetType() == SkillTargetType.GROUND)

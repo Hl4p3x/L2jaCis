@@ -5,15 +5,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.QuestState;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -225,7 +222,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			st.takeItems(BEGINNER_ARCANA, 1);
 			st.giveItems(CRYSTAL_OF_PROGRESS_1, 1); // give Starting Crystal
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4126, 1), false, false), null);
+			npc.getAI().tryToCast(player, 4126, 1);
 		}
 		// CAMONIELL
 		else if (event.equals("30636-02.htm"))
@@ -242,7 +239,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			st.takeItems(BEGINNER_ARCANA, 1);
 			st.giveItems(CRYSTAL_OF_PROGRESS_2, 1);
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4126, 1), false, false), null);
+			npc.getAI().tryToCast(player, 4126, 1);
 		}
 		// BELTHUS
 		else if (event.equals("30637-02.htm"))
@@ -259,7 +256,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			st.takeItems(BEGINNER_ARCANA, 1);
 			st.giveItems(CRYSTAL_OF_PROGRESS_3, 1);
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4126, 1), false, false), null);
+			npc.getAI().tryToCast(player, 4126, 1);
 		}
 		// BASILLA
 		else if (event.equals("30638-02.htm"))
@@ -276,7 +273,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			st.takeItems(BEGINNER_ARCANA, 1);
 			st.giveItems(CRYSTAL_OF_PROGRESS_4, 1);
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4126, 1), false, false), null);
+			npc.getAI().tryToCast(player, 4126, 1);
 		}
 		// CELESTIEL
 		else if (event.equals("30639-02.htm"))
@@ -293,7 +290,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			st.takeItems(BEGINNER_ARCANA, 1);
 			st.giveItems(CRYSTAL_OF_PROGRESS_5, 1);
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4126, 1), false, false), null);
+			npc.getAI().tryToCast(player, 4126, 1);
 		}
 		// BRYNTHEA
 		else if (event.equals("30640-02.htm"))
@@ -310,7 +307,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			st.takeItems(BEGINNER_ARCANA, 1);
 			st.giveItems(CRYSTAL_OF_PROGRESS_6, 1);
 			
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, player, SkillTable.getInstance().getInfo(4126, 1), false, false), null);
+			npc.getAI().tryToCast(player, 4126, 1);
 		}
 		
 		return htmltext;
@@ -332,7 +329,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.HUMAN_WIZARD && player.getClassId() != ClassId.ELVEN_WIZARD && player.getClassId() != ClassId.DARK_WIZARD) // wizard, elven wizard, dark wizard
 					htmltext = "30634-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30634-02.htm";
 				else
 					htmltext = "30634-03.htm";
@@ -847,7 +844,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 		switch (npcId)
 		{
 			case PAKO_THE_CAT:
-				if (st.getInt("Almors") == 2 && isPet && npc.getCurrentHp() == npc.getMaxHp())
+				if (st.getInt("Almors") == 2 && isPet && npc.getStatus().getHpRatio() == 1.0)
 				{
 					st.set("Almors", "3");
 					st.playSound(QuestState.SOUND_ITEMGET);
@@ -882,7 +879,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 				break;
 			
 			case UNICORN_RACER:
-				if (st.getInt("Camoniell") == 2 && isPet && npc.getCurrentHp() == npc.getMaxHp())
+				if (st.getInt("Camoniell") == 2 && isPet && npc.getStatus().getHpRatio() == 1.0)
 				{
 					st.set("Camoniell", "3");
 					st.playSound(QuestState.SOUND_ITEMGET);
@@ -916,7 +913,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 				break;
 			
 			case SHADOW_TUREN:
-				if (st.getInt("Belthus") == 2 && isPet && npc.getCurrentHp() == npc.getMaxHp())
+				if (st.getInt("Belthus") == 2 && isPet && npc.getStatus().getHpRatio() == 1.0)
 				{
 					st.set("Belthus", "3");
 					st.playSound(QuestState.SOUND_ITEMGET);
@@ -950,7 +947,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 				break;
 			
 			case MIMI_THE_CAT:
-				if (st.getInt("Basilla") == 2 && isPet && npc.getCurrentHp() == npc.getMaxHp())
+				if (st.getInt("Basilla") == 2 && isPet && npc.getStatus().getHpRatio() == 1.0)
 				{
 					st.set("Basilla", "3");
 					st.playSound(QuestState.SOUND_ITEMGET);
@@ -984,7 +981,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 				break;
 			
 			case UNICORN_PHANTASM:
-				if (st.getInt("Celestiel") == 2 && isPet && npc.getCurrentHp() == npc.getMaxHp())
+				if (st.getInt("Celestiel") == 2 && isPet && npc.getStatus().getHpRatio() == 1.0)
 				{
 					st.set("Celestiel", "3");
 					st.playSound(QuestState.SOUND_ITEMGET);
@@ -1018,7 +1015,7 @@ public class Q230_TestOfTheSummoner extends SecondClassQuest
 				break;
 			
 			case SILHOUETTE_TILFO:
-				if (st.getInt("Brynthea") == 2 && isPet && npc.getCurrentHp() == npc.getMaxHp())
+				if (st.getInt("Brynthea") == 2 && isPet && npc.getStatus().getHpRatio() == 1.0)
 				{
 					st.set("Brynthea", "3");
 					st.playSound(QuestState.SOUND_ITEMGET);

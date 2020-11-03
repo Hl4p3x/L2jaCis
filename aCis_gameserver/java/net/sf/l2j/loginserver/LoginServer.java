@@ -12,9 +12,9 @@ import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.mmocore.SelectorConfig;
 import net.sf.l2j.commons.mmocore.SelectorThread;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.loginserver.data.manager.GameServerManager;
 import net.sf.l2j.loginserver.data.manager.IpBanManager;
 import net.sf.l2j.loginserver.data.sql.AccountTable;
@@ -50,13 +50,11 @@ public class LoginServer
 			LogManager.getLogManager().readConfiguration(is);
 		}
 		
-		StringUtil.printSection("aCis");
-		
-		// Initialize config
+		StringUtil.printSection("Config");
 		Config.loadLoginServer();
 		
-		// Factories
-		L2DatabaseFactory.getInstance();
+		StringUtil.printSection("Poolers");
+		ConnectionPool.init();
 		
 		AccountTable.getInstance();
 		
@@ -71,11 +69,11 @@ public class LoginServer
 		
 		StringUtil.printSection("IP, Ports & Socket infos");
 		InetAddress bindAddress = null;
-		if (!Config.LOGIN_BIND_ADDRESS.equals("*"))
+		if (!Config.LOGINSERVER_HOSTNAME.equals("*"))
 		{
 			try
 			{
-				bindAddress = InetAddress.getByName(Config.LOGIN_BIND_ADDRESS);
+				bindAddress = InetAddress.getByName(Config.LOGINSERVER_HOSTNAME);
 			}
 			catch (UnknownHostException uhe)
 			{
@@ -107,7 +105,7 @@ public class LoginServer
 			_gameServerListener = new GameServerListener();
 			_gameServerListener.start();
 			
-			LOGGER.info("Listening for gameservers on {}:{}.", Config.GAME_SERVER_LOGIN_HOST, Config.GAME_SERVER_LOGIN_PORT);
+			LOGGER.info("Listening for gameservers on {}:{}.", Config.GAMESERVER_LOGIN_HOSTNAME, Config.GAMESERVER_LOGIN_PORT);
 		}
 		catch (IOException ioe)
 		{
@@ -118,7 +116,7 @@ public class LoginServer
 		
 		try
 		{
-			_selectorThread.openServerSocket(bindAddress, Config.PORT_LOGIN);
+			_selectorThread.openServerSocket(bindAddress, Config.LOGINSERVER_PORT);
 		}
 		catch (IOException ioe)
 		{
@@ -127,7 +125,7 @@ public class LoginServer
 			System.exit(1);
 		}
 		_selectorThread.start();
-		LOGGER.info("Loginserver ready on {}:{}.", (bindAddress == null) ? "*" : bindAddress.getHostAddress(), Config.PORT_LOGIN);
+		LOGGER.info("Loginserver ready on {}:{}.", (bindAddress == null) ? "*" : bindAddress.getHostAddress(), Config.LOGINSERVER_PORT);
 		
 		StringUtil.printSection("Waiting for gameserver answer");
 	}

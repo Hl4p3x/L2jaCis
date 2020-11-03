@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
 import net.sf.l2j.gameserver.enums.SayType;
@@ -32,11 +32,11 @@ public class CastleGatekeeper extends Folk
 		if (command.startsWith("tele"))
 		{
 			if (_teleportTask == null)
-				_teleportTask = ThreadPool.schedule(() -> oustPlayers(), getDelayInSeconds() * 1000);
+				_teleportTask = ThreadPool.schedule(() -> oustPlayers(), getTeleportDelay() * 1000);
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/castleteleporter/MassGK-1.htm");
-			html.replace("%delay%", getDelayInSeconds());
+			html.replace("%delay%", getTeleportDelay());
 			player.sendPacket(html);
 		}
 		else
@@ -58,7 +58,7 @@ public class CastleGatekeeper extends Folk
 		else
 		{
 			html.setFile("data/html/castleteleporter/MassGK-1.htm");
-			html.replace("%delay%", getDelayInSeconds());
+			html.replace("%delay%", getTeleportDelay());
 		}
 		html.replace("%objectId%", getObjectId());
 		player.sendPacket(html);
@@ -90,14 +90,9 @@ public class CastleGatekeeper extends Folk
 	}
 	
 	/**
-	 * Retrieve the teleport delay, as following :
-	 * <ul>
-	 * <li>30 seconds for regular teleport.</li>
-	 * <li>480 seconds (8 minutes) during an active siege, and if all ControlTowers have been broken.</li>
-	 * </ul>
-	 * @return the teleport delay in seconds.
+	 * @return The teleport delay, as following : 30 seconds for regular teleport, 480 seconds (8 minutes) during an active siege, and if all ControlTowers have been broken.
 	 */
-	private final int getDelayInSeconds()
+	private final int getTeleportDelay()
 	{
 		return (getCastle().getSiege().isInProgress() && getCastle().getSiege().getControlTowerCount() == 0) ? 480 : 30;
 	}

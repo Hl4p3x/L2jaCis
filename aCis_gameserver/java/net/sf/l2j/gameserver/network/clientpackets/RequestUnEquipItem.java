@@ -24,12 +24,12 @@ public class RequestUnEquipItem extends L2GameClientPacket
 		if (player == null)
 			return;
 		
-		final ItemInstance item = player.getInventory().getPaperdollItemByL2ItemId(_slot);
-		if (item == null)
-			return;
-		
 		// Prevent of unequiping a cursed weapon
 		if (_slot == Item.SLOT_LR_HAND && player.isCursedWeaponEquipped())
+			return;
+		
+		final ItemInstance item = player.getInventory().getItemFrom(_slot);
+		if (item == null)
 			return;
 			
 		// Prevent player from unequipping items in special conditions
@@ -41,7 +41,7 @@ public class RequestUnEquipItem extends L2GameClientPacket
 			return;
 		}
 		
-		final ItemInstance[] unequipped = player.getInventory().unEquipItemInBodySlotAndRecord(_slot);
+		final ItemInstance[] unequipped = player.getInventory().unequipItemInBodySlotAndRecord(_slot);
 		
 		// show the update in the inventory
 		final InventoryUpdate iu = new InventoryUpdate();

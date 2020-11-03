@@ -1,59 +1,41 @@
 package net.sf.l2j.gameserver.network.serverpackets;
 
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.skills.L2Skill;
 
-/**
- * format ddddd d
- */
 public class MagicSkillLaunched extends L2GameServerPacket
 {
-	private final int _charObjId;
+	private final int _objectId;
 	private final int _skillId;
 	private final int _skillLevel;
-	private final int _numberOfTargets;
 	private Creature[] _targets;
-	private final int _singleTargetId;
 	
-	public MagicSkillLaunched(Creature cha, int skillId, int skillLevel, Creature[] targets)
+	public MagicSkillLaunched(Creature cha, L2Skill skill, Creature[] targets)
 	{
-		_charObjId = cha.getObjectId();
-		_skillId = skillId;
-		_skillLevel = skillLevel;
-		_numberOfTargets = targets.length;
+		_objectId = cha.getObjectId();
+		_skillId = skill.getId();
+		_skillLevel = skill.getLevel();
 		_targets = targets;
-		_singleTargetId = 0;
-	}
-	
-	public MagicSkillLaunched(Creature cha, int skillId, int skillLevel)
-	{
-		_charObjId = cha.getObjectId();
-		_skillId = skillId;
-		_skillLevel = skillLevel;
-		_numberOfTargets = 1;
-		_singleTargetId = cha.getTargetId();
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0x76);
-		writeD(_charObjId);
+		writeD(_objectId);
 		writeD(_skillId);
 		writeD(_skillLevel);
-		writeD(_numberOfTargets);
-		if (_singleTargetId != 0 || _numberOfTargets == 0)
-			writeD(_singleTargetId);
+		
+		if (_targets.length == 0)
+		{
+			writeD(0);
+			writeD(0);
+		}
 		else
+		{
+			writeD(_targets.length);
 			for (Creature target : _targets)
-			{
-				try
-				{
-					writeD(target.getObjectId());
-				}
-				catch (NullPointerException e)
-				{
-					writeD(0); // untested
-				}
-			}
+				writeD(target.getObjectId());
+		}
 	}
 }

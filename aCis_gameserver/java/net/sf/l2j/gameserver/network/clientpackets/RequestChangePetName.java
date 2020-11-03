@@ -3,11 +3,10 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
@@ -81,7 +80,7 @@ public final class RequestChangePetName extends L2GameClientPacket
 	{
 		boolean result = true;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SEARCH_NAME))
 		{
 			ps.setString(1, name);
@@ -91,7 +90,7 @@ public final class RequestChangePetName extends L2GameClientPacket
 				result = rs.next();
 			}
 		}
-		catch (SQLException e)
+		catch (Exception e)
 		{
 			LOGGER.error("Couldn't check existing petname.", e);
 		}

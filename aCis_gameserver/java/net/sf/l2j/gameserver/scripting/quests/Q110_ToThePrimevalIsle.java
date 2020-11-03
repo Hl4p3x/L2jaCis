@@ -63,7 +63,7 @@ public class Q110_ToThePrimevalIsle extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 75) ? "31338-00.htm" : "31338-01.htm";
+				htmltext = (player.getStatus().getLevel() < 75) ? "31338-00.htm" : "31338-01.htm";
 				break;
 			
 			case STATE_STARTED:

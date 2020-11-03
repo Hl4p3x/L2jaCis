@@ -207,7 +207,7 @@ public class Q241_PossessorOfAPreciousSoul extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (!player.isSubClassActive() || player.getLevel() < 50) ? "31739-02.htm" : "31739-01.htm";
+				htmltext = (!player.isSubClassActive() || player.getStatus().getLevel() < 50) ? "31739-02.htm" : "31739-01.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.handler.skillhandlers;
 
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.handler.ISkillHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -47,7 +46,7 @@ public class Unlock implements ISkillHandler
 				return;
 			
 			chest.setInteracted();
-			if (chestUnlock(skill, chest))
+			if (chestUnlock(skill, chest.getStatus().getLevel()))
 			{
 				chest.setSpecialDrop();
 				chest.doDie(chest);
@@ -55,7 +54,7 @@ public class Unlock implements ISkillHandler
 			else
 			{
 				chest.addDamageHate(activeChar, 0, 999);
-				chest.getAI().tryTo(IntentionType.ATTACK, activeChar, false);
+				chest.getAI().tryToAttack(activeChar);
 			}
 		}
 		else
@@ -82,24 +81,24 @@ public class Unlock implements ISkillHandler
 		}
 	}
 	
-	private static final boolean chestUnlock(L2Skill skill, Creature chest)
+	private static final boolean chestUnlock(L2Skill skill, int level)
 	{
 		int chance = 0;
-		if (chest.getLevel() > 60)
+		if (level > 60)
 		{
 			if (skill.getLevel() < 10)
 				return false;
 			
 			chance = (skill.getLevel() - 10) * 5 + 30;
 		}
-		else if (chest.getLevel() > 40)
+		else if (level > 40)
 		{
 			if (skill.getLevel() < 6)
 				return false;
 			
 			chance = (skill.getLevel() - 6) * 5 + 10;
 		}
-		else if (chest.getLevel() > 30)
+		else if (level > 30)
 		{
 			if (skill.getLevel() < 3)
 				return false;

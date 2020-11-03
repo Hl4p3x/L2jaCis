@@ -55,14 +55,11 @@ public class DawnPriest extends SignsPriest
 						filename += "dawn_priest_2b.htm";
 				}
 				else
-					filename += "dawn_priest_1b.htm";
+					filename += "dawn_priest_1.htm";
 				break;
 			
 			case DUSK:
-				if (SevenSignsManager.getInstance().isSealValidationPeriod())
-					filename += "dawn_priest_3a.htm";
-				else
-					filename += "dawn_priest_3b.htm";
+				filename += "dawn_priest_3.htm";
 				break;
 			
 			default:
@@ -80,7 +77,7 @@ public class DawnPriest extends SignsPriest
 						filename += "dawn_priest_2b.htm";
 				}
 				else
-					filename += "dawn_priest_1a.htm";
+					filename += "dawn_priest_1.htm";
 				break;
 		}
 		

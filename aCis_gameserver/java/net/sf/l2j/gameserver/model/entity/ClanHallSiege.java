@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.ClanHallManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
@@ -70,7 +70,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 	
 	public void loadAttackers()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SQL_LOAD_ATTACKERS))
 		{
 			ps.setInt(1, _hall.getId());
@@ -93,7 +93,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 	
 	public final void saveAttackers()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("DELETE FROM clanhall_siege_attackers WHERE clanhall_id = ?"))
 		{
 			ps.setInt(1, _hall.getId());
@@ -126,7 +126,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		{
 			_guards = new ArrayList<>();
 			
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(SQL_LOAD_GUARDS))
 			{
 				ps.setInt(1, _hall.getId());
@@ -362,10 +362,10 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		final NpcSay npcSay = new NpcSay(npc, type, messageId);
 		final int region = MapRegionData.getInstance().getMapRegion(npc.getX(), npc.getY());
 		
-		for (Player pc : World.getInstance().getPlayers())
+		for (Player player : World.getInstance().getPlayers())
 		{
-			if (MapRegionData.getInstance().getMapRegion(pc.getX(), pc.getY()) == region)
-				pc.sendPacket(npcSay);
+			if (MapRegionData.getInstance().getMapRegion(player.getX(), player.getY()) == region)
+				player.sendPacket(npcSay);
 		}
 	}
 	

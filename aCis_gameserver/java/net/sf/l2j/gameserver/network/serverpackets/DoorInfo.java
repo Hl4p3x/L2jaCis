@@ -25,8 +25,8 @@ public class DoorInfo extends L2GameServerPacket
 		writeD((_showHp) ? 1 : 0);
 		writeD(1); // ??? (can target)
 		writeD(_door.isOpened() ? 0 : 1);
-		writeD(_door.getMaxHp());
-		writeD((int) _door.getCurrentHp());
+		writeD(_door.getStatus().getMaxHp());
+		writeD((int) _door.getStatus().getHp());
 		writeD(0); // ??? (show HP)
 		writeD(0); // ??? (Damage)
 	}

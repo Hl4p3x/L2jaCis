@@ -7,7 +7,6 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.ElementType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
@@ -18,7 +17,6 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.ai.type.AttackableAI;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.zone.type.BossZone;
 import net.sf.l2j.gameserver.model.zone.type.subtype.ZoneType;
@@ -145,16 +143,16 @@ public class QueenAnt extends L2AttackableAIScript
 			if (npc.getNpcId() == QUEEN)
 			{
 				if (skill != null && skill.getElement() == ElementType.FIRE && Rnd.get(100) < 70)
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill(), false, false), null);
+					npc.getAI().tryToCast(attacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill());
 				else
 				{
 					final double dist = npc.distance3D(attacker);
 					if (dist > 500 && Rnd.get(100) < 10)
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill(), false, false), null);
+						npc.getAI().tryToCast(attacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill());
 					else if (dist > 150 && Rnd.get(100) < 10)
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, (Rnd.get(10) < 8) ? FrequentSkill.QUEEN_ANT_STRIKE.getSkill() : FrequentSkill.QUEEN_ANT_SPRINKLE.getSkill(), false, false), null);
+						npc.getAI().tryToCast(attacker, (Rnd.get(10) < 8) ? FrequentSkill.QUEEN_ANT_STRIKE.getSkill() : FrequentSkill.QUEEN_ANT_SPRINKLE.getSkill());
 					else if (dist < 250 && Rnd.get(100) < 5)
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, attacker, FrequentSkill.QUEEN_ANT_BRANDISH.getSkill(), false, false), null);
+						npc.getAI().tryToCast(attacker, FrequentSkill.QUEEN_ANT_BRANDISH.getSkill());
 				}
 			}
 		}
@@ -183,24 +181,24 @@ public class QueenAnt extends L2AttackableAIScript
 				final Playable realAttacker = (isPet && attacker.getSummon() != null) ? attacker.getSummon() : attacker;
 				final double dist = npc.distance3D(realAttacker);
 				if (dist > 500 && Rnd.get(100) < 3)
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, realAttacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill(), false, false), null);
+					npc.getAI().tryToCast(realAttacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill());
 				else if (dist > 150 && Rnd.get(100) < 3)
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, realAttacker, (Rnd.get(10) < 8) ? FrequentSkill.QUEEN_ANT_STRIKE.getSkill() : FrequentSkill.QUEEN_ANT_SPRINKLE.getSkill(), false, false), null);
+					npc.getAI().tryToCast(realAttacker, (Rnd.get(10) < 8) ? FrequentSkill.QUEEN_ANT_STRIKE.getSkill() : FrequentSkill.QUEEN_ANT_SPRINKLE.getSkill());
 				else if (dist < 250 && Rnd.get(100) < 2)
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, realAttacker, FrequentSkill.QUEEN_ANT_BRANDISH.getSkill(), false, false), null);
+					npc.getAI().tryToCast(realAttacker, FrequentSkill.QUEEN_ANT_BRANDISH.getSkill());
 				break;
 			
 			case NURSE:
 				// If the faction caller is the larva, assist it directly, no matter what.
 				if (caller.getNpcId() == LARVA)
-					npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, caller, Rnd.nextBoolean() ? FrequentSkill.NURSE_HEAL_1.getSkill() : FrequentSkill.NURSE_HEAL_2.getSkill(), false, false), null);
+					npc.getAI().tryToCast(caller, Rnd.nextBoolean() ? FrequentSkill.NURSE_HEAL_1.getSkill() : FrequentSkill.NURSE_HEAL_2.getSkill());
 				// If the faction caller is Queen Ant, then check first Larva.
 				else if (caller.getNpcId() == QUEEN)
 				{
-					if (_larva != null && _larva.getCurrentHp() < _larva.getMaxHp())
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, _larva, Rnd.nextBoolean() ? FrequentSkill.NURSE_HEAL_1.getSkill() : FrequentSkill.NURSE_HEAL_2.getSkill(), false, false), null);
+					if (_larva != null && _larva.getStatus().getHpRatio() < 1.0)
+						npc.getAI().tryToCast(_larva, Rnd.nextBoolean() ? FrequentSkill.NURSE_HEAL_1.getSkill() : FrequentSkill.NURSE_HEAL_2.getSkill());
 					else
-						npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, caller, FrequentSkill.NURSE_HEAL_1.getSkill(), false, false), null);
+						npc.getAI().tryToCast(caller, FrequentSkill.NURSE_HEAL_1.getSkill());
 				}
 				break;
 		}
@@ -252,7 +250,7 @@ public class QueenAnt extends L2AttackableAIScript
 	public String onSkillSee(Npc npc, Player caster, L2Skill skill, WorldObject[] targets, boolean isPet)
 	{
 		final Playable realAttacker = (isPet && caster.getSummon() != null) ? caster.getSummon() : caster;
-		if (!Config.RAID_DISABLE_CURSE && realAttacker.getLevel() - npc.getLevel() > 8)
+		if (!Config.RAID_DISABLE_CURSE && realAttacker.getStatus().getLevel() - npc.getStatus().getLevel() > 8)
 		{
 			final L2Skill curse = FrequentSkill.RAID_CURSE.getSkill();
 			
@@ -265,7 +263,7 @@ public class QueenAnt extends L2AttackableAIScript
 		
 		// If Queen Ant see an aggroable skill, try to launch Queen Ant Strike.
 		if (npc.getNpcId() == QUEEN && skill.getAggroPoints() > 0 && Rnd.get(100) < 15)
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, realAttacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill(), false, false), null);
+			npc.getAI().tryToCast(realAttacker, FrequentSkill.QUEEN_ANT_STRIKE.getSkill());
 		
 		return super.onSkillSee(npc, caster, skill, targets, isPet);
 	}
@@ -305,7 +303,7 @@ public class QueenAnt extends L2AttackableAIScript
 			final StatsSet info = GrandBossManager.getInstance().getStatsSet(QUEEN);
 			
 			queen = (GrandBoss) addSpawn(QUEEN, info.getInteger("loc_x"), info.getInteger("loc_y"), info.getInteger("loc_z"), info.getInteger("heading"), false, 0, false);
-			queen.setCurrentHpMp(info.getInteger("currentHP"), info.getInteger("currentMP"));
+			queen.getStatus().setHpMp(info.getInteger("currentHP"), info.getInteger("currentMP"));
 		}
 		
 		GrandBossManager.getInstance().addBoss(queen);

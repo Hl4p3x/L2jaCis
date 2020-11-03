@@ -1,7 +1,10 @@
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
+import java.util.StringTokenizer;
+
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.ArmorSetData;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -10,203 +13,166 @@ import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Armor;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
-import net.sf.l2j.gameserver.network.serverpackets.ItemList;
+import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
-/**
- * This class handles following admin commands: - enchant_armor
- */
 public class AdminEnchant implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
 	{
-		"admin_seteh", // 6
-		"admin_setec", // 10
-		"admin_seteg", // 9
-		"admin_setel", // 11
-		"admin_seteb", // 12
-		"admin_setew", // 7
-		"admin_setes", // 8
-		"admin_setle", // 1
-		"admin_setre", // 2
-		"admin_setlf", // 4
-		"admin_setrf", // 5
-		"admin_seten", // 3
-		"admin_setun", // 0
-		"admin_setba", // 13
 		"admin_enchant"
 	};
 	
 	@Override
 	public boolean useAdminCommand(String command, Player activeChar)
 	{
-		if (command.equals("admin_enchant"))
-			showMainPage(activeChar);
-		else
+		final StringTokenizer st = new StringTokenizer(command, " ");
+		st.nextToken();
+		
+		if (st.countTokens() == 2)
 		{
-			int armorType = -1;
-			
-			if (command.startsWith("admin_seteh"))
-				armorType = Inventory.PAPERDOLL_HEAD;
-			else if (command.startsWith("admin_setec"))
-				armorType = Inventory.PAPERDOLL_CHEST;
-			else if (command.startsWith("admin_seteg"))
-				armorType = Inventory.PAPERDOLL_GLOVES;
-			else if (command.startsWith("admin_seteb"))
-				armorType = Inventory.PAPERDOLL_FEET;
-			else if (command.startsWith("admin_setel"))
-				armorType = Inventory.PAPERDOLL_LEGS;
-			else if (command.startsWith("admin_setew"))
-				armorType = Inventory.PAPERDOLL_RHAND;
-			else if (command.startsWith("admin_setes"))
-				armorType = Inventory.PAPERDOLL_LHAND;
-			else if (command.startsWith("admin_setle"))
-				armorType = Inventory.PAPERDOLL_LEAR;
-			else if (command.startsWith("admin_setre"))
-				armorType = Inventory.PAPERDOLL_REAR;
-			else if (command.startsWith("admin_setlf"))
-				armorType = Inventory.PAPERDOLL_LFINGER;
-			else if (command.startsWith("admin_setrf"))
-				armorType = Inventory.PAPERDOLL_RFINGER;
-			else if (command.startsWith("admin_seten"))
-				armorType = Inventory.PAPERDOLL_NECK;
-			else if (command.startsWith("admin_setun"))
-				armorType = Inventory.PAPERDOLL_UNDER;
-			else if (command.startsWith("admin_setba"))
-				armorType = Inventory.PAPERDOLL_BACK;
-			
-			if (armorType != -1)
+			try
 			{
-				try
+				final Paperdoll slot = Paperdoll.getEnumByName(st.nextToken());
+				if (slot == Paperdoll.NULL)
 				{
-					int ench = Integer.parseInt(command.substring(12));
-					
-					// check value
-					if (ench < 0 || ench > 65535)
-						activeChar.sendMessage("You must set the enchant level to be between 0-65535.");
-					else
-						setEnchant(activeChar, ench, armorType);
+					activeChar.sendMessage("Unknown paperdoll slot.");
+					return false;
 				}
-				catch (Exception e)
-				{
-					activeChar.sendMessage("Please specify a new enchant value.");
-				}
-			}
-			
-			// show the enchant menu after an action
-			showMainPage(activeChar);
-		}
-		
-		return true;
-	}
-	
-	private static void setEnchant(Player activeChar, int ench, int armorType)
-	{
-		WorldObject target = activeChar.getTarget();
-		if (!(target instanceof Player))
-			target = activeChar;
-		
-		final Player player = (Player) target;
-		
-		final ItemInstance item = player.getInventory().getPaperdollItem(armorType);
-		if (item != null && item.getLocationSlot() == armorType)
-		{
-			final Item it = item.getItem();
-			final int oldEnchant = item.getEnchantLevel();
-			
-			item.setEnchantLevel(ench);
-			item.updateDatabase();
-			
-			// If item is equipped, verify the skill obtention/drop (+4 duals, +6 armorset).
-			if (item.isEquipped())
-			{
-				final int currentEnchant = item.getEnchantLevel();
 				
-				// Skill bestowed by +4 duals.
-				if (it instanceof Weapon)
+				final int enchant = Integer.parseInt(st.nextToken());
+				if (enchant < 0 || enchant > 65535)
 				{
-					// Old enchant was >= 4 and new is lower : we drop the skill.
-					if (oldEnchant >= 4 && currentEnchant < 4)
-					{
-						final L2Skill enchant4Skill = ((Weapon) it).getEnchant4Skill();
-						if (enchant4Skill != null)
-						{
-							player.removeSkill(enchant4Skill.getId(), false);
-							player.sendSkillList();
-						}
-					}
-					// Old enchant was < 4 and new is 4 or more : we add the skill.
-					else if (oldEnchant < 4 && currentEnchant >= 4)
-					{
-						final L2Skill enchant4Skill = ((Weapon) it).getEnchant4Skill();
-						if (enchant4Skill != null)
-						{
-							player.addSkill(enchant4Skill, false);
-							player.sendSkillList();
-						}
-					}
+					activeChar.sendMessage("You must set the enchant level between 0 - 65535.");
+					return false;
 				}
-				// Add skill bestowed by +6 armorset.
-				else if (it instanceof Armor)
+				
+				WorldObject target = activeChar.getTarget();
+				if (!(target instanceof Player))
+					target = activeChar;
+				
+				final Player player = (Player) target;
+				
+				final ItemInstance item = player.getInventory().getItemFrom(slot);
+				if (item == null)
 				{
-					// Old enchant was >= 6 and new is lower : we drop the skill.
-					if (oldEnchant >= 6 && currentEnchant < 6)
+					activeChar.sendMessage(player.getName() + " doesn't wear any item in " + slot + " slot.");
+					return false;
+				}
+				
+				final Item it = item.getItem();
+				final int oldEnchant = item.getEnchantLevel();
+				
+				// Do nothing if both values are the same.
+				if (oldEnchant == enchant)
+				{
+					activeChar.sendMessage(player.getName() + "'s " + it.getName() + " enchant is already set to " + enchant + ".");
+					return false;
+				}
+				
+				item.setEnchantLevel(enchant);
+				item.updateDatabase();
+				
+				// If item is equipped, verify the skill obtention/drop (+4 duals, +6 armorset).
+				if (item.isEquipped())
+				{
+					final int currentEnchant = item.getEnchantLevel();
+					
+					// Skill bestowed by +4 duals.
+					if (it instanceof Weapon)
 					{
-						// Checks if player is wearing a chest item
-						final ItemInstance chestItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
-						if (chestItem != null)
+						// Old enchant was >= 4 and new is lower : we drop the skill.
+						if (oldEnchant >= 4 && currentEnchant < 4)
 						{
-							final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestItem.getItemId());
-							if (armorSet != null)
+							final L2Skill enchant4Skill = ((Weapon) it).getEnchant4Skill();
+							if (enchant4Skill != null)
 							{
-								final int skillId = armorSet.getEnchant6skillId();
-								if (skillId > 0)
-								{
-									player.removeSkill(skillId, false);
-									player.sendSkillList();
-								}
+								player.removeSkill(enchant4Skill.getId(), false);
+								player.sendSkillList();
+							}
+						}
+						// Old enchant was < 4 and new is 4 or more : we add the skill.
+						else if (oldEnchant < 4 && currentEnchant >= 4)
+						{
+							final L2Skill enchant4Skill = ((Weapon) it).getEnchant4Skill();
+							if (enchant4Skill != null)
+							{
+								player.addSkill(enchant4Skill, false);
+								player.sendSkillList();
 							}
 						}
 					}
-					// Old enchant was < 6 and new is 6 or more : we add the skill.
-					else if (oldEnchant < 6 && currentEnchant >= 6)
+					// Add skill bestowed by +6 armorset.
+					else if (it instanceof Armor)
 					{
-						// Checks if player is wearing a chest item
-						final ItemInstance chestItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
-						if (chestItem != null)
+						// Old enchant was >= 6 and new is lower : we drop the skill.
+						if (oldEnchant >= 6 && currentEnchant < 6)
 						{
-							final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestItem.getItemId());
-							if (armorSet != null && armorSet.isEnchanted6(player)) // has all parts of set enchanted to 6 or more
+							// Check if player is wearing a chest item.
+							final int itemId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+							if (itemId > 0)
 							{
-								final int skillId = armorSet.getEnchant6skillId();
-								if (skillId > 0)
+								final ArmorSet armorSet = ArmorSetData.getInstance().getSet(itemId);
+								if (armorSet != null)
 								{
-									final L2Skill skill = SkillTable.getInstance().getInfo(skillId, 1);
-									if (skill != null)
+									final int skillId = armorSet.getEnchant6skillId();
+									if (skillId > 0)
 									{
-										player.addSkill(skill, false);
+										player.removeSkill(skillId, false);
 										player.sendSkillList();
+									}
+								}
+							}
+						}
+						// Old enchant was < 6 and new is 6 or more : we add the skill.
+						else if (oldEnchant < 6 && currentEnchant >= 6)
+						{
+							// Check if player is wearing a chest item.
+							final int itemId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+							if (itemId > 0)
+							{
+								final ArmorSet armorSet = ArmorSetData.getInstance().getSet(itemId);
+								if (armorSet != null && armorSet.isEnchanted6(player)) // has all parts of set enchanted to 6 or more
+								{
+									final int skillId = armorSet.getEnchant6skillId();
+									if (skillId > 0)
+									{
+										final L2Skill skill = SkillTable.getInstance().getInfo(skillId, 1);
+										if (skill != null)
+										{
+											player.addSkill(skill, false);
+											player.sendSkillList();
+										}
 									}
 								}
 							}
 						}
 					}
 				}
+				
+				final InventoryUpdate iu = new InventoryUpdate();
+				iu.addModifiedItem(item);
+				player.sendPacket(iu);
+				
+				player.broadcastUserInfo();
+				
+				activeChar.sendMessage(player.getName() + "'s " + it.getName() + " enchant was modified from " + oldEnchant + " to " + enchant + ".");
 			}
-			
-			player.sendPacket(new ItemList(player, false));
-			player.broadcastUserInfo();
-			
-			activeChar.sendMessage("Changed enchantment of " + player.getName() + "'s " + it.getName() + " from " + oldEnchant + " to " + ench + ".");
-			if (player != activeChar)
-				player.sendMessage("A GM has changed the enchantment of your " + it.getName() + " from " + oldEnchant + " to " + ench + ".");
+			catch (Exception e)
+			{
+				activeChar.sendMessage("Please specify a new enchant value.");
+			}
 		}
-	}
-	
-	private static void showMainPage(Player activeChar)
-	{
-		AdminHelpPage.showHelpPage(activeChar, "enchant.htm");
+		else
+		{
+			activeChar.sendMessage("Usage: //enchant [slot name] [enchant level]");
+			activeChar.sendMessage("Slots: under|lear|rear|neck|lfinger|rfinger|head|rhand|lhand");
+			activeChar.sendMessage("Slots: gloves|chest|legs|feet|cloak|face|hair|hairall");
+		}
+		
+		AdminHelpPage.showHelpPage(activeChar, "main_menu.htm");
+		
+		return true;
 	}
 	
 	@Override

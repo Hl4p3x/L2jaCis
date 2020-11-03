@@ -1,10 +1,10 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
@@ -51,7 +51,7 @@ public class Q401_PathToAWarrior extends Quest
 		{
 			if (player.getClassId() != ClassId.HUMAN_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.WARRIOR) ? "30010-03.htm" : "30010-02b.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30010-02.htm";
 			else if (st.hasQuestItems(MEDALLION_OF_WARRIOR))
 				htmltext = "30010-04.htm";
@@ -171,7 +171,7 @@ public class Q401_PathToAWarrior extends Quest
 			
 			case 20038:
 			case 20043:
-				if (st.getInt("cond") == 5 && (st.getItemEquipped(Inventory.PAPERDOLL_RHAND) == RUSTED_BRONZE_SWORD_3))
+				if (st.getInt("cond") == 5 && st.getItemIdFrom(Paperdoll.RHAND) == RUSTED_BRONZE_SWORD_3)
 					if (st.dropItemsAlways(POISON_SPIDER_LEG, 1, 20))
 						st.set("cond", "6");
 				break;

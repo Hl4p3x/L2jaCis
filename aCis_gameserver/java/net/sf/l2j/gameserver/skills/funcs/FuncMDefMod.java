@@ -1,9 +1,9 @@
 package net.sf.l2j.gameserver.skills.funcs;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.skills.Stats;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.skills.Formulas;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.skills.basefuncs.Func;
@@ -27,22 +27,22 @@ public class FuncMDefMod extends Func
 		{
 			final Player player = (Player) effector;
 			
-			if (player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_LFINGER) != null)
+			if (player.getInventory().hasItemIn(Paperdoll.LFINGER))
 				value -= 5;
 			
-			if (player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_RFINGER) != null)
+			if (player.getInventory().hasItemIn(Paperdoll.RFINGER))
 				value -= 5;
 			
-			if (player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_LEAR) != null)
+			if (player.getInventory().hasItemIn(Paperdoll.LEAR))
 				value -= 9;
 			
-			if (player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_REAR) != null)
+			if (player.getInventory().hasItemIn(Paperdoll.REAR))
 				value -= 9;
 			
-			if (player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_NECK) != null)
+			if (player.getInventory().hasItemIn(Paperdoll.NECK))
 				value -= 13;
 		}
-		return value * Formulas.MEN_BONUS[effector.getMEN()] * effector.getLevelMod();
+		return value * Formulas.MEN_BONUS[effector.getStatus().getMEN()] * effector.getStatus().getLevelMod();
 	}
 	
 	public static Func getInstance()

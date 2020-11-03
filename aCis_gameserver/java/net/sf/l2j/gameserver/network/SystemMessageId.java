@@ -1696,7 +1696,7 @@ public final class SystemMessageId
 	
 	/**
 	 * ID: 287<br>
-	 * Message: The opposing clan has stared to engrave to monument!
+	 * Message: The opposing clan has started to engrave the monument!
 	 */
 	public static final SystemMessageId OPPONENT_STARTED_ENGRAVING;
 	
@@ -2092,13 +2092,13 @@ public final class SystemMessageId
 	
 	/**
 	 * ID: 358<br>
-	 * Message: $s1 hour(s) until catle siege conclusion.
+	 * Message: $s1 hour(s) until castle siege conclusion.
 	 */
 	public static final SystemMessageId S1_HOURS_UNTIL_SIEGE_CONCLUSION;
 	
 	/**
 	 * ID: 359<br>
-	 * Message: $s1 minute(s) until catle siege conclusion.
+	 * Message: $s1 minute(s) until castle siege conclusion.
 	 */
 	public static final SystemMessageId S1_MINUTES_UNTIL_SIEGE_CONCLUSION;
 	
@@ -6791,7 +6791,7 @@ public final class SystemMessageId
 	public static final SystemMessageId TEMPORARY_ALLIANCE;
 	
 	/**
-	 * ID: 1189<br>
+	 * ID: 1190<br>
 	 * Message: This temporary alliance of the Castle Attacker team has been dissolved.
 	 */
 	public static final SystemMessageId TEMPORARY_ALLIANCE_DISSOLVED;

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.location.RadarMarker;
 import net.sf.l2j.gameserver.network.serverpackets.RadarControl;
 
@@ -19,6 +20,15 @@ public final class RadarList
 	
 	/**
 	 * Add a {@link RadarMarker} to this {@link RadarList}.
+	 * @param loc : The {@link Location} used as reference.
+	 */
+	public void addMarker(Location loc)
+	{
+		addMarker(loc.getX(), loc.getY(), loc.getZ());
+	}
+	
+	/**
+	 * Add a {@link RadarMarker} to this {@link RadarList}.
 	 * @param x : The X position.
 	 * @param y : The Y position.
 	 * @param z : The Z position.
@@ -29,6 +39,15 @@ public final class RadarList
 		
 		_player.sendPacket(new RadarControl(2, 2, x, y, z));
 		_player.sendPacket(new RadarControl(0, 1, x, y, z));
+	}
+	
+	/**
+	 * Remove a {@link RadarMarker} from this {@link RadarList}.
+	 * @param loc : The {@link Location} used as reference.
+	 */
+	public void removeMarker(Location loc)
+	{
+		removeMarker(loc.getX(), loc.getY(), loc.getZ());
 	}
 	
 	/**

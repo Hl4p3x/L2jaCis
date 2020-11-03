@@ -2,12 +2,9 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
 
@@ -128,7 +125,7 @@ public final class Q125_TheNameOfEvil_1 extends Quest
 		{
 			case STATE_CREATED:
 				QuestState first = player.getQuestState(Q124_MeetingTheElroki.qn);
-				if (first != null && first.isCompleted() && player.getLevel() >= 76)
+				if (first != null && first.isCompleted() && player.getStatus().getLevel() >= 76)
 					htmltext = "32114-01.htm";
 				else
 					htmltext = "32114-00.htm";
@@ -185,7 +182,7 @@ public final class Q125_TheNameOfEvil_1 extends Quest
 					case ULU_KAIMU:
 						if (cond == 5)
 						{
-							npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, SkillTable.getInstance().getInfo(5089, 1), false, false), null);
+							npc.getAI().tryToCast(npc, 5089, 1);
 							htmltext = "32119-01.htm";
 						}
 						else if (cond == 6)
@@ -195,7 +192,7 @@ public final class Q125_TheNameOfEvil_1 extends Quest
 					case BALU_KAIMU:
 						if (cond == 6)
 						{
-							npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, SkillTable.getInstance().getInfo(5089, 1), false, false), null);
+							npc.getAI().tryToCast(npc, 5089, 1);
 							htmltext = "32120-01.htm";
 						}
 						else if (cond == 7)
@@ -205,7 +202,7 @@ public final class Q125_TheNameOfEvil_1 extends Quest
 					case CHUTA_KAIMU:
 						if (cond == 7)
 						{
-							npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, SkillTable.getInstance().getInfo(5089, 1), false, false), null);
+							npc.getAI().tryToCast(npc, 5089, 1);
 							htmltext = "32121-01.htm";
 						}
 						else if (cond == 8)

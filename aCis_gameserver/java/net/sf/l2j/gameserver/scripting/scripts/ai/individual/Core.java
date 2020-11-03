@@ -63,7 +63,7 @@ public class Core extends L2AttackableAIScript
 			final int mp = info.getInteger("currentMP");
 			
 			final GrandBoss core = (GrandBoss) addSpawn(CORE, loc_x, loc_y, loc_z, heading, false, 0, false);
-			core.setCurrentHpMp(hp, mp);
+			core.getStatus().setHpMp(hp, mp);
 			spawnBoss(core);
 		}
 	}

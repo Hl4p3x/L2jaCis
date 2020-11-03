@@ -491,7 +491,7 @@ public class Q662_AGameOfCards extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 61) ? "30845-02.htm" : "30845-01.htm";
+				htmltext = (player.getStatus().getLevel() < 61) ? "30845-02.htm" : "30845-01.htm";
 				break;
 			
 			case STATE_STARTED:

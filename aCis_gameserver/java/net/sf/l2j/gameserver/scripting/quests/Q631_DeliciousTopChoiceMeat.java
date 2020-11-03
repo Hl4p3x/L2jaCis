@@ -102,7 +102,7 @@ public class Q631_DeliciousTopChoiceMeat extends Quest
 		
 		if (event.equalsIgnoreCase("31537-03.htm"))
 		{
-			if (player.getLevel() >= 65)
+			if (player.getStatus().getLevel() >= 65)
 			{
 				st.setState(STATE_STARTED);
 				st.set("cond", "1");

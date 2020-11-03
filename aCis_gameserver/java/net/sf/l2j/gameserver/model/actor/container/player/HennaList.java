@@ -9,8 +9,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.HennaData;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.enums.actors.HennaType;
@@ -120,7 +120,7 @@ public class HennaList
 	{
 		final Henna[] hennas = new Henna[HennaList.MAX_HENNAS_AMOUNT];
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("SELECT slot, symbol_id FROM character_hennas WHERE char_obj_id = ? AND class_index = ?"))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -227,10 +227,10 @@ public class HennaList
 	public int getMaxSize()
 	{
 		final ClassId classId = _owner.getClassId();
-		if (classId.level() < 1)
+		if (classId.getLevel() < 1)
 			return 0;
 		
-		if (classId.level() == 1)
+		if (classId.getLevel() == 1)
 			return 2;
 		
 		return MAX_HENNAS_AMOUNT;
@@ -248,7 +248,7 @@ public class HennaList
 		
 		_hennas[slot] = henna;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("INSERT INTO character_hennas (char_obj_id,symbol_id,slot,class_index) VALUES (?,?,?,?)"))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -278,7 +278,7 @@ public class HennaList
 		
 		_hennas[slot] = null;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement("DELETE FROM character_hennas WHERE char_obj_id=? AND slot=? AND class_index=?"))
 		{
 			ps.setInt(1, _owner.getObjectId());

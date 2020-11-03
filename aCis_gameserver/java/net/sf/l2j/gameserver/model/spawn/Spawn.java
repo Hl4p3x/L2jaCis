@@ -2,17 +2,15 @@ package net.sf.l2j.gameserver.model.spawn;
 
 import java.lang.reflect.Constructor;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
-import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 
@@ -381,15 +379,7 @@ public final class Spawn implements Runnable
 			locz = _loc.getZ();
 		
 		// Set the HP and MP of the Npc to the max
-		_npc.setCurrentHpMp(_npc.getMaxHp(), _npc.getMaxMp());
-		
-		// when champion mod is enabled, try to make NPC a champion
-		if (Config.CHAMPION_FREQUENCY > 0)
-		{
-			// It can't be a Raid, a Raid minion nor a minion. Quest mobs and chests are disabled too.
-			if (_npc instanceof Monster && !getTemplate().cantBeChampion() && _npc.getLevel() >= Config.CHAMP_MIN_LVL && _npc.getLevel() <= Config.CHAMP_MAX_LVL && !_npc.isRaidRelated() && !_npc.isMinion())
-				((Monster) _npc).setChampion(Rnd.get(100) < Config.CHAMPION_FREQUENCY);
-		}
+		_npc.getStatus().setMaxHpMp();
 		
 		// spawn NPC on new coordinates
 		_npc.spawnMe(locx, locy, locz, (_loc.getHeading() < 0) ? Rnd.get(65536) : _loc.getHeading());

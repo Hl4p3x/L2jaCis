@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.enums.actors.ClassRace;
 import net.sf.l2j.gameserver.enums.actors.Sex;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -82,7 +82,7 @@ public class ClanMember
 		_race = player.getRace();
 		
 		_objectId = player.getObjectId();
-		_level = player.getLevel();
+		_level = player.getStatus().getLevel();
 		_classId = player.getClassId().getId();
 		_pledgeType = player.getPledgeType();
 		_powerGrade = player.getPowerGrade();
@@ -101,7 +101,7 @@ public class ClanMember
 			_race = _player.getRace();
 			
 			_objectId = _player.getObjectId();
-			_level = _player.getLevel();
+			_level = _player.getStatus().getLevel();
 			_classId = _player.getClassId().getId();
 			_powerGrade = _player.getPowerGrade();
 			_pledgeType = _player.getPledgeType();
@@ -157,13 +157,13 @@ public class ClanMember
 	
 	public int getLevel()
 	{
-		return (_player != null) ? _player.getLevel() : _level;
+		return (_player != null) ? _player.getStatus().getLevel() : _level;
 	}
 	
 	public void refreshLevel()
 	{
 		if (_player != null)
-			_level = _player.getLevel();
+			_level = _player.getStatus().getLevel();
 	}
 	
 	public int getClassId()
@@ -189,7 +189,7 @@ public class ClanMember
 			_player.setPledgeType(pledgeType);
 		else
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_PLEDGE))
 			{
 				ps.setInt(1, _pledgeType);
@@ -216,7 +216,7 @@ public class ClanMember
 			_player.setPowerGrade(powerGrade);
 		else
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(UPDATE_POWER_GRADE))
 			{
 				ps.setInt(1, _powerGrade);
@@ -281,7 +281,7 @@ public class ClanMember
 	 */
 	public void saveApprenticeAndSponsor(int apprentice, int sponsor)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_SPONSOR))
 		{
 			ps.setInt(1, apprentice);

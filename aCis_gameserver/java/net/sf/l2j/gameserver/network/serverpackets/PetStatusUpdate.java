@@ -7,14 +7,11 @@ import net.sf.l2j.gameserver.model.actor.instance.Servitor;
 public class PetStatusUpdate extends L2GameServerPacket
 {
 	private final Summon _summon;
-	private final int _maxHp, _maxMp;
 	private int _maxFed, _curFed;
 	
 	public PetStatusUpdate(Summon summon)
 	{
 		_summon = summon;
-		_maxHp = _summon.getMaxHp();
-		_maxMp = _summon.getMaxMp();
 		if (_summon instanceof Pet)
 		{
 			Pet pet = (Pet) _summon;
@@ -41,13 +38,13 @@ public class PetStatusUpdate extends L2GameServerPacket
 		writeS(_summon.getTitle());
 		writeD(_curFed);
 		writeD(_maxFed);
-		writeD((int) _summon.getCurrentHp());
-		writeD(_maxHp);
-		writeD((int) _summon.getCurrentMp());
-		writeD(_maxMp);
-		writeD(_summon.getLevel());
-		writeQ(_summon.getStat().getExp());
-		writeQ(_summon.getStat().getExpForThisLevel());// 0% absolute value
-		writeQ(_summon.getStat().getExpForNextLevel());// 100% absolute value
+		writeD((int) _summon.getStatus().getHp());
+		writeD(_summon.getStatus().getMaxHp());
+		writeD((int) _summon.getStatus().getMp());
+		writeD(_summon.getStatus().getMaxMp());
+		writeD(_summon.getStatus().getLevel());
+		writeQ(_summon.getStatus().getExp());
+		writeQ(_summon.getStatus().getExpForThisLevel());// 0% absolute value
+		writeQ(_summon.getStatus().getExpForNextLevel());// 100% absolute value
 	}
 }

@@ -8,10 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.sql.SpawnTable;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.enums.BossStatus;
@@ -40,7 +40,7 @@ public class RaidBossManager
 	
 	private void load()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_RAIDBOSSES);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -149,11 +149,11 @@ public class RaidBossManager
 		{
 			final RaidBoss raidboss = (RaidBoss) spawn.doSpawn(false);
 			
-			currentHP = (currentHP == 0) ? raidboss.getMaxHp() : currentHP;
-			currentMP = (currentMP == 0) ? raidboss.getMaxMp() : currentMP;
+			currentHP = (currentHP == 0) ? raidboss.getStatus().getMaxHp() : currentHP;
+			currentMP = (currentMP == 0) ? raidboss.getStatus().getMaxMp() : currentMP;
 			
 			// Set HP, MP.
-			raidboss.setCurrentHpMp(currentHP, currentMP);
+			raidboss.getStatus().setHpMp(currentHP, currentMP);
 			
 			bs.setStatus(BossStatus.ALIVE);
 			bs.setCurrentHp(currentHP);
@@ -163,7 +163,7 @@ public class RaidBossManager
 			// Time passed by, or we force the database save ; save data on database.
 			if (time > respawnTime || forceSave)
 			{
-				try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+				try (Connection con = ConnectionPool.getConnection();
 					PreparedStatement ps = con.prepareStatement(INSERT_RAIDBOSS))
 				{
 					ps.setInt(1, spawn.getNpcId());
@@ -234,7 +234,7 @@ public class RaidBossManager
 		// Save HP/MP and locations if boolean flag is set to true.
 		if (saveOnDb)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(SAVE_RAIDBOSS))
 			{
 				for (Entry<Integer, BossSpawn> entry : _spawns.entrySet())
@@ -244,8 +244,8 @@ public class RaidBossManager
 					// We only bother with living bosses.
 					if (bs.getStatus() == BossStatus.ALIVE)
 					{
-						ps.setDouble(1, bs.getBoss().getCurrentHp());
-						ps.setDouble(2, bs.getBoss().getCurrentMp());
+						ps.setDouble(1, bs.getBoss().getStatus().getHp());
+						ps.setDouble(2, bs.getBoss().getStatus().getMp());
 						ps.setInt(3, entry.getKey());
 						ps.addBatch();
 					}

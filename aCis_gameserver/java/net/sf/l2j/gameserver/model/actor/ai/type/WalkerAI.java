@@ -78,6 +78,6 @@ public class WalkerAI extends CreatureAI
 		else
 			getActor().forceWalkStance();
 		
-		changeCurrentIntention(IntentionType.MOVE_TO, node, null);
+		doMoveToIntention(node, null);
 	}
 }

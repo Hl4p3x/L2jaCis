@@ -334,7 +334,7 @@ public class FirstClassChange extends Quest
 			{
 				final boolean gotItem = st.hasQuestItems(array[7]);
 				
-				if (player.getLevel() < 20)
+				if (player.getStatus().getLevel() < 20)
 					suffix = "-" + ((gotItem) ? array[4] : array[3]);
 				else
 				{
@@ -387,14 +387,14 @@ public class FirstClassChange extends Quest
 			case 30462:
 				if (player.getRace() == ClassRace.DARK_ELF)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 31)
 							htmltext = npcId + "-01.htm";
 						else if (player.getClassId().getId() == 38)
 							htmltext = npcId + "-08.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-32.htm";
 					else
 						htmltext = npcId + "-31.htm";
@@ -406,14 +406,14 @@ public class FirstClassChange extends Quest
 			case 30358: // Thifiell (dark elf)
 				if (player.getRace() == ClassRace.DARK_ELF)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 31)
 							htmltext = npcId + "-01.htm";
 						else if (player.getClassId().getId() == 38)
 							htmltext = npcId + "-02.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-12.htm";
 					else
 						htmltext = npcId + "-13.htm";
@@ -428,14 +428,14 @@ public class FirstClassChange extends Quest
 			case 32097:
 				if (player.getRace() == ClassRace.ORC)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 44)
 							htmltext = npcId + "-01.htm";
 						else if (player.getClassId().getId() == 49)
 							htmltext = npcId + "-06.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-21.htm";
 					else
 						htmltext = npcId + "-22.htm";
@@ -447,14 +447,14 @@ public class FirstClassChange extends Quest
 			case 30565: // Kakai (Orcs)
 				if (player.getRace() == ClassRace.ORC)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 44)
 							htmltext = npcId + "-01.htm";
 						else if (player.getClassId().getId() == 49)
 							htmltext = npcId + "-06.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-09.htm";
 					else
 						htmltext = npcId + "-10.htm";
@@ -473,12 +473,12 @@ public class FirstClassChange extends Quest
 			case 30499:
 				if (player.getRace() == ClassRace.DWARF)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 53)
 							htmltext = npcId + "-01.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-09.htm";
 					else
 						htmltext = npcId + "-10.htm";
@@ -491,12 +491,12 @@ public class FirstClassChange extends Quest
 			case 30520:
 				if (player.getRace() == ClassRace.DWARF)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 53)
 							htmltext = npcId + "-01.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-05.htm";
 					else
 						htmltext = npcId + "-06.htm";
@@ -513,12 +513,12 @@ public class FirstClassChange extends Quest
 				{
 					if (player.isMageClass())
 					{
-						if (player.getClassId().level() == 0)
+						if (player.getClassId().getLevel() == 0)
 						{
 							if (player.getClassId().getId() == 25)
 								htmltext = npcId + "-01.htm";
 						}
-						else if (player.getClassId().level() == 1)
+						else if (player.getClassId().getLevel() == 1)
 							htmltext = npcId + "-31.htm";
 						else
 							htmltext = npcId + "-32.htm";
@@ -530,12 +530,12 @@ public class FirstClassChange extends Quest
 				{
 					if (player.isMageClass())
 					{
-						if (player.getClassId().level() == 0)
+						if (player.getClassId().getLevel() == 0)
 						{
 							if (player.getClassId().getId() == 10)
 								htmltext = npcId + "-08.htm";
 						}
-						else if (player.getClassId().level() == 1)
+						else if (player.getClassId().getLevel() == 1)
 							htmltext = npcId + "-31.htm";
 						else
 							htmltext = npcId + "-32.htm";
@@ -550,14 +550,14 @@ public class FirstClassChange extends Quest
 			case 30154: // Asterios (Elf fighters and mages)
 				if (player.getRace() == ClassRace.ELF)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 18)
 							htmltext = npcId + "-01.htm";
 						else if (player.getClassId().getId() == 25)
 							htmltext = npcId + "-02.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-12.htm";
 					else
 						htmltext = npcId + "-13.htm";
@@ -571,12 +571,12 @@ public class FirstClassChange extends Quest
 				{
 					if (player.isMageClass())
 					{
-						if (player.getClassId().level() == 0)
+						if (player.getClassId().getLevel() == 0)
 						{
 							if (player.getClassId().getId() == 10)
 								htmltext = npcId + "-01.htm";
 						}
-						else if (player.getClassId().level() == 1)
+						else if (player.getClassId().getLevel() == 1)
 							htmltext = npcId + "-06.htm";
 						else
 							htmltext = npcId + "-07.htm";
@@ -593,28 +593,28 @@ public class FirstClassChange extends Quest
 			case 30066:
 				if (player.getRace() == ClassRace.HUMAN)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 0)
 							htmltext = npcId + "-08.htm";
 						else
 							htmltext = npcId + "-40.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-38.htm";
 					else
 						htmltext = npcId + "-39.htm";
 				}
 				else if (player.getRace() == ClassRace.ELF)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 18)
 							htmltext = npcId + "-01.htm";
 						else
 							htmltext = npcId + "-40.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-38.htm";
 					else
 						htmltext = npcId + "-39.htm";
@@ -626,14 +626,14 @@ public class FirstClassChange extends Quest
 			case 30026: // Bitz (Human fighters)
 				if (player.getRace() == ClassRace.HUMAN)
 				{
-					if (player.getClassId().level() == 0)
+					if (player.getClassId().getLevel() == 0)
 					{
 						if (player.getClassId().getId() == 0)
 							htmltext = npcId + "-01.htm";
 						else
 							htmltext = npcId + "-10.htm";
 					}
-					else if (player.getClassId().level() == 1)
+					else if (player.getClassId().getLevel() == 1)
 						htmltext = npcId + "-08.htm";
 					else
 						htmltext = npcId + "-09.htm";

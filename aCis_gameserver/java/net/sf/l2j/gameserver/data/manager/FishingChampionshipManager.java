@@ -7,13 +7,13 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.sql.ServerMemoTable;
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -99,7 +99,7 @@ public class FishingChampionshipManager
 	{
 		_endDate = ServerMemoTable.getInstance().getLong("fishChampionshipEnd", 0);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SELECT))
 		{
 			try (ResultSet rs = ps.executeQuery())
@@ -211,7 +211,7 @@ public class FishingChampionshipManager
 	
 	public synchronized void newFish(Player player, int lureId)
 	{
-		if (!Config.ALT_FISH_CHAMPIONSHIP_ENABLED)
+		if (!Config.ALLOW_FISH_CHAMPIONSHIP)
 			return;
 		
 		double len = Rnd.get(60, 89) + (Rnd.get(0, 1000) / 1000.);
@@ -335,23 +335,23 @@ public class FishingChampionshipManager
 							switch (x)
 							{
 								case 0:
-									rewardCnt = Config.ALT_FISH_CHAMPIONSHIP_REWARD_1;
+									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_1;
 									break;
 								
 								case 1:
-									rewardCnt = Config.ALT_FISH_CHAMPIONSHIP_REWARD_2;
+									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_2;
 									break;
 								
 								case 2:
-									rewardCnt = Config.ALT_FISH_CHAMPIONSHIP_REWARD_3;
+									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_3;
 									break;
 								
 								case 3:
-									rewardCnt = Config.ALT_FISH_CHAMPIONSHIP_REWARD_4;
+									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_4;
 									break;
 								
 								case 4:
-									rewardCnt = Config.ALT_FISH_CHAMPIONSHIP_REWARD_5;
+									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_5;
 									break;
 							}
 						}
@@ -361,7 +361,7 @@ public class FishingChampionshipManager
 					
 					if (rewardCnt > 0)
 					{
-						player.addItem("fishing_reward", Config.ALT_FISH_CHAMPIONSHIP_REWARD_ITEM, rewardCnt, null, true);
+						player.addItem("fishing_reward", Config.FISH_CHAMPIONSHIP_REWARD_ITEM, rewardCnt, null, true);
 						
 						final NpcHtmlMessage html = new NpcHtmlMessage(0);
 						html.setFile("data/html/fisherman/championship/fish_event_reward001.htm");
@@ -396,12 +396,12 @@ public class FishingChampionshipManager
 			StringUtil.append(sb, "<td width=80 align=center>", getCurrentFishLength(x), "</td></tr>");
 		}
 		html.replace("%TABLE%", sb.toString());
-		html.replace("%prizeItem%", ItemData.getInstance().getTemplate(Config.ALT_FISH_CHAMPIONSHIP_REWARD_ITEM).getName());
-		html.replace("%prizeFirst%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_1);
-		html.replace("%prizeTwo%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_2);
-		html.replace("%prizeThree%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_3);
-		html.replace("%prizeFour%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_4);
-		html.replace("%prizeFive%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_5);
+		html.replace("%prizeItem%", ItemData.getInstance().getTemplate(Config.FISH_CHAMPIONSHIP_REWARD_ITEM).getName());
+		html.replace("%prizeFirst%", Config.FISH_CHAMPIONSHIP_REWARD_1);
+		html.replace("%prizeTwo%", Config.FISH_CHAMPIONSHIP_REWARD_2);
+		html.replace("%prizeThree%", Config.FISH_CHAMPIONSHIP_REWARD_3);
+		html.replace("%prizeFour%", Config.FISH_CHAMPIONSHIP_REWARD_4);
+		html.replace("%prizeFive%", Config.FISH_CHAMPIONSHIP_REWARD_5);
 		player.sendPacket(html);
 	}
 	
@@ -418,12 +418,12 @@ public class FishingChampionshipManager
 			StringUtil.append(sb, "<td width=80 align=center>", getFishLength(x), "</td></tr>");
 		}
 		html.replace("%TABLE%", sb.toString());
-		html.replace("%prizeItem%", ItemData.getInstance().getTemplate(Config.ALT_FISH_CHAMPIONSHIP_REWARD_ITEM).getName());
-		html.replace("%prizeFirst%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_1);
-		html.replace("%prizeTwo%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_2);
-		html.replace("%prizeThree%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_3);
-		html.replace("%prizeFour%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_4);
-		html.replace("%prizeFive%", Config.ALT_FISH_CHAMPIONSHIP_REWARD_5);
+		html.replace("%prizeItem%", ItemData.getInstance().getTemplate(Config.FISH_CHAMPIONSHIP_REWARD_ITEM).getName());
+		html.replace("%prizeFirst%", Config.FISH_CHAMPIONSHIP_REWARD_1);
+		html.replace("%prizeTwo%", Config.FISH_CHAMPIONSHIP_REWARD_2);
+		html.replace("%prizeThree%", Config.FISH_CHAMPIONSHIP_REWARD_3);
+		html.replace("%prizeFour%", Config.FISH_CHAMPIONSHIP_REWARD_4);
+		html.replace("%prizeFive%", Config.FISH_CHAMPIONSHIP_REWARD_5);
 		html.replace("%refresh%", getTimeRemaining());
 		html.replace("%objectId%", objectId);
 		player.sendPacket(html);
@@ -433,7 +433,7 @@ public class FishingChampionshipManager
 	{
 		ServerMemoTable.getInstance().set("fishChampionshipEnd", _endDate);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE);
 			PreparedStatement ps2 = con.prepareStatement(INSERT))
 		{

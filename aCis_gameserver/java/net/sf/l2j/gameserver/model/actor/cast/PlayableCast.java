@@ -5,128 +5,109 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Folk;
+import net.sf.l2j.gameserver.model.actor.instance.Guard;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
-import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 /**
  * This class groups all cast data related to a {@link Player}.
+ * @param <T> : The {@link Playable} used as actor.
  */
-public class PlayableCast extends CreatureCast
+public class PlayableCast<T extends Playable> extends CreatureCast<T>
 {
-	public PlayableCast(Creature creature)
+	public PlayableCast(T actor)
 	{
-		super(creature);
+		super(actor);
 	}
 	
 	@Override
 	public void doInstantCast(L2Skill skill, ItemInstance item)
 	{
-		if (!item.isHerb() && !_creature.destroyItem("Consume", item.getObjectId(), (skill.getItemConsumeId() == 0 && skill.getItemConsume() > 0) ? skill.getItemConsume() : 1, null, false))
+		if (!item.isHerb() && !_actor.destroyItem("Consume", item.getObjectId(), (skill.getItemConsumeId() == 0 && skill.getItemConsume() > 0) ? skill.getItemConsume() : 1, null, false))
 		{
-			_creature.getActingPlayer().sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
+			_actor.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
 			return;
 		}
 		
 		int reuseDelay = skill.getReuseDelay();
 		if (reuseDelay > 10)
-			_creature.disableSkill(skill, reuseDelay);
+			_actor.disableSkill(skill, reuseDelay);
 		
-		_creature.broadcastPacket(new MagicSkillUse(_creature, _creature, skill.getId(), skill.getLevel(), 0, 0));
-		
-		if (_creature instanceof Player)
-		{
-			_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.USE_S1).addSkillName(skill));
-			
-			if (skill.getNumCharges() > 0)
-			{
-				if (skill.getMaxCharges() > 0)
-					((Player) _creature).increaseCharges(skill.getNumCharges(), skill.getMaxCharges());
-				else
-					((Player) _creature).decreaseCharges(skill.getNumCharges());
-			}
-		}
+		_actor.broadcastPacket(new MagicSkillUse(_actor, _actor, skill.getId(), skill.getLevel(), 0, 0));
 		
 		callSkill(skill, new Creature[]
 		{
-			_creature
+			_actor
 		});
-		
-		_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(skill));
 	}
 	
 	@Override
-	public void doCast(SkillUseHolder skillUseHolder, ItemInstance itemInstance)
+	public void doCast(L2Skill skill, Creature target, ItemInstance itemInstance)
 	{
 		if (itemInstance != null)
-			((Playable) _creature).addItemSkillTimeStamp(skillUseHolder.getSkill(), itemInstance);
+		{
+			// Consume item if needed.
+			if (!(itemInstance.isHerb() || itemInstance.isSummonItem()) && !_actor.destroyItem("Consume", itemInstance.getObjectId(), 1, null, false))
+			{
+				_actor.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
+				return;
+			}
+			
+			// Set item timestamp.
+			_actor.addItemSkillTimeStamp(skill, itemInstance);
+		}
 		
-		super.doCast(skillUseHolder, null);
+		super.doCast(skill, target, null);
 	}
 	
 	@Override
-	public boolean canDoCast(SkillUseHolder skillUseHolder)
+	public boolean canDoCast(Creature target, L2Skill skill, boolean isCtrlPressed, int itemObjectId)
 	{
-		if (!super.canDoCast(skillUseHolder))
+		if (!super.canDoCast(target, skill, isCtrlPressed, itemObjectId))
 			return false;
 		
-		final Playable playable = (Playable) _creature;
-		final L2Skill skill = skillUseHolder.getSkill();
-		final ItemInstance itemInstance = (ItemInstance) playable.getAI().getCurrentIntention().getSecondParameter();
-		if (itemInstance != null && !playable.destroyItem("Consume", itemInstance.getObjectId(), (skill.getItemConsumeId() == 0 && skill.getItemConsume() > 0) ? skill.getItemConsume() : 1, null, false))
+		// Check item consumption validity.
+		if (itemObjectId != 0 && _actor.getInventory().getItemByObjectId(itemObjectId) == null)
 		{
-			// Event possible when scheduling an ItemSkills type of skill and you've destroyed the items in the meantime
-			playable.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
+			_actor.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
 			return false;
 		}
 		
-		final Creature target = skillUseHolder.getFinalTarget();
-		final boolean isCtrlPressed = skillUseHolder.isCtrlPressed();
 		if (skill.isOffensive())
 		{
 			if (target instanceof Playable)
 			{
 				final Playable playableTarget = (Playable) target;
+				
 				// Skills that have the playable as a target (Self, Aura, Area-Summon etc) are exempt from PvP checks
-				if (playableTarget.getActingPlayer() != playable.getActingPlayer() && !playable.getActingPlayer().canCastOffensiveSkillOnPlayable(playableTarget, skill, isCtrlPressed))
+				if (playableTarget.getActingPlayer() != _actor.getActingPlayer() && !_actor.getActingPlayer().canCastOffensiveSkillOnPlayable(playableTarget, skill, isCtrlPressed))
 				{
-					playable.sendPacket(SystemMessageId.INVALID_TARGET);
+					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 					return false;
 				}
 				
 				// Skills that have the playable as a target (Self, Aura, Area-Summon etc) can be used before olympiad starts
-				if (playableTarget.getActingPlayer() != playable.getActingPlayer() && playable.getActingPlayer().isInOlympiadMode() && !playable.getActingPlayer().isOlympiadStart())
+				if (playableTarget.getActingPlayer() != _actor.getActingPlayer() && _actor.getActingPlayer().isInOlympiadMode() && !_actor.getActingPlayer().isOlympiadStart())
 				{
-					playable.sendPacket(SystemMessageId.INVALID_TARGET);
+					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 					return false;
 				}
 				
-				if (playable.isInsideZone(ZoneId.PEACE) && !playable.getActingPlayer().getAccessLevel().allowPeaceAttack())
+				if (_actor.isInsideZone(ZoneId.PEACE) && !_actor.getActingPlayer().getAccessLevel().allowPeaceAttack())
 				{
-					playable.sendPacket(SystemMessageId.CANT_ATK_PEACEZONE);
+					_actor.sendPacket(SystemMessageId.CANT_ATK_PEACEZONE);
 					return false;
 				}
 			}
-			// Folk do not care if they are in a PEACE zone or not, behaviour is the same
-			else if (target instanceof Folk)
+			// You can damage Folk and Guard with CTRL, but nothing else.
+			else if (target instanceof Folk || target instanceof Guard)
 			{
-				// You can damage Folk-type with CTRL
-				if (skill.isDamage())
+				if (!skill.isDamage() || !isCtrlPressed)
 				{
-					if (!isCtrlPressed)
-					{
-						playable.sendPacket(SystemMessageId.INVALID_TARGET);
-						return false;
-					}
-				}
-				// but nothing else
-				else
-				{
-					playable.sendPacket(SystemMessageId.INVALID_TARGET);
+					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 					return false;
 				}
 			}
@@ -135,15 +116,15 @@ public class PlayableCast extends CreatureCast
 		{
 			if (target instanceof Playable)
 			{
-				if (!playable.getActingPlayer().canCastBeneficialSkillOnPlayable((Playable) target, skill, isCtrlPressed))
+				if (!_actor.getActingPlayer().canCastBeneficialSkillOnPlayable((Playable) target, skill, isCtrlPressed))
 				{
-					playable.sendPacket(SystemMessageId.INVALID_TARGET);
+					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 					return false;
 				}
 			}
 			else if (target instanceof Monster && !isCtrlPressed)
 			{
-				playable.sendPacket(SystemMessageId.INVALID_TARGET);
+				_actor.sendPacket(SystemMessageId.INVALID_TARGET);
 				return false;
 			}
 		}

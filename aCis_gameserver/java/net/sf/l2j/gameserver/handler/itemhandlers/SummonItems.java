@@ -1,9 +1,10 @@
 package net.sf.l2j.gameserver.handler.itemhandlers;
 
+import java.util.List;
+
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.data.xml.SummonItemData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
@@ -11,7 +12,6 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.ChristmasTree;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -53,51 +53,48 @@ public class SummonItems implements IItemHandler
 			return;
 		}
 		
-		final int npcId = sitem.getId();
-		if (npcId == 0)
-			return;
-		
-		final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(npcId);
+		final NpcTemplate npcTemplate = NpcData.getInstance().getTemplate(sitem.getId());
 		if (npcTemplate == null)
 			return;
-		
-		player.getMove().stop();
 		
 		switch (sitem.getValue())
 		{
 			case 0: // static summons (like Christmas tree)
+				final List<ChristmasTree> trees = player.getKnownTypeInRadius(ChristmasTree.class, 1200);
+				if (!trees.isEmpty())
+				{
+					player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANNOT_SUMMON_S1_AGAIN).addCharName(trees.get(0)));
+					return;
+				}
+				
+				if (!player.destroyItem("Summon", item, 1, null, false))
+					return;
+				
+				player.getMove().stop();
+				
 				try
 				{
-					for (ChristmasTree ch : player.getKnownTypeInRadius(ChristmasTree.class, 1200))
-					{
-						if (npcTemplate.getNpcId() == ChristmasTree.SPECIAL_TREE_ID)
-						{
-							player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANNOT_SUMMON_S1_AGAIN).addCharName(ch));
-							return;
-						}
-					}
+					final Spawn spawn = new Spawn(npcTemplate);
+					spawn.setLoc(player.getPosition());
+					spawn.setRespawnState(false);
 					
-					if (player.destroyItem("Summon", item.getObjectId(), 1, null, false))
-					{
-						final Spawn spawn = new Spawn(npcTemplate);
-						spawn.setLoc(player.getPosition());
-						spawn.setRespawnState(false);
-						
-						final Npc npc = spawn.doSpawn(true);
-						npc.setTitle(player.getName());
-						npc.setWalkOrRun(false); // broadcast info
-					}
+					final Npc npc = spawn.doSpawn(true);
+					npc.setTitle(player.getName());
+					npc.setWalkOrRun(false);
 				}
 				catch (Exception e)
 				{
 					player.sendPacket(SystemMessageId.TARGET_CANT_FOUND);
 				}
 				break;
+			
 			case 1: // summon pet through an item
-				player.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(player, player, SkillTable.getInstance().getInfo(2046, 1), false, false), null);
+				player.getAI().tryToCast(player, SkillTable.getInstance().getInfo(2046, 1), false, false, item.getObjectId());
 				player.sendPacket(SystemMessageId.SUMMON_A_PET);
 				break;
+			
 			case 2: // wyvern
+				player.getMove().stop();
 				player.mount(sitem.getId(), item.getObjectId());
 				break;
 		}

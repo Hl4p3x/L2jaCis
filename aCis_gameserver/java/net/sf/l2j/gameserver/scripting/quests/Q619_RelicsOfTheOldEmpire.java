@@ -228,7 +228,7 @@ public class Q619_RelicsOfTheOldEmpire extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 74) ? "31538-02.htm" : "31538-01.htm";
+				htmltext = (player.getStatus().getLevel() < 74) ? "31538-02.htm" : "31538-01.htm";
 				break;
 			
 			case STATE_STARTED:

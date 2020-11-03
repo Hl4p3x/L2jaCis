@@ -5,9 +5,9 @@ import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.util.StatsSet;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.taskmanager.BuyListTaskManager;
@@ -125,7 +125,7 @@ public class Product
 	 */
 	public void save(long nextRestockTime)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(ADD_OR_UPDATE_BUYLIST))
 		{
 			ps.setInt(1, getBuyListId());
@@ -145,7 +145,7 @@ public class Product
 	 */
 	public void delete()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_BUYLIST))
 		{
 			ps.setInt(1, getBuyListId());

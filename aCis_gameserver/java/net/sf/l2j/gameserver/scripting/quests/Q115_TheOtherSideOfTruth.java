@@ -243,7 +243,7 @@ public class Q115_TheOtherSideOfTruth extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 53) ? "32020-02.htm" : "32020-01.htm";
+				htmltext = (player.getStatus().getLevel() < 53) ? "32020-02.htm" : "32020-01.htm";
 				break;
 			
 			case STATE_STARTED:

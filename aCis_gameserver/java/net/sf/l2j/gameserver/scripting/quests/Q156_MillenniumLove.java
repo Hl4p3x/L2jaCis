@@ -71,7 +71,7 @@ public class Q156_MillenniumLove extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30368-00.htm" : "30368-01.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30368-00.htm" : "30368-01.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -38,7 +38,7 @@ public class Mdam implements ISkillHandler
 			if (target.isDead())
 				continue;
 			
-			boolean mcrit = Formulas.calcMCrit(activeChar.getMCriticalHit(target, skill));
+			boolean mcrit = Formulas.calcMCrit(activeChar, target, skill);
 			final byte shld = Formulas.calcShldUse(activeChar, target, skill);
 			final byte reflect = Formulas.calcSkillReflect(target, skill);
 			

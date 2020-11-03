@@ -3,8 +3,9 @@ package net.sf.l2j.gameserver.scripting.scripts.teleports;
 import net.sf.l2j.commons.util.ArraysUtil;
 
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
+import net.sf.l2j.gameserver.data.xml.TeleportData;
 import net.sf.l2j.gameserver.enums.CabalType;
-import net.sf.l2j.gameserver.enums.SealType;
+import net.sf.l2j.gameserver.enums.TeleportType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.scripting.Quest;
@@ -67,66 +68,7 @@ public class HuntingGroundsTeleport extends Quest
 		if (playerCabal == CabalType.NORMAL)
 			return ArraysUtil.contains(DAWN_NPCS, npc.getNpcId()) ? "dawn_tele-no.htm" : "dusk_tele-no.htm";
 		
-		String htmltext = "";
-		final boolean check = SevenSignsManager.getInstance().isSealValidationPeriod() && playerCabal == SevenSignsManager.getInstance().getSealOwner(SealType.GNOSIS) && SevenSignsManager.getInstance().getPlayerSeal(player.getObjectId()) == SealType.GNOSIS;
-		
-		switch (npc.getNpcId())
-		{
-			case 31078:
-			case 31085:
-				htmltext = check ? "low_gludin.htm" : "hg_gludin.htm";
-				break;
-			
-			case 31079:
-			case 31086:
-				htmltext = check ? "low_gludio.htm" : "hg_gludio.htm";
-				break;
-			
-			case 31080:
-			case 31087:
-				htmltext = check ? "low_dion.htm" : "hg_dion.htm";
-				break;
-			
-			case 31081:
-			case 31088:
-				htmltext = check ? "low_giran.htm" : "hg_giran.htm";
-				break;
-			
-			case 31082:
-			case 31089:
-				htmltext = check ? "low_heine.htm" : "hg_heine.htm";
-				break;
-			
-			case 31083:
-			case 31090:
-				htmltext = check ? "low_oren.htm" : "hg_oren.htm";
-				break;
-			
-			case 31084:
-			case 31091:
-				htmltext = check ? "low_aden.htm" : "hg_aden.htm";
-				break;
-			
-			case 31168:
-			case 31169:
-				htmltext = check ? "low_hw.htm" : "hg_hw.htm";
-				break;
-			
-			case 31692:
-			case 31693:
-				htmltext = check ? "low_goddard.htm" : "hg_goddard.htm";
-				break;
-			
-			case 31694:
-			case 31695:
-				htmltext = check ? "low_rune.htm" : "hg_rune.htm";
-				break;
-			
-			case 31997:
-			case 31998:
-				htmltext = check ? "low_schuttgart.htm" : "hg_schuttgart.htm";
-				break;
-		}
-		return htmltext;
+		TeleportData.getInstance().showTeleportList(player, npc, TeleportType.STANDARD);
+		return null;
 	}
 }

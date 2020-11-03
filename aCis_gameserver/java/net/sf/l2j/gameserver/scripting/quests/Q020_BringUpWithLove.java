@@ -58,7 +58,7 @@ public class Q020_BringUpWithLove extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 65) ? "31537-02.htm" : "31537-01.htm";
+				htmltext = (player.getStatus().getLevel() < 65) ? "31537-02.htm" : "31537-01.htm";
 				break;
 			
 			case STATE_STARTED:

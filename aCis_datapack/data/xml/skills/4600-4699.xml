@@ -488,7 +488,7 @@
 		<set name="isDebuff" val="true" />
 		<for>
 			<effect name="Debuff" time="5" val="0" stackOrder="1" stackType="heal_effect_down">
-				<mul stat="regHp" val="0" />
+				<mul stat="gainHp" val="0.0" />
 			</effect>
 		</for>
 	</skill>

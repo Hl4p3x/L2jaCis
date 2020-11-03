@@ -81,7 +81,7 @@ public class Q027_ChestCaughtWithABaitOfWind extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 27)
+				if (player.getStatus().getLevel() < 27)
 					htmltext = "31570-02.htm";
 				else
 				{

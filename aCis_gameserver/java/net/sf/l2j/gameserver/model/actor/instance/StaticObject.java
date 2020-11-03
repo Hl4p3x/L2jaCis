@@ -1,8 +1,6 @@
 package net.sf.l2j.gameserver.model.actor.instance;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.WorldObject;
-import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.network.serverpackets.ShowTownMap;
@@ -83,31 +81,12 @@ public class StaticObject extends WorldObject
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		Player player = (Player) target;
-		if (player.isGM() && isShiftPressed)
-		{
-			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-			html.setFile("data/html/admin/staticinfo.htm");
-			html.replace("%x%", getX());
-			html.replace("%y%", getY());
-			html.replace("%z%", getZ());
-			html.replace("%objid%", getObjectId());
-			html.replace("%staticid%", getStaticObjectId());
-			html.replace("%class%", getClass().getSimpleName());
-			player.sendPacket(html);
-			
-			if (player.getTarget() != this)
-				player.setTarget(this);
-			
-			return;
-		}
-		
 		if (player.getTarget() != this)
 			player.setTarget(this);
 		else
-			player.getAI().tryTo(IntentionType.INTERACT, this, isShiftPressed);
+			player.getAI().tryToInteract(this, isCtrlPressed, isShiftPressed);
 	}
 	
 	@Override

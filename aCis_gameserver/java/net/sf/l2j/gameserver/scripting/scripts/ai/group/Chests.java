@@ -3,15 +3,12 @@ package net.sf.l2j.gameserver.scripting.scripts.ai.group;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Chest;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -121,7 +118,7 @@ public class Chests extends L2AttackableAIScript
 						case SKILL_BOX_KEY:
 						case SKILL_DELUXE_KEY:
 							// check the chance to open the box.
-							int keyLevelNeeded = (chest.getLevel() / 10) - skill.getLevel();
+							int keyLevelNeeded = (chest.getStatus().getLevel() / 10) - skill.getLevel();
 							if (keyLevelNeeded < 0)
 								keyLevelNeeded *= -1;
 							
@@ -140,7 +137,7 @@ public class Chests extends L2AttackableAIScript
 							break;
 						
 						default:
-							chest.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(chest, chest, SkillTable.getInstance().getInfo(4143, Math.min(10, Math.round(npc.getLevel() / 10))), false, false), null);
+							chest.getAI().tryToCast(chest, 4143, Math.min(10, Math.round(npc.getStatus().getLevel() / 10)));
 							break;
 					}
 				}
@@ -166,7 +163,7 @@ public class Chests extends L2AttackableAIScript
 				
 				// If it was a box, cast a suicide type skill.
 				if (Rnd.get(100) < 40)
-					chest.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(chest, chest, SkillTable.getInstance().getInfo(4143, Math.min(10, Math.round(npc.getLevel() / 10))), false, false), null);
+					chest.getAI().tryToCast(chest, 4143, Math.min(10, Math.round(npc.getStatus().getLevel() / 10)));
 			}
 		}
 		return super.onAttack(npc, attacker, damage, skill);

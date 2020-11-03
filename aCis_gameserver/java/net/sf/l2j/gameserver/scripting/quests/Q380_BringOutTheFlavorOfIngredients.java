@@ -74,7 +74,7 @@ public class Q380_BringOutTheFlavorOfIngredients extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 24) ? "30069-00.htm" : "30069-01.htm";
+				htmltext = (player.getStatus().getLevel() < 24) ? "30069-00.htm" : "30069-01.htm";
 				break;
 			
 			case STATE_STARTED:

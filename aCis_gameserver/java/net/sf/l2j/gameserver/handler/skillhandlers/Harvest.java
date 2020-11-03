@@ -97,8 +97,8 @@ public class Harvest implements ISkillHandler
 	private static boolean calcSuccess(Creature activeChar, Creature target)
 	{
 		int basicSuccess = 100;
-		final int levelPlayer = activeChar.getLevel();
-		final int levelTarget = target.getLevel();
+		final int levelPlayer = activeChar.getStatus().getLevel();
+		final int levelTarget = target.getStatus().getLevel();
 		
 		int diff = (levelPlayer - levelTarget);
 		if (diff < 0)

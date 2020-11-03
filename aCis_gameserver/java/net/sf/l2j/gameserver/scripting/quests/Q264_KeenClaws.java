@@ -64,7 +64,7 @@ public class Q264_KeenClaws extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 3) ? "30136-01.htm" : "30136-02.htm";
+				htmltext = (player.getStatus().getLevel() < 3) ? "30136-01.htm" : "30136-02.htm";
 				break;
 			
 			case STATE_STARTED:

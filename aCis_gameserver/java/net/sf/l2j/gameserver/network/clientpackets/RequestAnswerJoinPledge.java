@@ -55,7 +55,7 @@ public final class RequestAnswerJoinPledge extends L2GameClientPacket
 				{
 					case Clan.SUBUNIT_ACADEMY:
 						player.setPowerGrade(9);
-						player.setLvlJoinedAcademy(player.getLevel());
+						player.setLvlJoinedAcademy(player.getStatus().getLevel());
 						break;
 					
 					case Clan.SUBUNIT_ROYAL1:

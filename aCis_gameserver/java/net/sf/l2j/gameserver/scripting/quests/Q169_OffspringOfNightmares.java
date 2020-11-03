@@ -69,7 +69,7 @@ public class Q169_OffspringOfNightmares extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30145-00.htm";
-				else if (player.getLevel() < 15)
+				else if (player.getStatus().getLevel() < 15)
 					htmltext = "30145-02.htm";
 				else
 					htmltext = "30145-03.htm";

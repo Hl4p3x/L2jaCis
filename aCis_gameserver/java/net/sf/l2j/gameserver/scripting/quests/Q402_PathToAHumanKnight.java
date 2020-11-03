@@ -69,7 +69,7 @@ public class Q402_PathToAHumanKnight extends Quest
 		{
 			if (player.getClassId() != ClassId.HUMAN_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.KNIGHT) ? "30417-02a.htm" : "30417-03.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30417-02.htm";
 			else if (st.hasQuestItems(SWORD_OF_RITUAL))
 				htmltext = "30417-04.htm";

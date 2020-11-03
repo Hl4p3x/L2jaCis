@@ -133,7 +133,7 @@ public class Q219_TestimonyOfFate extends SecondClassQuest
 		{
 			st.playSound(QuestState.SOUND_MIDDLE);
 			
-			if (player.getLevel() < 38)
+			if (player.getStatus().getLevel() < 38)
 			{
 				htmltext = "30476-13.htm";
 				st.set("cond", "14");
@@ -189,7 +189,7 @@ public class Q219_TestimonyOfFate extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30476-02.htm";
-				else if (player.getLevel() < 37 || player.getClassId().level() != 1)
+				else if (player.getStatus().getLevel() < 37 || player.getClassId().getLevel() != 1)
 					htmltext = "30476-01.htm";
 				else
 					htmltext = "30476-03.htm";
@@ -220,7 +220,7 @@ public class Q219_TestimonyOfFate extends SecondClassQuest
 							htmltext = "30476-11.htm";
 						else if (cond == 14)
 						{
-							if (player.getLevel() < 38)
+							if (player.getStatus().getLevel() < 38)
 								htmltext = "30476-14.htm";
 							else
 							{

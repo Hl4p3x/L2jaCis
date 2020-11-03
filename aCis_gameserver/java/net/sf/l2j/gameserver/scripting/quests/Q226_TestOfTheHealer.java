@@ -170,7 +170,7 @@ public class Q226_TestOfTheHealer extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.KNIGHT && player.getClassId() != ClassId.ELVEN_KNIGHT && player.getClassId() != ClassId.CLERIC && player.getClassId() != ClassId.ELVEN_ORACLE)
 					htmltext = "30473-01.htm";
-				else if (player.getLevel() < 39)
+				else if (player.getStatus().getLevel() < 39)
 					htmltext = "30473-02.htm";
 				else
 					htmltext = "30473-03.htm";

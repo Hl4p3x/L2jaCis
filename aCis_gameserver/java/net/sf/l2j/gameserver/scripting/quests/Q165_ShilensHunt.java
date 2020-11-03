@@ -76,7 +76,7 @@ public class Q165_ShilensHunt extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30348-00.htm";
-				else if (player.getLevel() < 3)
+				else if (player.getStatus().getLevel() < 3)
 					htmltext = "30348-01.htm";
 				else
 					htmltext = "30348-02.htm";

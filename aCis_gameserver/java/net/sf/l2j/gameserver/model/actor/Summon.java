@@ -4,20 +4,20 @@ import java.util.List;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.xml.ItemData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.TeamType;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
 import net.sf.l2j.gameserver.enums.items.ActionType;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
-import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminEditChar;
 import net.sf.l2j.gameserver.model.actor.ai.type.CreatureAI;
 import net.sf.l2j.gameserver.model.actor.ai.type.SummonAI;
 import net.sf.l2j.gameserver.model.actor.cast.SummonCast;
+import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
+import net.sf.l2j.gameserver.model.actor.instance.FriendlyMonster;
+import net.sf.l2j.gameserver.model.actor.instance.Guard;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
-import net.sf.l2j.gameserver.model.actor.instance.Servitor;
-import net.sf.l2j.gameserver.model.actor.stat.SummonStat;
+import net.sf.l2j.gameserver.model.actor.move.SummonMove;
 import net.sf.l2j.gameserver.model.actor.status.SummonStatus;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.group.Party;
@@ -61,33 +61,39 @@ public abstract class Summon extends Playable
 	public abstract int getSummonType();
 	
 	@Override
-	public void initCharStat()
+	public SummonStatus<? extends Summon> getStatus()
 	{
-		setStat(new SummonStat(this));
+		return (SummonStatus<?>) _status;
 	}
 	
 	@Override
-	public SummonStat getStat()
+	public void setStatus()
 	{
-		return (SummonStat) super.getStat();
+		_status = new SummonStatus<>(this);
 	}
 	
 	@Override
-	public void initCharStatus()
+	public SummonCast getCast()
 	{
-		setStatus(new SummonStatus(this));
-	}
-	
-	@Override
-	public SummonStatus getStatus()
-	{
-		return (SummonStatus) super.getStatus();
+		return (SummonCast) _cast;
 	}
 	
 	@Override
 	public void setCast()
 	{
 		_cast = new SummonCast(this);
+	}
+	
+	@Override
+	public SummonMove getMove()
+	{
+		return (SummonMove) _move;
+	}
+	
+	@Override
+	public void setMove()
+	{
+		_move = new SummonMove(this);
 	}
 	
 	@Override
@@ -117,7 +123,7 @@ public abstract class Summon extends Playable
 	{
 		super.setWalkOrRun(value);
 		
-		broadcastStatusUpdate();
+		getStatus().broadcastStatusUpdate();
 	}
 	
 	@Override
@@ -142,21 +148,8 @@ public abstract class Summon extends Playable
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		final Player player = (Player) target;
-		
-		// GMs lack the normal shift + action behaviour of regular players
-		if (player.isGM() && isShiftPressed)
-		{
-			AdminEditChar.gatherSummonInfo(this, player);
-			
-			if (player.getTarget() != this)
-				player.setTarget(this);
-			
-			return;
-		}
-		
 		// Set the target of the player
 		if (player.getTarget() != this)
 			player.setTarget(this);
@@ -165,21 +158,16 @@ public abstract class Summon extends Playable
 			if (player == _owner)
 			{
 				if (isCtrlPressed)
-					player.getAI().tryTo(IntentionType.ATTACK, this, isShiftPressed);
+					player.getAI().tryToAttack(this, isCtrlPressed, isShiftPressed);
 				else
-					player.getAI().tryTo(IntentionType.INTERACT, this, isShiftPressed);
+					player.getAI().tryToInteract(this, isCtrlPressed, isShiftPressed);
 			}
 			else
 			{
-				if (isAttackableWithoutForceBy(player))
-					player.getAI().tryTo(IntentionType.ATTACK, this, isShiftPressed);
+				if (isAttackableWithoutForceBy(player) || (isCtrlPressed && isAttackableBy(player)))
+					player.getAI().tryToAttack(this, isCtrlPressed, isShiftPressed);
 				else
-				{
-					if (isAttackableBy(player) && isCtrlPressed)
-						player.getAI().tryTo(IntentionType.ATTACK, this, isShiftPressed);
-					else
-						player.getAI().tryTo(IntentionType.FOLLOW, this, isShiftPressed);
-				}
+					player.getAI().tryToFollow(this, isShiftPressed);
 			}
 		}
 	}
@@ -211,7 +199,8 @@ public abstract class Summon extends Playable
 		return getTemplate().getNpcId();
 	}
 	
-	public int getMaxLoad()
+	@Override
+	public int getWeightLimit()
 	{
 		return 0;
 	}
@@ -226,16 +215,26 @@ public abstract class Summon extends Playable
 		return getTemplate().getSpsCount();
 	}
 	
-	public void followOwner()
-	{
-		getAI().setFollowStatus(true);
-	}
-	
 	@Override
 	public boolean doDie(Creature killer)
 	{
 		if (!super.doDie(killer))
 			return false;
+		
+		// Refresh aggro list of all Attackables which were hit by that Summon.
+		for (Attackable attackable : getKnownType(Attackable.class))
+		{
+			if (attackable.isDead())
+				continue;
+			
+			final boolean isGuard = attackable instanceof Guard || attackable instanceof FriendlyMonster;
+			if (this instanceof Pet && isGuard)
+				continue;
+			
+			final AggroInfo info = attackable.getAggroList().get(this);
+			if (info != null && (!isGuard || info.getDamage() > 0))
+				attackable.addDamageHate(getOwner(), 0, 1);
+		}
 		
 		// Disable beastshots
 		for (int itemId : getOwner().getAutoSoulShot())
@@ -258,13 +257,6 @@ public abstract class Summon extends Playable
 			return;
 		
 		deleteMe(_owner);
-	}
-	
-	@Override
-	public void broadcastStatusUpdate()
-	{
-		super.broadcastStatusUpdate();
-		updateAndBroadcastStatus(1);
 	}
 	
 	public void deleteMe(Player owner)
@@ -292,7 +284,7 @@ public abstract class Summon extends Playable
 			// Abort attack, cast and move.
 			abortAll(true);
 			
-			stopHpMpRegeneration();
+			getStatus().stopHpMpRegeneration();
 			stopAllEffects();
 			store();
 			
@@ -428,36 +420,21 @@ public abstract class Summon extends Playable
 		if (target.getObjectId() != getOwner().getObjectId())
 		{
 			if (pcrit || mcrit)
-				if (this instanceof Servitor)
-					sendPacket(SystemMessageId.CRITICAL_HIT_BY_SUMMONED_MOB);
-				else
-					sendPacket(SystemMessageId.CRITICAL_HIT_BY_PET);
-				
-			final SystemMessage sm;
+				sendPacket(SystemMessageId.CRITICAL_HIT_BY_PET);
 			
 			if (target.isInvul())
 			{
 				if (target.isParalyzed())
-					sm = SystemMessage.getSystemMessage(SystemMessageId.OPPONENT_PETRIFIED);
+					sendPacket(SystemMessageId.OPPONENT_PETRIFIED);
 				else
-					sm = SystemMessage.getSystemMessage(SystemMessageId.ATTACK_WAS_BLOCKED);
+					sendPacket(SystemMessageId.ATTACK_WAS_BLOCKED);
 			}
 			else
-				sm = SystemMessage.getSystemMessage(SystemMessageId.PET_HIT_FOR_S1_DAMAGE).addNumber(damage);
-			
-			sendPacket(sm);
+				sendPacket(SystemMessage.getSystemMessage(SystemMessageId.PET_HIT_FOR_S1_DAMAGE).addNumber(damage));
 			
 			if (getOwner().isInOlympiadMode() && target instanceof Player && ((Player) target).isInOlympiadMode() && ((Player) target).getOlympiadGameId() == getOwner().getOlympiadGameId())
-			{
 				OlympiadGameManager.getInstance().notifyCompetitorDamage(getOwner(), damage);
-			}
 		}
-	}
-	
-	@Override
-	public void reduceCurrentHp(double damage, Creature attacker, L2Skill skill)
-	{
-		super.reduceCurrentHp(damage, attacker, skill);
 	}
 	
 	@Override

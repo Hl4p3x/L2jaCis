@@ -11,7 +11,6 @@ import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.model.zone.type.FishingZone;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -68,8 +67,8 @@ public class Fishing implements ISkillHandler
 		}
 		
 		// Check equipped baits.
-		final ItemInstance lure = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_LHAND);
-		if (lure == null)
+		final ItemInstance item = player.getSecondaryWeaponInstance();
+		if (item == null)
 		{
 			player.sendPacket(SystemMessageId.BAIT_ON_HOOK_BEFORE_FISHING);
 			return;
@@ -104,14 +103,14 @@ public class Fishing implements ISkillHandler
 		}
 		
 		// Has enough bait, consume 1 and update inventory.
-		if (!player.destroyItem("Consume", lure, 1, player, false))
+		if (!player.destroyItem("Consume", item, 1, player, false))
 		{
 			player.sendPacket(SystemMessageId.NOT_ENOUGH_BAIT);
 			return;
 		}
 		
 		// Start fishing.
-		player.getFishingStance().start(baitLoc, lure);
+		player.getFishingStance().start(baitLoc, item);
 	}
 	
 	@Override

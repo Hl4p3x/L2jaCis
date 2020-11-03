@@ -218,7 +218,7 @@ public class Q620_FourGoblets extends Quest
 		else if (npcId == NAMELESS_SPIRIT)
 		{
 			if (cond == 0)
-				htmltext = (player.getLevel() >= 74) ? "31453-01.htm" : "31453-12.htm";
+				htmltext = (player.getStatus().getLevel() >= 74) ? "31453-01.htm" : "31453-12.htm";
 			else if (cond == 1)
 				htmltext = (st.hasQuestItems(GOBLET_OF_ALECTIA, GOBLET_OF_TISHAS, GOBLET_OF_MEKARA, GOBLET_OF_MORIGUL)) ? "31453-15.htm" : "31453-14.htm";
 			else if (cond == 2)

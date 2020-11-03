@@ -13,7 +13,8 @@ public class EffectPoint extends Npc
 	public EffectPoint(int objectId, NpcTemplate template, Creature owner)
 	{
 		super(objectId, template);
-		_owner = owner == null ? null : owner.getActingPlayer();
+		
+		_owner = (owner == null) ? null : owner.getActingPlayer();
 	}
 	
 	@Override
@@ -23,9 +24,9 @@ public class EffectPoint extends Npc
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		target.sendPacket(ActionFailed.STATIC_PACKET);
+		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}
 	
 	@Override

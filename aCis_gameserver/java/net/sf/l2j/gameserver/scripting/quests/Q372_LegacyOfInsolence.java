@@ -337,7 +337,7 @@ public class Q372_LegacyOfInsolence extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 59) ? "30844-01.htm" : "30844-02.htm";
+				htmltext = (player.getStatus().getLevel() < 59) ? "30844-01.htm" : "30844-02.htm";
 				break;
 			
 			case STATE_STARTED:
@@ -405,11 +405,10 @@ public class Q372_LegacyOfInsolence extends Quest
 		for (int item = itemsToCheck[0]; item <= itemsToCheck[1]; item++)
 			st.takeItems(item, 1);
 		
-		// Retrieve array with rewards.
-		final int[][] rewards = REWARDS_MATRICE[rewardType];
 		final int chance = Rnd.get(100);
 		
-		for (int[] reward : rewards)
+		// Retrieve array with rewards.
+		for (int[] reward : REWARDS_MATRICE[rewardType])
 		{
 			if (chance < reward[0])
 			{

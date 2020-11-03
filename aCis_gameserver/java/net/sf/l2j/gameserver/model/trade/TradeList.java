@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import net.sf.l2j.gameserver.data.xml.ItemData;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -513,10 +514,10 @@ public class TradeList
 			
 			// Update current load as well
 			StatusUpdate playerSU = new StatusUpdate(_owner);
-			playerSU.addAttribute(StatusUpdate.CUR_LOAD, _owner.getCurrentLoad());
+			playerSU.addAttribute(StatusType.CUR_LOAD, _owner.getCurrentWeight());
 			_owner.sendPacket(playerSU);
 			playerSU = new StatusUpdate(_partner);
-			playerSU.addAttribute(StatusUpdate.CUR_LOAD, _partner.getCurrentLoad());
+			playerSU.addAttribute(StatusType.CUR_LOAD, _partner.getCurrentWeight());
 			_partner.sendPacket(playerSU);
 			
 			success = true;

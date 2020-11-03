@@ -97,7 +97,7 @@ public class Q645_GhostsOfBatur extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 23) ? "32017-02.htm" : "32017-01.htm";
+				htmltext = (player.getStatus().getLevel() < 23) ? "32017-02.htm" : "32017-01.htm";
 				break;
 			
 			case STATE_STARTED:

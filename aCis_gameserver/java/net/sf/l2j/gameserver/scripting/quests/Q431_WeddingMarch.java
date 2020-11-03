@@ -72,7 +72,7 @@ public class Q431_WeddingMarch extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 38) ? "31042-00.htm" : "31042-01.htm";
+				htmltext = (player.getStatus().getLevel() < 38) ? "31042-00.htm" : "31042-01.htm";
 				break;
 			
 			case STATE_STARTED:

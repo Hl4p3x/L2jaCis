@@ -65,7 +65,7 @@ public class Q052_WilliesSpecialBait extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 48) ? "31574-02.htm" : "31574-01.htm";
+				htmltext = (player.getStatus().getLevel() < 48) ? "31574-02.htm" : "31574-01.htm";
 				break;
 			
 			case STATE_STARTED:

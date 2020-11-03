@@ -90,7 +90,7 @@ public class Q043_HelpTheSister extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 26) ? "30829-00a.htm" : "30829-00.htm";
+				htmltext = (player.getStatus().getLevel() < 26) ? "30829-00a.htm" : "30829-00.htm";
 				break;
 			
 			case STATE_STARTED:

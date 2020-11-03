@@ -68,7 +68,7 @@ public class Q019_GoToThePastureland extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 63) ? "31302-03.htm" : "31302-00.htm";
+				htmltext = (player.getStatus().getLevel() < 63) ? "31302-03.htm" : "31302-00.htm";
 				break;
 			
 			case STATE_STARTED:

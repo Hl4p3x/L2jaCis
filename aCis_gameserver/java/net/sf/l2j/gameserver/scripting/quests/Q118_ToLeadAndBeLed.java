@@ -154,7 +154,7 @@ public class Q118_ToLeadAndBeLed extends Quest
 					if (st2 != null)
 						htmltext = (st2.isCompleted()) ? "30298-02a.htm" : "30298-02b.htm";
 					else
-						htmltext = (player.getLevel() > 18) ? "30298-01.htm" : "30298-02.htm";
+						htmltext = (player.getStatus().getLevel() > 18) ? "30298-01.htm" : "30298-02.htm";
 				}
 				else if (player.getApprentice() > 0)
 				{

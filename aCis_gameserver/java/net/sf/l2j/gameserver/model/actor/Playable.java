@@ -14,12 +14,10 @@ import net.sf.l2j.gameserver.model.actor.attack.PlayableAttack;
 import net.sf.l2j.gameserver.model.actor.cast.PlayableCast;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.actor.instance.SiegeGuard;
-import net.sf.l2j.gameserver.model.actor.stat.PlayableStat;
 import net.sf.l2j.gameserver.model.actor.status.PlayableStatus;
 import net.sf.l2j.gameserver.model.actor.template.CreatureTemplate;
 import net.sf.l2j.gameserver.model.entity.Duel.DuelState;
 import net.sf.l2j.gameserver.model.entity.Siege;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.EtcItem;
 import net.sf.l2j.gameserver.model.pledge.Clan;
@@ -42,40 +40,37 @@ public abstract class Playable extends Creature
 		super(objectId, template);
 	}
 	
+	/**
+	 * @return The max weight that the {@link Playable} can carry.
+	 */
+	public abstract int getWeightLimit();
+	
+	public abstract int getKarma();
+	
+	public abstract byte getPvpFlag();
+	
 	@Override
-	public void initCharStat()
+	public PlayableStatus<? extends Playable> getStatus()
 	{
-		setStat(new PlayableStat(this));
+		return (PlayableStatus<?>) _status;
 	}
 	
 	@Override
-	public PlayableStat getStat()
+	public void setStatus()
 	{
-		return (PlayableStat) super.getStat();
-	}
-	
-	@Override
-	public void initCharStatus()
-	{
-		setStatus(new PlayableStatus(this));
-	}
-	
-	@Override
-	public PlayableStatus getStatus()
-	{
-		return (PlayableStatus) super.getStatus();
+		_status = new PlayableStatus<>(this);
 	}
 	
 	@Override
 	public void setCast()
 	{
-		_cast = new PlayableCast(this);
+		_cast = new PlayableCast<>(this);
 	}
 	
 	@Override
 	public void setAttack()
 	{
-		_attack = new PlayableAttack(this);
+		_attack = new PlayableAttack<>(this);
 	}
 	
 	@Override
@@ -88,7 +83,7 @@ public abstract class Playable extends Creature
 				return false;
 			
 			// now reset currentHp to zero
-			setCurrentHp(0);
+			getStatus().setHp(0);
 			
 			setIsDead(true);
 		}
@@ -121,7 +116,7 @@ public abstract class Playable extends Creature
 			stopAllEffectsExceptThoseThatLastThroughDeath();
 		
 		// Send the Server->Client packet StatusUpdate with current HP and MP to all other Player to inform
-		broadcastStatusUpdate();
+		getStatus().broadcastStatusUpdate();
 		
 		// Notify Creature AI
 		getAI().notifyEvent(AiEventType.DEAD, null, null);
@@ -153,14 +148,19 @@ public abstract class Playable extends Creature
 		{
 			stopPhoenixBlessing(null);
 			
-			getStatus().setCurrentHp(getMaxHp());
-			getStatus().setCurrentMp(getMaxMp());
+			getStatus().setMaxHpMp();
 		}
 		else
-			getStatus().setCurrentHp(getMaxHp() * Config.RESPAWN_RESTORE_HP);
+			getStatus().setHp(getStatus().getMaxHp() * Config.RESPAWN_RESTORE_HP);
 		
 		// Start broadcast status
 		broadcastPacket(new Revive(this));
+	}
+	
+	@Override
+	public boolean isMovementDisabled()
+	{
+		return super.isMovementDisabled() || getStatus().getMoveSpeed() == 0;
 	}
 	
 	public boolean checkIfPvP(Playable target)
@@ -299,10 +299,6 @@ public abstract class Playable extends Creature
 			sendPacket(new ExUseSharedGroupItem(etcItem.getItemId(), group, reuseDelay, reuseDelay));
 	}
 	
-	public abstract int getKarma();
-	
-	public abstract byte getPvpFlag();
-	
 	/**
 	 * Disable this ItemInstance id for the duration of the delay in milliseconds.
 	 * @param item
@@ -377,7 +373,7 @@ public abstract class Playable extends Creature
 		
 		// Players in the same CC/party/alliance/clan may only damage each other with ctrlPressed.
 		// If it's an AOE skill, only the mainTarget will be hit. PvpFlag / Karma do not influence these checks.
-		final boolean isMainTarget = (((SkillUseHolder) getAI().getCurrentIntention().getFirstParameter()).getFinalTarget() == target);
+		final boolean isMainTarget = getAI().getCurrentIntention().getFinalTarget() == target;
 		final boolean isCtrlDamagingTheMainTarget = isCtrlPressed && skill.isDamage() && isMainTarget;
 		if (sameParty || sameCommandChannel || sameClan || sameAlliance || sameSiegeSide)
 			return isCtrlDamagingTheMainTarget;
@@ -386,16 +382,16 @@ public abstract class Playable extends Creature
 		if (isInsideZone(ZoneId.PVP) && targetPlayer.isInsideZone(ZoneId.PVP))
 			return true;
 		
-		if (targetPlayer.getProtectionBlessing() && (getActingPlayer().getLevel() - targetPlayer.getLevel() >= 10) && getActingPlayer().getKarma() > 0)
+		if (targetPlayer.getProtectionBlessing() && (getActingPlayer().getStatus().getLevel() - targetPlayer.getStatus().getLevel() >= 10) && getActingPlayer().getKarma() > 0)
 			return false;
 		
-		if (getActingPlayer().getProtectionBlessing() && (targetPlayer.getLevel() - getActingPlayer().getLevel() >= 10) && targetPlayer.getKarma() > 0)
+		if (getActingPlayer().getProtectionBlessing() && (targetPlayer.getStatus().getLevel() - getActingPlayer().getStatus().getLevel() >= 10) && targetPlayer.getKarma() > 0)
 			return false;
 		
-		if (targetPlayer.isCursedWeaponEquipped() && getActingPlayer().getLevel() <= 20)
+		if (targetPlayer.isCursedWeaponEquipped() && getActingPlayer().getStatus().getLevel() <= 20)
 			return false;
 		
-		if (getActingPlayer().isCursedWeaponEquipped() && targetPlayer.getLevel() <= 20)
+		if (getActingPlayer().isCursedWeaponEquipped() && targetPlayer.getStatus().getLevel() <= 20)
 			return false;
 		
 		// If the target not from the same CC/party/alliance/clan/SiegeSide is flagged / PK, you can do anything.
@@ -450,17 +446,17 @@ public abstract class Playable extends Creature
 				return true;
 			
 			// One cannot be attacked if any of the two has Blessing of Protection and the other is >=10 levels higher and is PK
-			if (getProtectionBlessing() && (attackerPlayable.getLevel() - getLevel() >= 10) && attackerPlayable.getKarma() > 0)
+			if (getProtectionBlessing() && (attackerPlayable.getStatus().getLevel() - getStatus().getLevel() >= 10) && attackerPlayable.getKarma() > 0)
 				return false;
 			
-			if (attackerPlayable.getProtectionBlessing() && (getLevel() - attackerPlayable.getLevel() >= 10) && getKarma() > 0)
+			if (attackerPlayable.getProtectionBlessing() && (getStatus().getLevel() - attackerPlayable.getStatus().getLevel() >= 10) && getKarma() > 0)
 				return false;
 			
 			// One cannot be attacked if any of the two is wielding a Cursed Weapon and the other is under level 20
-			if (getActingPlayer().isCursedWeaponEquipped() && attackerPlayable.getLevel() <= 20)
+			if (getActingPlayer().isCursedWeaponEquipped() && attackerPlayable.getStatus().getLevel() <= 20)
 				return false;
 			
-			if (attackerPlayable.getActingPlayer().isCursedWeaponEquipped() && getLevel() <= 20)
+			if (attackerPlayable.getActingPlayer().isCursedWeaponEquipped() && getStatus().getLevel() <= 20)
 				return false;
 		}
 		
@@ -506,37 +502,32 @@ public abstract class Playable extends Creature
 	}
 	
 	/**
-	 * Return True if the (Creature attacker)'s attack on the Playable should continue.
-	 * <ul>
-	 * <li>Monsters and Summon always continue the attack</li>
-	 * <li>Playables in Olympiad continue the attack</li>
-	 * <li>Playables in Duel continue the attack</li>
-	 * <li>Playables in a PVP area continue the attack</li>
-	 * </ul>
+	 * @param target : The {@link Creature} used as target.
+	 * @return True if this {@link Playable} can continue to attack the {@link Creature} set as target, false otherwise.
 	 */
-	@Override
-	public boolean canAttackingContinueBy(Creature attacker)
+	public boolean canKeepAttacking(Creature target)
 	{
-		// Monsters and Summon always continue the attack
-		if (attacker instanceof Monster || attacker instanceof Summon)
-			return true;
+		if (target == null)
+			return false;
 		
-		if (attacker instanceof Playable)
+		if (target instanceof Playable)
 		{
+			final Player targetPlayer = target.getActingPlayer();
+			
 			// Playables in Olympiad continue the attack
-			final Player attackerPlayer = attacker.getActingPlayer();
-			if (attackerPlayer.isInOlympiadMode() && getActingPlayer().isInOlympiadMode() && getActingPlayer().isOlympiadStart() && attackerPlayer.getOlympiadGameId() == getActingPlayer().getOlympiadGameId())
+			if (targetPlayer.isInOlympiadMode() && getActingPlayer().isInOlympiadMode() && getActingPlayer().isOlympiadStart() && targetPlayer.getOlympiadGameId() == getActingPlayer().getOlympiadGameId())
 				return true;
 			
 			// Playables in Duel continue the attack
-			if (getActingPlayer().getDuelState() == DuelState.DUELLING && getActingPlayer().getDuelId() == attackerPlayer.getDuelId())
+			if (getActingPlayer().getDuelState() == DuelState.DUELLING && getActingPlayer().getDuelId() == targetPlayer.getDuelId())
 				return true;
 			
 			// Playables in a PVP area continue the attack
-			if (isInsideZone(ZoneId.PVP) && attacker.isInsideZone(ZoneId.PVP))
+			if (isInsideZone(ZoneId.PVP) && target.isInsideZone(ZoneId.PVP))
 				return true;
+			
+			return false;
 		}
-		
-		return false;
+		return true;
 	}
 }

@@ -23,7 +23,7 @@ public class FuncAtkCritical extends Func
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
 		if (!(effector instanceof Summon))
-			value *= Formulas.DEX_BONUS[effector.getDEX()];
+			value *= Formulas.DEX_BONUS[effector.getStatus().getDEX()];
 		
 		return value * 10;
 	}

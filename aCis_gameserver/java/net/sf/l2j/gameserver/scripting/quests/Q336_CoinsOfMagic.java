@@ -1208,7 +1208,7 @@ public class Q336_CoinsOfMagic extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 40) ? "30232-01.htm" : "30232-02.htm";
+				htmltext = (player.getStatus().getLevel() < 40) ? "30232-01.htm" : "30232-02.htm";
 				break;
 			
 			case STATE_STARTED:

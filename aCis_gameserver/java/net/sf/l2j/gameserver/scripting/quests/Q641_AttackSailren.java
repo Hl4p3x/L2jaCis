@@ -75,7 +75,7 @@ public final class Q641_AttackSailren extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 77)
+				if (player.getStatus().getLevel() < 77)
 					htmltext = "32109-3.htm";
 				else
 				{

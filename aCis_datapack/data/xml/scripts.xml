@@ -344,7 +344,6 @@
 	<script path="quests.Q662_AGameOfCards"/>
 	<script path="quests.Q663_SeductiveWhispers"/>
 	<script path="quests.Q688_DefeatTheElrokianRaiders"/>
-<!-- 	<script path="quests.Tutorial"/> -->
 
 	<!-- AI Section -->
 
@@ -399,7 +398,6 @@
 	<script path="scripts.custom.KetraOrcSupport"/>
 	<script path="scripts.custom.VarkaSilenosSupport"/>
 	<script path="scripts.custom.RaidbossInfo"/>
-	<script path="scripts.custom.NpcLocationInfo"/>
 	<script path="scripts.custom.HeroCirclet"/>
 	<script path="scripts.custom.HeroWeapon"/>
 
@@ -410,20 +408,24 @@
 <!-- 	<script path="scripts.events.TheValentineEvent"/> -->
 <!-- 	<script path="scripts.events.MasterOfEnchanting"/> -->
 
+	<!-- Feature -->
+
+	<script path="scripts.feature.NewbieHelper"/>
+	<script path="scripts.feature.Tutorial"/>
+
 	<!-- Teleports -->
 
 	<script path="scripts.teleports.CastleDefendTeleport"/>
+	<script path="scripts.teleports.DimensionalVortex"/>
 	<script path="scripts.teleports.ElrokiTeleporters"/>
 	<script path="scripts.teleports.GatekeeperSpirit"/>
 	<script path="scripts.teleports.GrandBossTeleporters"/>
 	<script path="scripts.teleports.HuntingGroundsTeleport"/>
-	<script path="scripts.teleports.NewbieTravelToken"/>
 	<script path="scripts.teleports.NoblesseTeleport"/>
 	<script path="scripts.teleports.OracleTeleport"/>
 	<script path="scripts.teleports.PaganTeleporters"/>
 	<script path="scripts.teleports.RaceTrack"/>
 	<script path="scripts.teleports.TeleportWithCharm"/>
-	<script path="scripts.teleports.ToIVortex"/>
 
 	<!-- Village Master -->
 

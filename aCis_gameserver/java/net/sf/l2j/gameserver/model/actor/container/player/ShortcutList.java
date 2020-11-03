@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.enums.ShortcutType;
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
 import net.sf.l2j.gameserver.model.Macro;
@@ -99,7 +99,7 @@ public class ShortcutList
 		if (oldShortcut != null)
 			deleteShortCutFromDb(oldShortcut);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_SHORTCUT))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -150,7 +150,7 @@ public class ShortcutList
 	
 	private void deleteShortCutFromDb(Shortcut shortcut)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_SHORTCUT))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -172,7 +172,7 @@ public class ShortcutList
 	{
 		_shortcuts.clear();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_SHORTCUTS))
 		{
 			ps.setInt(1, _owner.getObjectId());

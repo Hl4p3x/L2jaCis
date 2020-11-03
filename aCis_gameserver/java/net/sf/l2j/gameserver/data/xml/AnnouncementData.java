@@ -147,8 +147,8 @@ public class AnnouncementData implements IXmlReader
 	 * @param message : The String to announce.
 	 * @param critical : Is it a critical announcement or not.
 	 * @param auto : Is it using a specific task or not.
-	 * @param initialDelay : Initial delay of the task, used only if auto is setted to True.
-	 * @param delay : Delay of the task, used only if auto is setted to True.
+	 * @param initialDelay : Initial delay of the task, used only if auto is set to True.
+	 * @param delay : Delay of the task, used only if auto is set to True.
 	 * @param limit : Maximum amount of loops the task will do before ending.
 	 * @return true if the announcement has been successfully added, false otherwise.
 	 */

@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.skills.effects;
 
 import net.sf.l2j.gameserver.enums.AiEventType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -28,7 +27,7 @@ public class EffectStunSelf extends AbstractEffect
 		// Trigger onAttacked event.
 		getEffector().getAI().notifyEvent(AiEventType.ATTACKED, getEffector(), null);
 		
-		getEffector().getAI().tryTo(IntentionType.IDLE, null, null);
+		getEffector().getAI().tryToIdle();
 		
 		// Refresh abnormal effects.
 		getEffector().updateAbnormalEffect();

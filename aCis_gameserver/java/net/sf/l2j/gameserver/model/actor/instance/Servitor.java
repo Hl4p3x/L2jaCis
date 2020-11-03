@@ -2,17 +2,18 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.enums.actors.NpcRace;
 import net.sf.l2j.gameserver.model.WorldObject;
-import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
-import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
+import net.sf.l2j.gameserver.model.olympiad.OlympiadGameManager;
+import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SetSummonRemainTime;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.skills.l2skills.L2SkillSummon;
 import net.sf.l2j.gameserver.taskmanager.DecayTaskManager;
@@ -59,15 +60,86 @@ public class Servitor extends Summon
 	}
 	
 	@Override
-	public final int getLevel()
-	{
-		return (getTemplate() != null ? getTemplate().getLevel() : 0);
-	}
-	
-	@Override
 	public int getSummonType()
 	{
 		return 1;
+	}
+	
+	@Override
+	public void sendDamageMessage(Creature target, int damage, boolean mcrit, boolean pcrit, boolean miss)
+	{
+		if (miss || getOwner() == null)
+			return;
+		
+		// Prevents the double spam of system messages, if the target is the owning player.
+		if (target.getObjectId() != getOwner().getObjectId())
+		{
+			if (pcrit || mcrit)
+				sendPacket(SystemMessageId.CRITICAL_HIT_BY_SUMMONED_MOB);
+			
+			if (target.isInvul())
+			{
+				if (target.isParalyzed())
+					sendPacket(SystemMessageId.OPPONENT_PETRIFIED);
+				else
+					sendPacket(SystemMessageId.ATTACK_WAS_BLOCKED);
+			}
+			else
+				sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SUMMON_GAVE_DAMAGE_S1).addNumber(damage));
+			
+			if (getOwner().isInOlympiadMode() && target instanceof Player && ((Player) target).isInOlympiadMode() && ((Player) target).getOlympiadGameId() == getOwner().getOlympiadGameId())
+				OlympiadGameManager.getInstance().notifyCompetitorDamage(getOwner(), damage);
+		}
+	}
+	
+	@Override
+	public boolean doDie(Creature killer)
+	{
+		if (!super.doDie(killer))
+			return false;
+		
+		// Popup for summon if phoenix buff was on
+		if (isPhoenixBlessed())
+			getOwner().reviveRequest(getOwner(), null, true);
+		
+		DecayTaskManager.getInstance().add(this, getTemplate().getCorpseTime());
+		
+		if (_summonLifeTask != null)
+		{
+			_summonLifeTask.cancel(false);
+			_summonLifeTask = null;
+		}
+		return true;
+		
+	}
+	
+	@Override
+	public void unSummon(Player owner)
+	{
+		if (_summonLifeTask != null)
+		{
+			_summonLifeTask.cancel(false);
+			_summonLifeTask = null;
+		}
+		super.unSummon(owner);
+	}
+	
+	@Override
+	public boolean destroyItem(String process, int objectId, int count, WorldObject reference, boolean sendMessage)
+	{
+		return getOwner().destroyItem(process, objectId, count, reference, sendMessage);
+	}
+	
+	@Override
+	public boolean destroyItemByItemId(String process, int itemId, int count, WorldObject reference, boolean sendMessage)
+	{
+		return getOwner().destroyItemByItemId(process, itemId, count, reference, sendMessage);
+	}
+	
+	@Override
+	public boolean isUndead()
+	{
+		return getTemplate().getRace() == NpcRace.UNDEAD;
 	}
 	
 	public void setExpPenalty(float expPenalty)
@@ -138,67 +210,6 @@ public class Servitor extends Summon
 	public void addExpAndSp(int addToExp, int addToSp)
 	{
 		getOwner().addExpAndSp(addToExp, addToSp);
-	}
-	
-	@Override
-	public boolean doDie(Creature killer)
-	{
-		if (!super.doDie(killer))
-			return false;
-		
-		// Send aggro of mobs to summoner.
-		for (Attackable mob : getKnownType(Attackable.class))
-		{
-			if (mob.isDead())
-				continue;
-			
-			final AggroInfo info = mob.getAggroList().get(this);
-			if (info != null)
-				mob.addDamageHate(getOwner(), info.getDamage(), info.getHate());
-		}
-		
-		// Popup for summon if phoenix buff was on
-		if (isPhoenixBlessed())
-			getOwner().reviveRequest(getOwner(), null, true);
-		
-		DecayTaskManager.getInstance().add(this, getTemplate().getCorpseTime());
-		
-		if (_summonLifeTask != null)
-		{
-			_summonLifeTask.cancel(false);
-			_summonLifeTask = null;
-		}
-		return true;
-		
-	}
-	
-	@Override
-	public void unSummon(Player owner)
-	{
-		if (_summonLifeTask != null)
-		{
-			_summonLifeTask.cancel(false);
-			_summonLifeTask = null;
-		}
-		super.unSummon(owner);
-	}
-	
-	@Override
-	public boolean destroyItem(String process, int objectId, int count, WorldObject reference, boolean sendMessage)
-	{
-		return getOwner().destroyItem(process, objectId, count, reference, sendMessage);
-	}
-	
-	@Override
-	public boolean destroyItemByItemId(String process, int itemId, int count, WorldObject reference, boolean sendMessage)
-	{
-		return getOwner().destroyItemByItemId(process, itemId, count, reference, sendMessage);
-	}
-	
-	@Override
-	public boolean isUndead()
-	{
-		return getTemplate().getRace() == NpcRace.UNDEAD;
 	}
 	
 	private static class SummonLifetime implements Runnable

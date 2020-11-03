@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.RecipeData;
 import net.sf.l2j.gameserver.enums.ShortcutType;
 import net.sf.l2j.gameserver.model.Shortcut;
@@ -106,7 +106,7 @@ public class RecipeBook
 		// Db call.
 		if (saveOnDb)
 		{
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(INSERT_RECIPE))
 			{
 				ps.setInt(1, _owner.getObjectId());
@@ -139,7 +139,7 @@ public class RecipeBook
 		_owner.getShortcutList().deleteShortcuts(recipeId, ShortcutType.RECIPE);
 		
 		// Db call.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(DELETE_RECIPE))
 		{
 			ps.setInt(1, _owner.getObjectId());
@@ -157,7 +157,7 @@ public class RecipeBook
 	 */
 	public void restore()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_RECIPE_BOOK))
 		{
 			ps.setInt(1, _owner.getObjectId());

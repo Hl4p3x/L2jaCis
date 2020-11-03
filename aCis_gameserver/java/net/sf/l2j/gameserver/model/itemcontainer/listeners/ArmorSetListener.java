@@ -2,12 +2,12 @@ package net.sf.l2j.gameserver.model.itemcontainer.listeners;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.ArmorSetData;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.ArmorSet;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class ArmorSetListener implements OnEquipListener
@@ -20,7 +20,7 @@ public class ArmorSetListener implements OnEquipListener
 	}
 	
 	@Override
-	public void onEquip(int slot, ItemInstance item, Playable actor)
+	public void onEquip(Paperdoll slot, ItemInstance item, Playable actor)
 	{
 		if (!item.isEquipable())
 			return;
@@ -34,20 +34,20 @@ public class ArmorSetListener implements OnEquipListener
 			return;
 		}
 		
-		// Checks if player is wearing a chest item
-		final ItemInstance chestItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
-		if (chestItem == null)
+		// Check if the Player is wearing a chest item.
+		final int chestId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+		if (chestId == 0)
 			return;
 		
-		// checks if there is armorset for chest item that player worns
-		final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestItem.getItemId());
+		// Check if this chest is part of an ArmorSet.
+		final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestId);
 		if (armorSet == null)
 			return;
 		
-		// checks if equipped item is part of set
-		if (armorSet.containItem(slot, item.getItemId()))
+		// Check if equipped item is part of the ArmorSet.
+		if (armorSet.containsItem(slot, item.getItemId()))
 		{
-			if (armorSet.containAll(player))
+			if (armorSet.containsAll(player))
 			{
 				L2Skill skill = SkillTable.getInstance().getInfo(armorSet.getSkillId(), 1);
 				if (skill != null)
@@ -57,7 +57,7 @@ public class ArmorSetListener implements OnEquipListener
 					player.sendSkillList();
 				}
 				
-				if (armorSet.containShield(player)) // has shield from set
+				if (armorSet.containsShield(player)) // has shield from set
 				{
 					L2Skill skills = SkillTable.getInstance().getInfo(armorSet.getShieldSkillId(), 1);
 					if (skills != null)
@@ -82,9 +82,9 @@ public class ArmorSetListener implements OnEquipListener
 				}
 			}
 		}
-		else if (armorSet.containShield(item.getItemId()))
+		else if (armorSet.containsShield(item.getItemId()))
 		{
-			if (armorSet.containAll(player))
+			if (armorSet.containsAll(player))
 			{
 				L2Skill skills = SkillTable.getInstance().getInfo(armorSet.getShieldSkillId(), 1);
 				if (skills != null)
@@ -97,7 +97,7 @@ public class ArmorSetListener implements OnEquipListener
 	}
 	
 	@Override
-	public void onUnequip(int slot, ItemInstance item, Playable actor)
+	public void onUnequip(Paperdoll slot, ItemInstance item, Playable actor)
 	{
 		final Player player = (Player) actor;
 		
@@ -113,7 +113,7 @@ public class ArmorSetListener implements OnEquipListener
 		int removeSkillId2 = 0; // shield skill
 		int removeSkillId3 = 0; // enchant +6 skill
 		
-		if (slot == Inventory.PAPERDOLL_CHEST)
+		if (slot == Paperdoll.CHEST)
 		{
 			final ArmorSet armorSet = ArmorSetData.getInstance().getSet(item.getItemId());
 			if (armorSet == null)
@@ -126,22 +126,25 @@ public class ArmorSetListener implements OnEquipListener
 		}
 		else
 		{
-			final ItemInstance chestItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
-			if (chestItem == null)
+			// Check if the Player is wearing a chest item.
+			final int chestId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+			if (chestId == 0)
 				return;
 			
-			final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestItem.getItemId());
+			// Check if this chest is part of an ArmorSet.
+			final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestId);
 			if (armorSet == null)
 				return;
 			
-			if (armorSet.containItem(slot, item.getItemId())) // removed part of set
+			// Check if equipped item is part of the ArmorSet.
+			if (armorSet.containsItem(slot, item.getItemId())) // removed part of set
 			{
 				remove = true;
 				removeSkillId1 = armorSet.getSkillId();
 				removeSkillId2 = armorSet.getShieldSkillId();
 				removeSkillId3 = armorSet.getEnchant6skillId();
 			}
-			else if (armorSet.containShield(item.getItemId())) // removed shield
+			else if (armorSet.containsShield(item.getItemId())) // removed shield
 			{
 				remove = true;
 				removeSkillId2 = armorSet.getShieldSkillId();

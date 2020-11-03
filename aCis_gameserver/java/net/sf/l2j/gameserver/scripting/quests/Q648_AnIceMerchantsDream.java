@@ -274,7 +274,7 @@ public class Q648_AnIceMerchantsDream extends Quest
 			case STATE_CREATED:
 				if (npc.getNpcId() == RAFFORTY)
 				{
-					if (player.getLevel() < 53)
+					if (player.getStatus().getLevel() < 53)
 						htmltext = "32020-01.htm";
 					else
 					{

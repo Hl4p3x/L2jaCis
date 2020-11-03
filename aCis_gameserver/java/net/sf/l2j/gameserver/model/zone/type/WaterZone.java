@@ -31,7 +31,7 @@ public class WaterZone extends ZoneType
 		{
 			for (Player player : character.getKnownType(Player.class))
 			{
-				if (character.getMoveSpeed() == 0)
+				if (character.getStatus().getMoveSpeed() == 0)
 					player.sendPacket(new ServerObjectInfo((Npc) character, player));
 				else
 					player.sendPacket(new NpcInfo((Npc) character, player));
@@ -51,7 +51,7 @@ public class WaterZone extends ZoneType
 		{
 			for (Player player : character.getKnownType(Player.class))
 			{
-				if (character.getMoveSpeed() == 0)
+				if (character.getStatus().getMoveSpeed() == 0)
 					player.sendPacket(new ServerObjectInfo((Npc) character, player));
 				else
 					player.sendPacket(new NpcInfo((Npc) character, player));

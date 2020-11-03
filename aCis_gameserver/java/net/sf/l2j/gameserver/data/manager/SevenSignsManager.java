@@ -8,12 +8,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.sql.AutoSpawnTable;
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
@@ -558,7 +558,7 @@ public class SevenSignsManager
 	 */
 	protected void restoreSevenSignsData()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(LOAD_DATA);
 				ResultSet rs = ps.executeQuery())
@@ -623,7 +623,7 @@ public class SevenSignsManager
 	 */
 	public void saveSevenSignsData()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_PLAYER))
 		{
 			for (StatsSet set : _playersData.values())
@@ -648,7 +648,7 @@ public class SevenSignsManager
 	
 	public final void saveSevenSignsStatus()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_STATUS))
 		{
 			ps.setInt(1, _currentCycle);
@@ -727,7 +727,7 @@ public class SevenSignsManager
 			_playersData.put(objectId, set);
 			
 			// Update data in database, as we have a new player signing up.
-			try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+			try (Connection con = ConnectionPool.getConnection();
 				PreparedStatement ps = con.prepareStatement(INSERT_PLAYER))
 			{
 				ps.setInt(1, objectId);
@@ -784,7 +784,7 @@ public class SevenSignsManager
 		int totalAncientAdena = set.getInteger("ancient_adena_amount") + contribScore;
 		int totalContribScore = set.getInteger("contribution_score") + contribScore;
 		
-		if (totalContribScore > Config.ALT_MAXIMUM_PLAYER_CONTRIB)
+		if (totalContribScore > Config.MAXIMUM_PLAYER_CONTRIB)
 			return -1;
 		
 		set.set("red_stones", set.getInteger("red_stones") + redCount);

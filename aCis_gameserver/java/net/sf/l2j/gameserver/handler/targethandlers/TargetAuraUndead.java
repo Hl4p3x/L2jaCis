@@ -9,18 +9,19 @@ import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.instance.Servitor;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetAuraUndead implements ITargetHandler
 {
 	@Override
-	public Creature[] getTargetList(SkillUseHolder skillUseHolder)
+	public SkillTargetType getTargetType()
 	{
-		final L2Skill skill = skillUseHolder.getSkill();
-		final Creature caster = skillUseHolder.getCaster();
-		final Boolean isCtrlPressed = skillUseHolder.isCtrlPressed();
-		final boolean srcInArena = caster.isInArena();
+		return SkillTargetType.AURA_UNDEAD;
+	}
+	
+	@Override
+	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
+	{
 		final List<Creature> list = new ArrayList<>();
 		for (Creature creature : caster.getKnownTypeInRadius(Creature.class, skill.getSkillRadius()))
 		{
@@ -30,7 +31,7 @@ public class TargetAuraUndead implements ITargetHandler
 			if (creature.isDead() || !creature.isUndead())
 				continue;
 			
-			if (!L2Skill.checkForAreaOffensiveSkills(caster, creature, skill, isCtrlPressed, srcInArena))
+			if (!L2Skill.checkForAreaOffensiveSkills(caster, creature, skill, false, false))
 				continue;
 			
 			if (!GeoEngine.getInstance().canSeeTarget(caster, creature))
@@ -46,13 +47,7 @@ public class TargetAuraUndead implements ITargetHandler
 	}
 	
 	@Override
-	public SkillTargetType getTargetType()
-	{
-		return SkillTargetType.AURA_UNDEAD;
-	}
-	
-	@Override
-	public Creature getFinalTarget(Creature target, Creature caster, L2Skill skill, boolean isCtrlPressed)
+	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		return caster;
 	}

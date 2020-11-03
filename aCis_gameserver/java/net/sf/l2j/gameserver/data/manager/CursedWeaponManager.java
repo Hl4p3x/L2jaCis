@@ -24,7 +24,7 @@ import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import org.w3c.dom.Document;
 
 /**
- * Loads and store {@link CursedWeapon}s. A cursed weapon is a feature involving the drop of a powerful weapon, which stages on player kills and give powerful stats.
+ * Load and store {@link CursedWeapon}s. A cursed weapon is a feature involving the drop of a powerful weapon, which stages on player kills and give powerful stats.
  * <ul>
  * <li><u>dropRate :</u> the drop rate used by the monster to drop the item. Default : 1/1000000</li>
  * <li><u>duration :</u> the overall lifetime duration in hours. Default : 72 hours (3 days)</li>
@@ -66,7 +66,7 @@ public class CursedWeaponManager implements IXmlReader
 	}
 	
 	/**
-	 * Ends the life of existing {@link CursedWeapon}s, clear the map, and reload content.
+	 * End the life of existing {@link CursedWeapon}s, clear the map, and reload content.
 	 */
 	public void reload()
 	{
@@ -99,9 +99,9 @@ public class CursedWeaponManager implements IXmlReader
 	}
 	
 	/**
-	 * Checks if a {@link CursedWeapon} can drop. Verify if it is already active and if the {@link Attackable} you killed was a valid candidate.
-	 * @param attackable : The target to test.
-	 * @param player : The player who killed the Attackable.
+	 * Check if a {@link CursedWeapon} can drop, verifying if it is already active and if the killed {@link Attackable} is a valid candidate.
+	 * @param attackable : The {@link Attackable} to test.
+	 * @param player : The {@link Player} who killed the {@link Attackable}.
 	 */
 	public synchronized void checkDrop(Attackable attackable, Player player)
 	{
@@ -119,9 +119,9 @@ public class CursedWeaponManager implements IXmlReader
 	}
 	
 	/**
-	 * Assimilate a {@link CursedWeapon} if you already possess one (which ranks up possessed weapon), or activate it otherwise.
-	 * @param player : The player to test.
-	 * @param item : The item player picked up.
+	 * Assimilate a {@link CursedWeapon} if the {@link Player} set as parameter already possesses one (which ranks up possessed weapon), or activate it otherwise.
+	 * @param player : The {@link Player} to test.
+	 * @param item : The picked up {@link ItemInstance}.
 	 */
 	public void activate(Player player, ItemInstance item)
 	{
@@ -148,15 +148,15 @@ public class CursedWeaponManager implements IXmlReader
 	/**
 	 * Retrieve the {@link CursedWeapon} based on its itemId and handle the drop process.
 	 * @param itemId : The cursed weapon itemId.
-	 * @param killer : The creature who killed the monster.
+	 * @param creature : The {@link Creature} who killed the {@link CursedWeapon} holder.
 	 */
-	public void drop(int itemId, Creature killer)
+	public void drop(int itemId, Creature creature)
 	{
 		final CursedWeapon cw = _cursedWeapons.get(itemId);
 		if (cw == null)
 			return;
 		
-		cw.dropIt(killer);
+		cw.dropIt(creature);
 	}
 	
 	/**
@@ -179,9 +179,10 @@ public class CursedWeaponManager implements IXmlReader
 	}
 	
 	/**
-	 * This method is used on EnterWorld to check if the {@link Player} is equipped with a {@link CursedWeapon}.<br>
-	 * If so, we set the player and item references on the cursed weapon, then we reward cursed skills to that player.
-	 * @param player : The player to check.
+	 * Check if the {@link Player} is equipped with a {@link CursedWeapon} on EnterWorld.<br>
+	 * <br>
+	 * If so, we set the {@link Player} and item references on the {@link CursedWeapon}, then we reward associated skills to that {@link Player}.
+	 * @param player : The {@link Player} to test.
 	 */
 	public void checkPlayer(Player player)
 	{

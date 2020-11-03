@@ -2,10 +2,9 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
@@ -13,7 +12,6 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -127,17 +125,17 @@ public final class BabyPet extends Pet
 		
 		L2Skill skill = null;
 		
-		final double hpPercent = owner.getCurrentHp() / owner.getMaxHp();
-		if (hpPercent < 0.15)
+		final double hpRatio = owner.getStatus().getHpRatio();
+		if (hpRatio < 0.15)
 		{
 			skill = _majorHeal.getSkill();
-			if (isSkillDisabled(skill) || getCurrentMp() < skill.getMpConsume() || Rnd.get(100) > 75)
+			if (isSkillDisabled(skill) || getStatus().getMp() < skill.getMpConsume() || Rnd.get(100) > 75)
 				skill = null;
 		}
-		else if (_majorHeal.getSkill() != _minorHeal.getSkill() && hpPercent < 0.8)
+		else if (_majorHeal.getSkill() != _minorHeal.getSkill() && hpRatio < 0.8)
 		{
 			skill = _minorHeal.getSkill();
-			if (isSkillDisabled(skill) || getCurrentMp() < skill.getMpConsume() || Rnd.get(100) > 25)
+			if (isSkillDisabled(skill) || getStatus().getMp() < skill.getMpConsume() || Rnd.get(100) > 25)
 				skill = null;
 		}
 		
@@ -147,7 +145,7 @@ public final class BabyPet extends Pet
 			if (!getAI().getFollowStatus() && !isIn3DRadius(getOwner(), skill.getCastRange()))
 				return;
 			
-			getAI().tryTo(IntentionType.CAST, new SkillUseHolder(this, getOwner(), skill, false, false), null);
+			getAI().tryToCast(getOwner(), skill);
 			
 			getOwner().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.PET_USES_S1).addSkillName(skill));
 		}

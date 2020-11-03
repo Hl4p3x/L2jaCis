@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -203,7 +202,7 @@ public class Q025_HidingBehindTheTruth extends Quest
 					triolPawn = (Attackable) addSpawn(TRIOL_PAWN, TRIOL_SPAWNS.get(npc.getNpcId()), false, 120000, true);
 					triolPawn.forceRunStance();
 					triolPawn.addDamageHate(player, 0, 99999);
-					triolPawn.getAI().tryTo(IntentionType.ATTACK, player, false);
+					triolPawn.getAI().tryToAttack(player);
 					triolPawn.setScriptValue(player.getObjectId());
 					triolPawn.broadcastNpcSay(NpcStringId.ID_2550, player.getName());
 					
@@ -326,7 +325,7 @@ public class Q025_HidingBehindTheTruth extends Quest
 		{
 			case STATE_CREATED:
 				QuestState st2 = player.getQuestState("Q024_InhabitantsOfTheForestOfTheDead");
-				htmltext = (st2 != null && st2.isCompleted() && player.getLevel() >= 66) ? "31349-01.htm" : "31349-02.htm";
+				htmltext = (st2 != null && st2.isCompleted() && player.getStatus().getLevel() >= 66) ? "31349-01.htm" : "31349-02.htm";
 				break;
 			
 			case STATE_STARTED:

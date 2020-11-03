@@ -8,16 +8,19 @@ import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetAlly implements ITargetHandler
 {
 	@Override
-	public Creature[] getTargetList(SkillUseHolder skillUseHolder)
+	public SkillTargetType getTargetType()
 	{
-		final L2Skill skill = skillUseHolder.getSkill();
-		final Creature caster = skillUseHolder.getCaster();
+		return SkillTargetType.ALLY;
+	}
+	
+	@Override
+	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
+	{
 		final Player player = caster.getActingPlayer();
 		
 		if (player.isInOlympiadMode())
@@ -65,13 +68,7 @@ public class TargetAlly implements ITargetHandler
 	}
 	
 	@Override
-	public SkillTargetType getTargetType()
-	{
-		return SkillTargetType.ALLY;
-	}
-	
-	@Override
-	public Creature getFinalTarget(Creature target, Creature caster, L2Skill skill, boolean isCtrlPressed)
+	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		if (caster.getActingPlayer() == null)
 			return null;

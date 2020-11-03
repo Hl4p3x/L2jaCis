@@ -11,17 +11,19 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetBehindAura implements ITargetHandler
 {
 	@Override
-	public Creature[] getTargetList(SkillUseHolder skillUseHolder)
+	public SkillTargetType getTargetType()
 	{
-		final L2Skill skill = skillUseHolder.getSkill();
-		final Creature caster = skillUseHolder.getCaster();
-		final Boolean isCtrlPressed = skillUseHolder.isCtrlPressed();
+		return SkillTargetType.BEHIND_AURA;
+	}
+	
+	@Override
+	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
+	{
 		final List<Creature> list = new ArrayList<>();
 		if (skill.getSkillType() == SkillType.DUMMY)
 		{
@@ -38,7 +40,6 @@ public class TargetBehindAura implements ITargetHandler
 		}
 		else
 		{
-			final boolean srcInArena = caster.isInArena();
 			for (Creature creature : caster.getKnownTypeInRadius(Creature.class, skill.getSkillRadius()))
 			{
 				if (creature instanceof Attackable || creature instanceof Playable)
@@ -46,7 +47,7 @@ public class TargetBehindAura implements ITargetHandler
 					if (!creature.isBehind(caster))
 						continue;
 					
-					if (!L2Skill.checkForAreaOffensiveSkills(caster, creature, skill, isCtrlPressed, srcInArena))
+					if (!L2Skill.checkForAreaOffensiveSkills(caster, creature, skill, false, false))
 						continue;
 					
 					list.add(creature);
@@ -61,13 +62,7 @@ public class TargetBehindAura implements ITargetHandler
 	}
 	
 	@Override
-	public SkillTargetType getTargetType()
-	{
-		return SkillTargetType.BEHIND_AURA;
-	}
-	
-	@Override
-	public Creature getFinalTarget(Creature target, Creature caster, L2Skill skill, boolean isCtrlPressed)
+	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		return caster;
 	}

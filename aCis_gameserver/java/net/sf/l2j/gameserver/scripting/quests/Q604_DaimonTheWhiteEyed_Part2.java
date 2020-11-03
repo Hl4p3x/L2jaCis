@@ -135,7 +135,7 @@ public class Q604_DaimonTheWhiteEyed_Part2 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 73)
+				if (player.getStatus().getLevel() < 73)
 				{
 					htmltext = "31683-02.htm";
 					st.exitQuest(true);

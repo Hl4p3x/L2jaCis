@@ -4,7 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.commons.pool.ConnectionPool;
+
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
@@ -29,7 +30,7 @@ public final class RecommendationUpdate extends ScheduledQuest
 		{
 			player.getRecomChars().clear();
 			
-			final int level = player.getLevel();
+			final int level = player.getStatus().getLevel();
 			if (level < 20)
 			{
 				player.setRecomLeft(3);
@@ -50,7 +51,7 @@ public final class RecommendationUpdate extends ScheduledQuest
 		}
 		
 		// Refresh database side.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			// Delete all characters listed on character_recommends table.
 			try (PreparedStatement ps = con.prepareStatement(DELETE_CHAR_RECOMS))

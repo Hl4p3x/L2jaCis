@@ -60,7 +60,7 @@ public class SkillTreeData implements IXmlReader
 	{
 		final List<FishingSkillNode> result = new ArrayList<>();
 		
-		_fishingSkills.stream().filter(s -> s.getMinLvl() <= player.getLevel() && (!s.isDwarven() || (player.hasDwarvenCraft() && s.isDwarven()))).forEach(s ->
+		_fishingSkills.stream().filter(s -> s.getMinLvl() <= player.getStatus().getLevel() && (!s.isDwarven() || (player.hasDwarvenCraft() && s.isDwarven()))).forEach(s ->
 		{
 			if (player.getSkillLevel(s.getId()) == s.getValue() - 1)
 				result.add(s);
@@ -83,7 +83,7 @@ public class SkillTreeData implements IXmlReader
 			return null;
 		
 		// Integrity check ; we check if minimum template skill node is ok for player level.
-		if (fsn.getMinLvl() > player.getLevel())
+		if (fsn.getMinLvl() > player.getStatus().getLevel())
 			return null;
 		
 		// We find current known player skill level, if any. If the level is respected, we return the skill.
@@ -99,7 +99,7 @@ public class SkillTreeData implements IXmlReader
 	 */
 	public int getRequiredLevelForNextFishingSkill(Player player)
 	{
-		return _fishingSkills.stream().filter(s -> s.getMinLvl() > player.getLevel() && (!s.isDwarven() || (player.hasDwarvenCraft() && s.isDwarven()))).min((s1, s2) -> Integer.compare(s1.getMinLvl(), s2.getMinLvl())).map(s -> s.getMinLvl()).orElse(0);
+		return _fishingSkills.stream().filter(s -> s.getMinLvl() > player.getStatus().getLevel() && (!s.isDwarven() || (player.hasDwarvenCraft() && s.isDwarven()))).min((s1, s2) -> Integer.compare(s1.getMinLvl(), s2.getMinLvl())).map(s -> s.getMinLvl()).orElse(0);
 	}
 	
 	/**

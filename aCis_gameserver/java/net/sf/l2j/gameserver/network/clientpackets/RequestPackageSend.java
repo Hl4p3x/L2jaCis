@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Folk;
@@ -77,7 +78,7 @@ public final class RequestPackageSend extends L2GameClientPacket
 			return;
 		
 		// Freight price from config or normal price per item slot (30)
-		int fee = _items.size() * Config.ALT_GAME_FREIGHT_PRICE;
+		int fee = _items.size() * Config.FREIGHT_PRICE;
 		int currentAdena = player.getAdena();
 		int slots = 0;
 		
@@ -151,7 +152,7 @@ public final class RequestPackageSend extends L2GameClientPacket
 		
 		// Update current load status on player
 		StatusUpdate su = new StatusUpdate(player);
-		su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
 		player.sendPacket(su);
 	}
 }

@@ -215,7 +215,7 @@ public class Q386_StolenDignity extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 58) ? "30843-04.htm" : "30843-01.htm";
+				htmltext = (player.getStatus().getLevel() < 58) ? "30843-04.htm" : "30843-01.htm";
 				break;
 			
 			case STATE_STARTED:

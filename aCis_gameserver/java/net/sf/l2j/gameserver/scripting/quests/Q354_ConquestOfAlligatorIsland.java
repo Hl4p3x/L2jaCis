@@ -191,7 +191,7 @@ public class Q354_ConquestOfAlligatorIsland extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 38) ? "30895-00.htm" : "30895-01.htm";
+				htmltext = (player.getStatus().getLevel() < 38) ? "30895-00.htm" : "30895-01.htm";
 				break;
 			
 			case STATE_STARTED:

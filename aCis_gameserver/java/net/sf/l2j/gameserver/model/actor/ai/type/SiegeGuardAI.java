@@ -6,7 +6,6 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.ArraysUtil;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.actors.NpcAiType;
@@ -18,6 +17,7 @@ import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.SiegeGuard;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class SiegeGuardAI extends AttackableAI
@@ -96,7 +96,7 @@ public class SiegeGuardAI extends AttackableAI
 			}
 			
 			// Chose a target from its aggroList
-			final Creature target = (_actor.isConfused()) ? (Creature) getCurrentIntention().getFirstParameter() : npc.getMostHated();
+			final Creature target = (_actor.isConfused()) ? getCurrentIntention().getFinalTarget() : npc.getMostHated();
 			if (target != null)
 			{
 				// Get the hate level of the L2Attackable against this Creature target contained in _aggroList
@@ -106,7 +106,7 @@ public class SiegeGuardAI extends AttackableAI
 					_actor.forceRunStance();
 					
 					// Set the AI Intention to ATTACK
-					tryTo(IntentionType.ATTACK, target, false);
+					tryToAttack(target);
 				}
 				return;
 			}
@@ -152,7 +152,7 @@ public class SiegeGuardAI extends AttackableAI
 			target = targetReconsider(actor.getTemplate().getClanRange(), false);
 			if (target == null)
 			{
-				changeCurrentIntention(IntentionType.ACTIVE, null, null);
+				doActiveIntention();
 				return;
 			}
 		}
@@ -193,7 +193,7 @@ public class SiegeGuardAI extends AttackableAI
 				for (Creature cha : actor.getKnownTypeInRadius(Creature.class, 1000))
 				{
 					// Don't bother about dead, not visible, or healthy characters.
-					if (cha.isAlikeDead() || !GeoEngine.getInstance().canSeeTarget(actor, cha) || (cha.getCurrentHp() / cha.getMaxHp() > 0.75))
+					if (cha.isAlikeDead() || !GeoEngine.getInstance().canSeeTarget(actor, cha) || cha.getStatus().getHpRatio() > 0.75)
 						continue;
 					
 					// Will affect only defenders or NPCs from same faction.
@@ -265,7 +265,7 @@ public class SiegeGuardAI extends AttackableAI
 		 */
 		
 		// The range takes now in consideration physical attack range.
-		range += actor.getPhysicalAttackRange();
+		range += actor.getStatus().getPhysicalAttackRange();
 		
 		if (actor.isMovementDisabled())
 		{
@@ -275,7 +275,7 @@ public class SiegeGuardAI extends AttackableAI
 			
 			// Any AI type, even healer or mage, will try to melee attack if it can't do anything else (desesperate situation).
 			if (target != null)
-				tryTo(IntentionType.ATTACK, target, false);
+				tryToAttack(target);
 			
 			return;
 		}
@@ -305,7 +305,7 @@ public class SiegeGuardAI extends AttackableAI
 					newY = target.getY() - newY;
 				
 				if (!actor.isIn2DRadius(newX, newY, actorCollision))
-					actor.getMove().moveToLocation(newX, newY, actor.getZ());
+					actor.getMove().maybeMoveToLocation(new Location(newX, newY, actor.getZ()), 0, true, false);
 				
 				return;
 			}
@@ -326,7 +326,7 @@ public class SiegeGuardAI extends AttackableAI
 		 * BASIC MELEE ATTACK
 		 */
 		
-		tryTo(IntentionType.ATTACK, target, false);
+		tryToAttack(target);
 	}
 	
 	/**

@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.model.World;
@@ -55,7 +55,7 @@ public class FriendsBBSManager extends BaseBBSManager
 			}
 			else if (action.equals("delall"))
 			{
-				try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+				try (Connection con = ConnectionPool.getConnection();
 					PreparedStatement ps = con.prepareStatement(DELETE_ALL_FRIENDS))
 				{
 					ps.setInt(1, player.getObjectId());
@@ -91,7 +91,7 @@ public class FriendsBBSManager extends BaseBBSManager
 				showFriendsList(player, true);
 			else if (action.equals("del"))
 			{
-				try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+				try (Connection con = ConnectionPool.getConnection();
 					PreparedStatement ps = con.prepareStatement(DELETE_FRIEND))
 				{
 					ps.setInt(1, player.getObjectId());

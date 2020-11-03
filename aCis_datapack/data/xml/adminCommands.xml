@@ -3,9 +3,8 @@
 	<!-- ADMIN -->
 	<aCar name="admin_admin" accessLevel="7"/>
 	<aCar name="admin_gmlist" accessLevel="7"/>
+	<aCar name="admin_info" accessLevel="7"/>
 	<aCar name="admin_kill" accessLevel="7"/>
-	<aCar name="admin_silence" accessLevel="7"/>
-	<aCar name="admin_tradeoff" accessLevel="7"/>
 	<aCar name="admin_reload" accessLevel="7"/>
 	<aCar name="admin_show" accessLevel="7"/>
 
@@ -73,7 +72,6 @@
 	<aCar name="admin_find_account" accessLevel="7"/>
 	<aCar name="admin_find_dualbox" accessLevel="7"/>
 	<aCar name="admin_set" accessLevel="7"/>
-	<aCar name="admin_summon_info" accessLevel="7"/>
 	<aCar name="admin_unsummon" accessLevel="7"/>
 	<aCar name="admin_summon_setlvl" accessLevel="7"/>
 	<aCar name="admin_show_pet_inv" accessLevel="7"/>
@@ -112,21 +110,6 @@
 	<aCar name="admin_atmosphere_menu" accessLevel="7"/>
 
 	<!-- ENCHANT -->
-	<aCar name="admin_seteh" accessLevel="7"/>
-	<aCar name="admin_setec" accessLevel="7"/>
-	<aCar name="admin_seteg" accessLevel="7"/>
-	<aCar name="admin_setel" accessLevel="7"/>
-	<aCar name="admin_seteb" accessLevel="7"/>
-	<aCar name="admin_setew" accessLevel="7"/>
-	<aCar name="admin_setes" accessLevel="7"/>
-	<aCar name="admin_setle" accessLevel="7"/>
-	<aCar name="admin_setre" accessLevel="7"/>
-	<aCar name="admin_setlf" accessLevel="7"/>
-	<aCar name="admin_setrf" accessLevel="7"/>
-	<aCar name="admin_seten" accessLevel="7"/>
-	<aCar name="admin_setun" accessLevel="7"/>
-	<aCar name="admin_setba" accessLevel="7"/>
-	<aCar name="admin_setbe" accessLevel="7"/>
 	<aCar name="admin_enchant" accessLevel="7"/>
 
 	<!-- GEOENGINE -->
@@ -134,6 +117,7 @@
 	<aCar name="admin_geo_pos" accessLevel="7"/>
 	<aCar name="admin_geo_see" accessLevel="7"/>
 	<aCar name="admin_geo_move" accessLevel="7"/>
+	<aCar name="admin_geo_fly" accessLevel="7"/>
 	<aCar name="admin_path_find" accessLevel="7"/>
 	<aCar name="admin_path_info" accessLevel="7"/>
 
@@ -185,7 +169,6 @@
 	<aCar name="admin_broadmovie" accessLevel="7"/>
 	
 	<!-- NPC -->
-	<aCar name="admin_npcinfo" accessLevel="7"/>
 	<aCar name="admin_show_shop" accessLevel="7"/>
 	<aCar name="admin_show_shoplist" accessLevel="7"/>
 	<aCar name="admin_walker" accessLevel="7"/>

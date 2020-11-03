@@ -81,8 +81,13 @@ public class GrandBossTeleporters extends Quest
 		
 		if (event.equalsIgnoreCase("baium"))
 		{
+			final int status = GrandBossManager.getInstance().getBossStatus(29020);
+			if (status == Baium.AWAKE)
+				htmltext = "31862-01.htm";
+			else if (status == Baium.DEAD)
+				htmltext = "31862-04.htm";
 			// Player is mounted on a wyvern, cancel it.
-			if (player.isFlying())
+			else if (player.isFlying())
 				htmltext = "31862-05.htm";
 			// Player hasn't blooded fabric, cancel it.
 			else if (!st.hasQuestItems(4295))
@@ -268,7 +273,7 @@ public class GrandBossTeleporters extends Quest
 							// Check players conditions.
 							for (Player member : party)
 							{
-								if (member.getLevel() < 70)
+								if (member.getStatus().getLevel() < 70)
 									return "32109-06.htm";
 								
 								if (!MathUtil.checkIfInRange(1000, player, member, true))

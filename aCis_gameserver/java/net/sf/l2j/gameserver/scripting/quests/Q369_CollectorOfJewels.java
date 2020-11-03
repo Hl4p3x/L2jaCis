@@ -107,7 +107,7 @@ public class Q369_CollectorOfJewels extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 25) ? "30376-01.htm" : "30376-02.htm";
+				htmltext = (player.getStatus().getLevel() < 25) ? "30376-01.htm" : "30376-02.htm";
 				break;
 			
 			case STATE_STARTED:

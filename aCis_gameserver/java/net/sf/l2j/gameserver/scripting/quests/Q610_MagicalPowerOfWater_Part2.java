@@ -146,7 +146,7 @@ public class Q610_MagicalPowerOfWater_Part2 extends Quest
 			case STATE_CREATED:
 				if (!st.hasQuestItems(GREEN_TOTEM))
 					htmltext = "31372-02.htm";
-				else if (player.getLevel() < 75 && player.getAllianceWithVarkaKetra() < 2)
+				else if (player.getStatus().getLevel() < 75 && player.getAllianceWithVarkaKetra() < 2)
 					htmltext = "31372-03.htm";
 				else
 					htmltext = "31372-01.htm";

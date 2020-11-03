@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.model.actor.instance;
 import java.util.List;
 
 import net.sf.l2j.gameserver.data.xml.WalkerRouteData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.ai.type.CreatureAI;
 import net.sf.l2j.gameserver.model.actor.ai.type.WalkerAI;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
@@ -48,6 +47,6 @@ public class Walker extends Folk
 	{
 		final List<WalkerLocation> route = WalkerRouteData.getInstance().getWalkerRoute(getNpcId());
 		if (route != null && !route.isEmpty())
-			getAI().tryTo(IntentionType.MOVE_TO, route.get(1), null);
+			getAI().tryToMoveTo(route.get(1), null);
 	}
 }

@@ -330,7 +330,7 @@ public class Q327_RecoverTheFarmland extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = npc.getNpcId() + ((player.getLevel() < 25) ? "-01.htm" : "-02.htm");
+				htmltext = npc.getNpcId() + ((player.getStatus().getLevel() < 25) ? "-01.htm" : "-02.htm");
 				break;
 			
 			case STATE_STARTED:

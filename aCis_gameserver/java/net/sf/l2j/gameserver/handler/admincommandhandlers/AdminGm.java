@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -37,7 +37,7 @@ public class AdminGm implements IAdminCommandHandler
 				}
 				catch (Exception e)
 				{
-					activeChar.sendMessage("Invalid timer setted for //gm ; default time is used.");
+					activeChar.sendMessage("Invalid timer set for //gm ; default time is used.");
 				}
 			}
 			

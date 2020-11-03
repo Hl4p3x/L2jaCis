@@ -133,7 +133,7 @@ public class Q374_WhisperOfDreams_Part1 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 56) ? "30515-01.htm" : "30515-02.htm";
+				htmltext = (player.getStatus().getLevel() < 56) ? "30515-01.htm" : "30515-02.htm";
 				break;
 			
 			case STATE_STARTED:

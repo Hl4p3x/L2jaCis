@@ -11,7 +11,6 @@ import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -20,7 +19,6 @@ import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.zone.type.BossZone;
 import net.sf.l2j.gameserver.network.serverpackets.Earthquake;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
@@ -93,7 +91,7 @@ public class Antharas extends L2AttackableAIScript
 				final Npc antharas = addSpawn(_antharasId, loc_x, loc_y, loc_z, heading, false, 0, false);
 				GrandBossManager.getInstance().addBoss(ANTHARAS, (GrandBoss) antharas);
 				
-				antharas.setCurrentHpMp(hp, mp);
+				antharas.getStatus().setHpMp(hp, mp);
 				antharas.forceRunStance();
 				
 				// stores current time for inactivity task.
@@ -210,7 +208,7 @@ public class Antharas extends L2AttackableAIScript
 				default:
 					skill = SkillTable.getInstance().getInfo(5094, 1);
 			}
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, skill, false, false), null);
+			npc.getAI().tryToCast(npc, skill);
 		}
 		// Cinematic
 		else if (name.equalsIgnoreCase("beginning"))
@@ -322,8 +320,7 @@ public class Antharas extends L2AttackableAIScript
 			return;
 		}
 		
-		final L2Skill skill = getRandomSkill(npc);
-		npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, _actualVictim, skill, false, false), null);
+		npc.getAI().tryToCast(_actualVictim, getRandomSkill(npc), false, false, 0);
 	}
 	
 	/**
@@ -334,7 +331,7 @@ public class Antharas extends L2AttackableAIScript
 	 */
 	private static L2Skill getRandomSkill(Npc npc)
 	{
-		final double hpRatio = npc.getCurrentHp() / npc.getMaxHp();
+		final double hpRatio = npc.getStatus().getHpRatio();
 		
 		// Find enemies surrounding Antharas.
 		final int[] playersAround = getPlayersCountInPositions(1100, npc, false);

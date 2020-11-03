@@ -2,28 +2,25 @@ package net.sf.l2j.gameserver.network.serverpackets;
 
 import net.sf.l2j.gameserver.model.actor.Creature;
 
-/**
- * format dddddd dddh (h)
- */
 public class MagicSkillUse extends L2GameServerPacket
 {
+	private final int _objectId;
 	private final int _targetId;
 	private final int _skillId;
 	private final int _skillLevel;
 	private final int _hitTime;
 	private final int _reuseDelay;
-	private final int _charObjId, _x, _y, _z, _targetx, _targety, _targetz;
-	private boolean _success = false;
+	private final int _x;
+	private final int _y;
+	private final int _z;
+	private final int _tX;
+	private final int _tY;
+	private final int _tZ;
+	private final boolean _success;
 	
 	public MagicSkillUse(Creature cha, Creature target, int skillId, int skillLevel, int hitTime, int reuseDelay, boolean crit)
 	{
-		this(cha, target, skillId, skillLevel, hitTime, reuseDelay);
-		_success = crit;
-	}
-	
-	public MagicSkillUse(Creature cha, Creature target, int skillId, int skillLevel, int hitTime, int reuseDelay)
-	{
-		_charObjId = cha.getObjectId();
+		_objectId = cha.getObjectId();
 		_targetId = target.getObjectId();
 		_skillId = skillId;
 		_skillLevel = skillLevel;
@@ -32,32 +29,27 @@ public class MagicSkillUse extends L2GameServerPacket
 		_x = cha.getX();
 		_y = cha.getY();
 		_z = cha.getZ();
-		_targetx = target.getX();
-		_targety = target.getY();
-		_targetz = target.getZ();
+		_tX = target.getX();
+		_tY = target.getY();
+		_tZ = target.getZ();
+		_success = crit;
+	}
+	
+	public MagicSkillUse(Creature cha, Creature target, int skillId, int skillLevel, int hitTime, int reuseDelay)
+	{
+		this(cha, target, skillId, skillLevel, hitTime, reuseDelay, false);
 	}
 	
 	public MagicSkillUse(Creature cha, int skillId, int skillLevel, int hitTime, int reuseDelay)
 	{
-		_charObjId = cha.getObjectId();
-		_targetId = cha.getTargetId();
-		_skillId = skillId;
-		_skillLevel = skillLevel;
-		_hitTime = hitTime;
-		_reuseDelay = reuseDelay;
-		_x = cha.getX();
-		_y = cha.getY();
-		_z = cha.getZ();
-		_targetx = cha.getX();
-		_targety = cha.getY();
-		_targetz = cha.getZ();
+		this(cha, cha, skillId, skillLevel, hitTime, reuseDelay, false);
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0x48);
-		writeD(_charObjId);
+		writeD(_objectId);
 		writeD(_targetId);
 		writeD(_skillId);
 		writeD(_skillLevel);
@@ -73,8 +65,8 @@ public class MagicSkillUse extends L2GameServerPacket
 		}
 		else
 			writeD(0x00);
-		writeD(_targetx);
-		writeD(_targety);
-		writeD(_targetz);
+		writeD(_tX);
+		writeD(_tY);
+		writeD(_tZ);
 	}
 }

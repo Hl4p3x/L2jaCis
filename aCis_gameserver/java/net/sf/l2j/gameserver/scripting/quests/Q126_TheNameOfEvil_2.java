@@ -251,7 +251,7 @@ public class Q126_TheNameOfEvil_2 extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 77)
+				if (player.getStatus().getLevel() < 77)
 					htmltext = "32115-02.htm";
 				else
 				{

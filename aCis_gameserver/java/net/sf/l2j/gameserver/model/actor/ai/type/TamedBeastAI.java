@@ -3,15 +3,13 @@ package net.sf.l2j.gameserver.model.actor.ai.type;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.TamedBeast;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -106,9 +104,9 @@ public class TamedBeastAI extends AttackableAI
 		
 		// If the owner has less than 2 buffs, cast the chosen buff.
 		if (totalBuffsOnOwner < 2 && owner.getFirstEffect(buffToGive) == null)
-			tryTo(IntentionType.CAST, new SkillUseHolder(getActor(), owner, buffToGive, false, false), null);
+			tryToCast(owner, buffToGive);
 		else
-			tryTo(IntentionType.FOLLOW, owner, false);
+			tryToFollow(owner, false);
 	}
 	
 	@Override
@@ -131,8 +129,7 @@ public class TamedBeastAI extends AttackableAI
 		if (proba == 0)
 		{
 			// Happen only when owner's HPs < 50%
-			final float HPRatio = ((float) getOwner().getCurrentHp()) / getOwner().getMaxHp();
-			if (HPRatio < 0.5)
+			if (getOwner().getStatus().getHpRatio() < 0.5)
 			{
 				for (final L2Skill skill : getActor().getTemplate().getSkills(NpcSkillType.HEAL))
 				{
@@ -143,7 +140,7 @@ public class TamedBeastAI extends AttackableAI
 						case BALANCE_LIFE:
 						case HEAL_PERCENT:
 						case HEAL_STATIC:
-							tryTo(IntentionType.CAST, new SkillUseHolder(getActor(), getOwner(), skill, false, false), null);
+							tryToCast(getOwner(), skill);
 							return;
 					}
 				}
@@ -157,7 +154,7 @@ public class TamedBeastAI extends AttackableAI
 				// if the skill is a debuff, check if the attacker has it already
 				if (attacker.getFirstEffect(skill) == null)
 				{
-					tryTo(IntentionType.CAST, new SkillUseHolder(getActor(), attacker, skill, false, false), null);
+					tryToCast(attacker, skill);
 					return;
 				}
 			}
@@ -166,8 +163,7 @@ public class TamedBeastAI extends AttackableAI
 		else if (proba == 2)
 		{
 			// Happen only when owner's MPs < 50%
-			final float MPRatio = ((float) getOwner().getCurrentMp()) / getOwner().getMaxMp();
-			if (MPRatio < 0.5)
+			if (getOwner().getStatus().getMpRatio() < 0.5)
 			{
 				for (final L2Skill skill : getActor().getTemplate().getSkills(NpcSkillType.HEAL))
 				{
@@ -175,7 +171,7 @@ public class TamedBeastAI extends AttackableAI
 					{
 						case MANARECHARGE:
 						case MANAHEAL_PERCENT:
-							tryTo(IntentionType.CAST, new SkillUseHolder(getActor(), getOwner(), skill, false, false), null);
+							tryToCast(getOwner(), skill);
 							return;
 					}
 				}
@@ -187,9 +183,9 @@ public class TamedBeastAI extends AttackableAI
 	protected void onEvtFinishedCasting()
 	{
 		if (_nextIntention.isBlank())
-			changeCurrentIntention(IntentionType.FOLLOW, getOwner(), false);
+			doFollowIntention(getOwner(), false);
 		else
-			changeCurrentIntention(_nextIntention);
+			doIntention(_nextIntention);
 	}
 	
 	@Override

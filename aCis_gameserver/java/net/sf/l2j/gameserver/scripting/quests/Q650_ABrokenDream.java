@@ -71,7 +71,7 @@ public class Q650_ABrokenDream extends Quest
 		{
 			case STATE_CREATED:
 				QuestState st2 = player.getQuestState("Q117_TheOceanOfDistantStars");
-				if (st2 != null && st2.isCompleted() && player.getLevel() >= 39)
+				if (st2 != null && st2.isCompleted() && player.getStatus().getLevel() >= 39)
 					htmltext = "32054-01.htm";
 				else
 				{

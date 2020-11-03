@@ -3,43 +3,44 @@ package net.sf.l2j.gameserver.model.actor;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
+import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.DimensionalRiftManager;
 import net.sf.l2j.gameserver.data.manager.LotteryManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
+import net.sf.l2j.gameserver.data.xml.InstantTeleportData;
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.data.xml.MultisellData;
-import net.sf.l2j.gameserver.data.xml.NewbieBuffData;
 import net.sf.l2j.gameserver.data.xml.ScriptData;
-import net.sf.l2j.gameserver.enums.IntentionType;
+import net.sf.l2j.gameserver.data.xml.TeleportData;
 import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
+import net.sf.l2j.gameserver.enums.TeleportType;
 import net.sf.l2j.gameserver.enums.actors.NpcAiType;
 import net.sf.l2j.gameserver.enums.actors.NpcRace;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
+import net.sf.l2j.gameserver.enums.actors.NpcTalkCond;
 import net.sf.l2j.gameserver.enums.items.ShotType;
-import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminNpc;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.WorldObject;
-import net.sf.l2j.gameserver.model.actor.stat.NpcStat;
 import net.sf.l2j.gameserver.model.actor.status.NpcStatus;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.clanhall.ClanHall;
 import net.sf.l2j.gameserver.model.clanhall.SiegableHall;
 import net.sf.l2j.gameserver.model.entity.Castle;
-import net.sf.l2j.gameserver.model.holder.NewbieBuffHolder;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
 import net.sf.l2j.gameserver.model.location.Location;
+import net.sf.l2j.gameserver.model.location.Teleport;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
 import net.sf.l2j.gameserver.network.NpcStringId;
@@ -100,7 +101,7 @@ public class Npc extends Creature
 		for (final L2Skill skill : template.getSkills(NpcSkillType.PASSIVE))
 			addStatFuncs(skill.getStatFuncs(this));
 		
-		initCharStatusUpdateValues();
+		getStatus().initializeValues();
 		
 		// initialize the "current" equipment
 		_leftHandItemId = template.getLeftHand();
@@ -122,27 +123,15 @@ public class Npc extends Creature
 	}
 	
 	@Override
-	public void initCharStat()
+	public NpcStatus<? extends Npc> getStatus()
 	{
-		setStat(new NpcStat(this));
+		return (NpcStatus<?>) _status;
 	}
 	
 	@Override
-	public NpcStat getStat()
+	public void setStatus()
 	{
-		return (NpcStat) super.getStat();
-	}
-	
-	@Override
-	public void initCharStatus()
-	{
-		setStatus(new NpcStatus(this));
-	}
-	
-	@Override
-	public NpcStatus getStatus()
-	{
-		return (NpcStatus) super.getStatus();
+		_status = new NpcStatus<>(this);
 	}
 	
 	@Override
@@ -158,12 +147,6 @@ public class Npc extends Creature
 		
 		for (final Player player : getKnownType(Player.class))
 			sendInfo(player);
-	}
-	
-	@Override
-	public final int getLevel()
-	{
-		return getTemplate().getLevel();
 	}
 	
 	@Override
@@ -203,25 +186,6 @@ public class Npc extends Creature
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
-	{
-		Player player = (Player) target;
-		// GMs lack the normal shift + action behaviour of regular players
-		if (player.isGM() && isShiftPressed)
-		{
-			AdminNpc.sendGeneralInfos(player, this);
-			
-			if (player.getTarget() != this)
-				player.setTarget(this);
-			
-			player.sendPacket(ActionFailed.STATIC_PACKET);
-			return;
-		}
-		
-		super.onAction(target, isCtrlPressed, isShiftPressed);
-	}
-	
-	@Override
 	public final void notifyQuestEventSkillFinished(L2Skill skill, WorldObject target)
 	{
 		final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_SPELL_FINISHED);
@@ -243,7 +207,7 @@ public class Npc extends Creature
 	@Override
 	public void sendInfo(Player player)
 	{
-		player.sendPacket((getMoveSpeed() == 0) ? new ServerObjectInfo(this, player) : new NpcInfo(this, player));
+		player.sendPacket((getStatus().getMoveSpeed() == 0) ? new ServerObjectInfo(this, player) : new NpcInfo(this, player));
 	}
 	
 	@Override
@@ -824,60 +788,8 @@ public class Npc extends Creature
 			if (player.reduceAdena("RestoreCP", 100, player.getCurrentFolk(), true))
 			{
 				setTarget(player);
-				getAI().tryTo(IntentionType.CAST, new SkillUseHolder(this, player, FrequentSkill.ARENA_CP_RECOVERY.getSkill(), false, false), null);
+				getAI().tryToCast(player, FrequentSkill.ARENA_CP_RECOVERY.getSkill());
 				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CP_WILL_BE_RESTORED).addCharName(player));
-			}
-		}
-		else if (command.startsWith("SupportMagic"))
-		{
-			// Prevent a cursed weapon wielder of being buffed.
-			if (player.isCursedWeaponEquipped())
-				return;
-			
-			final int playerLevel = player.getLevel();
-			int lowestLevel = 0;
-			int higestLevel = 0;
-			
-			// Select the player.
-			setTarget(player);
-			
-			// Calculate the min and max level between which the player must be to obtain buff.
-			if (player.isMageClass())
-			{
-				lowestLevel = NewbieBuffData.getInstance().getMagicLowestLevel();
-				higestLevel = NewbieBuffData.getInstance().getMagicHighestLevel();
-			}
-			else
-			{
-				lowestLevel = NewbieBuffData.getInstance().getPhysicLowestLevel();
-				higestLevel = NewbieBuffData.getInstance().getPhysicHighestLevel();
-			}
-			
-			// If the player is too high level, display a message and return.
-			if (playerLevel > higestLevel || !player.isNewbie())
-			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-				html.setHtml("<html><body>Newbie Guide:<br>Only a <font color=\"LEVEL\">novice character of level " + higestLevel + " or less</font> can receive my support magic.<br>Your novice character is the first one that you created and raised in this world.</body></html>");
-				html.replace("%objectId%", getObjectId());
-				player.sendPacket(html);
-				return;
-			}
-			
-			// If the player is too low level, display a message and return.
-			if (playerLevel < lowestLevel)
-			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
-				html.setHtml("<html><body>Come back here when you have reached level " + lowestLevel + ". I will give you support magic then.</body></html>");
-				html.replace("%objectId%", getObjectId());
-				player.sendPacket(html);
-				return;
-			}
-			
-			// Go through the NewbieBuff List and cast skills.
-			for (final NewbieBuffHolder buff : NewbieBuffData.getInstance().getBuffs())
-			{
-				if (buff.isMagicClassBuff() == player.isMageClass() && playerLevel >= buff.getLowerLevel() && playerLevel <= buff.getUpperLevel())
-					getAI().tryTo(IntentionType.CAST, new SkillUseHolder(this, player, buff.getSkill(), false, false), null);
 			}
 		}
 		else if (command.startsWith("multisell"))
@@ -914,6 +826,111 @@ public class Npc extends Creature
 			{
 			}
 		}
+		else if (command.equals("teleport_request"))
+		{
+			TeleportData.getInstance().showTeleportList(player, this, TeleportType.STANDARD);
+		}
+		else if (command.startsWith("teleport"))
+		{
+			try
+			{
+				final StringTokenizer st = new StringTokenizer(command, " ");
+				st.nextToken();
+				
+				teleport(player, Integer.parseInt(st.nextToken()));
+			}
+			catch (final Exception e)
+			{
+				player.sendPacket(ActionFailed.STATIC_PACKET);
+			}
+		}
+		else if (command.startsWith("instant_teleport"))
+		{
+			try
+			{
+				final StringTokenizer st = new StringTokenizer(command, " ");
+				st.nextToken();
+				
+				instantTeleport(player, Integer.parseInt(st.nextToken()));
+			}
+			catch (final Exception e)
+			{
+				player.sendPacket(ActionFailed.STATIC_PACKET);
+			}
+		}
+	}
+	
+	/**
+	 * @param player : The {@link Player} to test.
+	 * @return True if the teleport is possible, false otherwise.
+	 */
+	protected boolean isTeleportAllowed(Player player)
+	{
+		return true;
+	}
+	
+	/**
+	 * Teleport the {@link Player} into the {@link Npc}'s instant teleports {@link List} index.<br>
+	 * <br>
+	 * The only check is {@link #isTeleportAllowed(Player)}.
+	 * @param player : The {@link Player} to test.
+	 * @param index : The {@link Location} index information to retrieve from this {@link Npc}'s instant teleports {@link List}.
+	 */
+	protected void instantTeleport(Player player, int index)
+	{
+		if (!isTeleportAllowed(player))
+			return;
+		
+		final List<Location> teleports = InstantTeleportData.getInstance().getTeleports(getNpcId());
+		if (teleports == null || index > teleports.size())
+			return;
+		
+		final Location teleport = teleports.get(index);
+		if (teleport == null)
+			return;
+		
+		player.teleportTo(teleport, 20);
+	}
+	
+	/**
+	 * Teleport the {@link Player} into the {@link Npc}'s {@link Teleport}s {@link List} index.<br>
+	 * <br>
+	 * Following checks are done : {@link #isTeleportAllowed(Player)}, castle siege, price.
+	 * @param player : The {@link Player} to test.
+	 * @param index : The {@link Teleport} index information to retrieve from this {@link Npc}'s instant teleports {@link List}.
+	 */
+	protected void teleport(Player player, int index)
+	{
+		if (!isTeleportAllowed(player))
+			return;
+		
+		final List<Teleport> teleports = TeleportData.getInstance().getTeleports(getNpcId());
+		if (teleports == null || index > teleports.size())
+			return;
+		
+		final Teleport teleport = teleports.get(index);
+		if (teleport == null)
+			return;
+		
+		if (teleport.getCastleId() > 0)
+		{
+			final Castle castle = CastleManager.getInstance().getCastleById(teleport.getCastleId());
+			if (castle != null && castle.getSiege().isInProgress())
+			{
+				player.sendPacket(SystemMessageId.CANNOT_PORT_VILLAGE_IN_SIEGE);
+				return;
+			}
+		}
+		
+		if (Config.FREE_TELEPORT || teleport.getPriceCount() == 0 || player.destroyItemByItemId("InstantTeleport", teleport.getPriceId(), teleport.getPriceCount(), this, true))
+			player.teleportTo(teleport, 20);
+		
+		player.sendPacket(ActionFailed.STATIC_PACKET);
+	}
+	
+	protected NpcTalkCond getNpcTalkCond(Player player)
+	{
+		return NpcTalkCond.OWNER;
 	}
 	
 	/**
@@ -979,7 +996,7 @@ public class Npc extends Creature
 			return;
 		}
 		
-		if (quest.isRealQuest() && (player.getWeightPenalty() > 2 || player.getInventoryLimit() * 0.8 <= player.getInventory().getSize()))
+		if (quest.isRealQuest() && (player.getWeightPenalty() > 2 || player.getStatus().isOverburden()))
 		{
 			player.sendPacket(SystemMessageId.INVENTORY_LESS_THAN_80_PERCENT);
 			return;
@@ -1214,10 +1231,10 @@ public class Npc extends Creature
 					type2 += Math.pow(2, player.getLoto(i) - 17);
 			}
 			
-			if (!player.reduceAdena("Loto", Config.ALT_LOTTERY_TICKET_PRICE, this, true))
+			if (!player.reduceAdena("Loto", Config.LOTTERY_TICKET_PRICE, this, true))
 				return;
 			
-			LotteryManager.getInstance().increasePrize(Config.ALT_LOTTERY_TICKET_PRICE);
+			LotteryManager.getInstance().increasePrize(Config.LOTTERY_TICKET_PRICE);
 			
 			final ItemInstance item = new ItemInstance(IdFactory.getInstance().getNextId(), 4442);
 			item.setCount(1);
@@ -1285,10 +1302,10 @@ public class Npc extends Creature
 		else if (val == 25) // 25 - lottery instructions
 		{
 			html.setFile(getHtmlPath(npcId, 2));
-			html.replace("%prize5%", Config.ALT_LOTTERY_5_NUMBER_RATE * 100);
-			html.replace("%prize4%", Config.ALT_LOTTERY_4_NUMBER_RATE * 100);
-			html.replace("%prize3%", Config.ALT_LOTTERY_3_NUMBER_RATE * 100);
-			html.replace("%prize2%", Config.ALT_LOTTERY_2_AND_1_NUMBER_PRIZE);
+			html.replace("%prize5%", Config.LOTTERY_5_NUMBER_RATE * 100);
+			html.replace("%prize4%", Config.LOTTERY_4_NUMBER_RATE * 100);
+			html.replace("%prize3%", Config.LOTTERY_3_NUMBER_RATE * 100);
+			html.replace("%prize2%", Config.LOTTERY_2_AND_1_NUMBER_PRIZE);
 		}
 		else if (val > 25) // >25 - check lottery ticket by item object id
 		{
@@ -1307,7 +1324,7 @@ public class Npc extends Creature
 		html.replace("%objectId%", getObjectId());
 		html.replace("%race%", LotteryManager.getInstance().getId());
 		html.replace("%adena%", LotteryManager.getInstance().getPrize());
-		html.replace("%ticket_price%", Config.ALT_LOTTERY_TICKET_PRICE);
+		html.replace("%ticket_price%", Config.LOTTERY_TICKET_PRICE);
 		html.replace("%enddate%", DateFormat.getDateInstance().format(LotteryManager.getInstance().getEndDate()));
 		player.sendPacket(html);
 		
@@ -1389,7 +1406,7 @@ public class Npc extends Creature
 		loc.addRandomOffset(offset);
 		
 		// Try to move to the position.
-		getAI().tryTo(IntentionType.MOVE_TO, loc, null);
+		getAI().tryToMoveTo(loc, null);
 	}
 	
 	@Override

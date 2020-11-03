@@ -155,7 +155,7 @@ public class Q024_InhabitantsOfTheForestOfTheDead extends Quest
 		{
 			case STATE_CREATED:
 				QuestState st2 = player.getQuestState("Q023_LidiasHeart");
-				if (st2 == null || !st2.isCompleted() || player.getLevel() < 65)
+				if (st2 == null || !st2.isCompleted() || player.getStatus().getLevel() < 65)
 					htmltext = "31389-02.htm";
 				else
 					htmltext = "31389-01.htm";

@@ -6,6 +6,7 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowInfoUpdate;
@@ -35,7 +36,7 @@ public class Q509_TheClansPrestige extends Quest
 	private static final int QUEEN_SHYEED = 25514;
 	
 	// Reward list (itemId, minClanPoints, maxClanPoints)
-	private static final int reward_list[][] =
+	private static final int[][] REWARDS =
 	{
 		{
 			DAIMON_THE_WHITE_EYED,
@@ -70,33 +71,13 @@ public class Q509_TheClansPrestige extends Quest
 	};
 	
 	// Radar
-	private static final int radar[][] =
+	private static final Location[] LOCS =
 	{
-		{
-			186320,
-			-43904,
-			-3175
-		},
-		{
-			134672,
-			-115600,
-			-1216
-		},
-		{
-			170000,
-			-59900,
-			-3848
-		},
-		{
-			93296,
-			-75104,
-			-1824
-		},
-		{
-			79635,
-			-55612,
-			-5980
-		}
+		new Location(186320, -43904, -3175),
+		new Location(134672, -115600, -1216),
+		new Location(170000, -59900, -3848),
+		new Location(93296, -75104, -1824),
+		new Location(79635, -55612, -5980)
 	};
 	
 	public Q509_TheClansPrestige()
@@ -126,15 +107,7 @@ public class Q509_TheClansPrestige extends Quest
 			st.set("cond", "1");
 			st.set("raid", event);
 			st.playSound(QuestState.SOUND_ACCEPT);
-			
-			int evt = Integer.parseInt(event);
-			
-			int x = radar[evt - 1][0];
-			int y = radar[evt - 1][1];
-			int z = radar[evt - 1][2];
-			
-			if (x + y + z > 0)
-				st.addRadar(x, y, z);
+			st.addRadar(LOCS[Integer.parseInt(event) - 1]);
 		}
 		else if (event.equalsIgnoreCase("31331-6.htm"))
 		{
@@ -168,13 +141,13 @@ public class Q509_TheClansPrestige extends Quest
 			
 			case STATE_STARTED:
 				final int raid = st.getInt("raid");
-				final int item = reward_list[raid - 1][1];
+				final int item = REWARDS[raid - 1][1];
 				
 				if (!st.hasQuestItems(item))
 					htmltext = "31331-" + raid + "a.htm";
 				else
 				{
-					final int reward = Rnd.get(reward_list[raid - 1][2], reward_list[raid - 1][3]);
+					final int reward = Rnd.get(REWARDS[raid - 1][2], REWARDS[raid - 1][3]);
 					
 					htmltext = "31331-" + raid + "b.htm";
 					st.takeItems(item, 1);
@@ -200,8 +173,8 @@ public class Q509_TheClansPrestige extends Quest
 		
 		// Reward only if quest is setup on good index.
 		int raid = st.getInt("raid");
-		if (reward_list[raid - 1][0] == npc.getNpcId())
-			st.dropItemsAlways(reward_list[raid - 1][1], 1, 1);
+		if (REWARDS[raid - 1][0] == npc.getNpcId())
+			st.dropItemsAlways(REWARDS[raid - 1][1], 1, 1);
 		
 		return null;
 	}

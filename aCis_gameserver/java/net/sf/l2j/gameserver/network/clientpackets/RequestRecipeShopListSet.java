@@ -8,7 +8,6 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.craft.ManufactureItem;
 import net.sf.l2j.gameserver.model.craft.ManufactureList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.RecipeShopManageList;
 import net.sf.l2j.gameserver.network.serverpackets.RecipeShopMsg;
 
 public final class RequestRecipeShopListSet extends L2GameClientPacket
@@ -42,24 +41,28 @@ public final class RequestRecipeShopListSet extends L2GameClientPacket
 		if (player == null)
 			return;
 		
-		// Integrity check.
-		if (!player.getRecipeBook().canPassManufactureProcess(_items))
-			return;
-		
 		// Retrieve and clear the manufacture list.
 		final ManufactureList manufactureList = player.getManufactureList();
 		manufactureList.clear();
 		
-		// Check multiple conditions. Message is sent directly from the method.
-		if (!player.canOpenPrivateStore(false))
-			return;
-		
+		// Integrity check.
 		if (ArraysUtil.isEmpty(_items))
 		{
+			player.setOperateType(OperateType.NONE);
 			player.sendPacket(SystemMessageId.NO_RECIPES_REGISTERED);
-			player.sendPacket(new RecipeShopManageList(player, manufactureList.isDwarven()));
 			return;
 		}
+		
+		// Integrity check.
+		if (!player.getRecipeBook().canPassManufactureProcess(_items))
+		{
+			player.setOperateType(OperateType.NONE);
+			return;
+		}
+		
+		// Check multiple conditions. Message and OperateType reset are sent directly from the method.
+		if (!player.canOpenPrivateStore(false))
+			return;
 		
 		// Feed it with packet informations.
 		manufactureList.set(_items);

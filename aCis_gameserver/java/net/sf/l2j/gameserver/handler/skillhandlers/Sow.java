@@ -68,8 +68,8 @@ public class Sow implements ISkillHandler
 		final int minlevelSeed = seed.getLevel() - 5;
 		final int maxlevelSeed = seed.getLevel() + 5;
 		
-		final int levelPlayer = activeChar.getLevel(); // Attacker Level
-		final int levelTarget = target.getLevel(); // target Level
+		final int levelPlayer = activeChar.getStatus().getLevel(); // Attacker Level
+		final int levelTarget = target.getStatus().getLevel(); // target Level
 		
 		int basicSuccess = (seed.isAlternative()) ? 20 : 90;
 		

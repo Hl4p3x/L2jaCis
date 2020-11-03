@@ -6,6 +6,7 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowInfoUpdate;
@@ -37,7 +38,7 @@ public class Q508_AClansReputation extends Quest
 	private static final int RAHHA = 25051;
 	
 	// Reward list (itemId, minClanPoints, maxClanPoints)
-	private static final int reward_list[][] =
+	private static final int[][] REWARDS =
 	{
 		{
 			PALIBATI_QUEEN_THEMIS,
@@ -78,38 +79,14 @@ public class Q508_AClansReputation extends Quest
 	};
 	
 	// Radar
-	private static final int radar[][] =
+	private static final Location[] LOCS =
 	{
-		{
-			192346,
-			21528,
-			-3648
-		},
-		{
-			191979,
-			54902,
-			-7658
-		},
-		{
-			170038,
-			-26236,
-			-3824
-		},
-		{
-			171762,
-			55028,
-			-5992
-		},
-		{
-			117232,
-			-9476,
-			-3320
-		},
-		{
-			144218,
-			-5816,
-			-4722
-		}
+		new Location(192346, 21528, -3648),
+		new Location(191979, 54902, -7658),
+		new Location(170038, -26236, -3824),
+		new Location(171762, 55028, -5992),
+		new Location(117232, -9476, -3320),
+		new Location(144218, -5816, -4722)
 	};
 	
 	public Q508_AClansReputation()
@@ -139,15 +116,7 @@ public class Q508_AClansReputation extends Quest
 			st.set("cond", "1");
 			st.set("raid", event);
 			st.playSound(QuestState.SOUND_ACCEPT);
-			
-			int evt = Integer.parseInt(event);
-			
-			int x = radar[evt - 1][0];
-			int y = radar[evt - 1][1];
-			int z = radar[evt - 1][2];
-			
-			if (x + y + z > 0)
-				st.addRadar(x, y, z);
+			st.addRadar(LOCS[Integer.parseInt(event) - 1]);
 		}
 		else if (event.equalsIgnoreCase("30868-7.htm"))
 		{
@@ -181,13 +150,13 @@ public class Q508_AClansReputation extends Quest
 			
 			case STATE_STARTED:
 				final int raid = st.getInt("raid");
-				final int item = reward_list[raid - 1][1];
+				final int item = REWARDS[raid - 1][1];
 				
 				if (!st.hasQuestItems(item))
 					htmltext = "30868-" + raid + "a.htm";
 				else
 				{
-					final int reward = Rnd.get(reward_list[raid - 1][2], reward_list[raid - 1][3]);
+					final int reward = Rnd.get(REWARDS[raid - 1][2], REWARDS[raid - 1][3]);
 					
 					htmltext = "30868-" + raid + "b.htm";
 					st.takeItems(item, 1);
@@ -213,8 +182,8 @@ public class Q508_AClansReputation extends Quest
 		
 		// Reward only if quest is setup on good index.
 		final int raid = st.getInt("raid");
-		if (reward_list[raid - 1][0] == npc.getNpcId())
-			st.dropItemsAlways(reward_list[raid - 1][1], 1, 1);
+		if (REWARDS[raid - 1][0] == npc.getNpcId())
+			st.dropItemsAlways(REWARDS[raid - 1][1], 1, 1);
 		
 		return null;
 	}

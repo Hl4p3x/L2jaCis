@@ -72,7 +72,7 @@ public class Q415_PathToAMonk extends Quest
 		{
 			if (player.getClassId() != ClassId.ORC_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.MONK) ? "30587-02a.htm" : "30587-02.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30587-03.htm";
 			else if (st.hasQuestItems(KHAVATARI_TOTEM))
 				htmltext = "30587-04.htm";

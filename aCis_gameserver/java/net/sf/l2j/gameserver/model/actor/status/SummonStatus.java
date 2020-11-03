@@ -8,11 +8,11 @@ import net.sf.l2j.gameserver.model.entity.Duel.DuelState;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
-public class SummonStatus extends PlayableStatus
+public class SummonStatus<T extends Summon> extends PlayableStatus<T>
 {
-	public SummonStatus(Summon activeChar)
+	public SummonStatus(T actor)
 	{
-		super(activeChar);
+		super(actor);
 	}
 	
 	@Override
@@ -24,10 +24,10 @@ public class SummonStatus extends PlayableStatus
 	@Override
 	public void reduceHp(double value, Creature attacker, boolean awake, boolean isDOT, boolean isHPConsumption)
 	{
-		if (getActiveChar().isDead())
+		if (_actor.isDead())
 			return;
 		
-		final Player owner = getActiveChar().getOwner();
+		final Player owner = _actor.getOwner();
 		
 		// We deny the duel, no matter if damage has been done or not.
 		if (attacker != null)
@@ -43,13 +43,22 @@ public class SummonStatus extends PlayableStatus
 		if (attacker != null)
 		{
 			if (!isDOT && owner != null)
-				owner.sendPacket(SystemMessage.getSystemMessage((getActiveChar() instanceof Servitor) ? SystemMessageId.SUMMON_RECEIVED_DAMAGE_S2_BY_S1 : SystemMessageId.PET_RECEIVED_S2_DAMAGE_BY_S1).addCharName(attacker).addNumber((int) value));
+				owner.sendPacket(SystemMessage.getSystemMessage((_actor instanceof Servitor) ? SystemMessageId.SUMMON_RECEIVED_DAMAGE_S2_BY_S1 : SystemMessageId.PET_RECEIVED_S2_DAMAGE_BY_S1).addCharName(attacker).addNumber((int) value));
 		}
 	}
 	
 	@Override
-	public Summon getActiveChar()
+	public void broadcastStatusUpdate()
 	{
-		return (Summon) super.getActiveChar();
+		super.broadcastStatusUpdate();
+		
+		_actor.updateAndBroadcastStatus(1);
 	}
+	
+	@Override
+	public int getLevel()
+	{
+		return _actor.getTemplate().getLevel();
+	}
+	
 }

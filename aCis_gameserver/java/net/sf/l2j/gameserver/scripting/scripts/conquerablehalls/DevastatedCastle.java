@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.SayType;
@@ -12,7 +11,6 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.entity.ClanHallSiege;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -83,10 +81,10 @@ public final class DevastatedCastle extends ClanHallSiege
 		if (clan != null && getAttackerClans().contains(clan))
 			_damageToGustav.merge(clan.getClanId(), damage, Integer::sum);
 		
-		if ((npc.getCurrentHp() < npc.getMaxHp() / 12) && npc.getAI().getCurrentIntention().getType() != IntentionType.CAST)
+		if ((npc.getStatus().getHp() < npc.getStatus().getMaxHp() / 12) && npc.getAI().getCurrentIntention().getType() != IntentionType.CAST)
 		{
 			broadcastNpcSay(npc, SayType.ALL, GUSTAV_ATTACK_SHOUT);
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, SkillTable.getInstance().getInfo(4235, 1), false, false), null);
+			npc.getAI().tryToCast(npc, 4235, 1);
 		}
 		return super.onAttack(npc, attacker, damage, skill);
 	}

@@ -16,6 +16,6 @@ public class ConditionPlayerHp extends Condition
 	@Override
 	public boolean testImpl(Creature effector, Creature effected, L2Skill skill, Item item)
 	{
-		return effector.getCurrentHp() * 100 / effector.getMaxHp() <= _hp;
+		return effector.getStatus().getHpRatio() * 100 <= _hp;
 	}
 }

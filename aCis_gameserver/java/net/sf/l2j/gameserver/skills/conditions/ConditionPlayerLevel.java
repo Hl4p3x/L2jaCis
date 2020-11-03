@@ -16,6 +16,6 @@ public class ConditionPlayerLevel extends Condition
 	@Override
 	public boolean testImpl(Creature effector, Creature effected, L2Skill skill, Item item)
 	{
-		return effector.getLevel() >= _level;
+		return effector.getStatus().getLevel() >= _level;
 	}
 }

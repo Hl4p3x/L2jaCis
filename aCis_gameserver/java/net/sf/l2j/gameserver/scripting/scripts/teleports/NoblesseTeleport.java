@@ -1,5 +1,7 @@
 package net.sf.l2j.gameserver.scripting.scripts.teleports;
 
+import net.sf.l2j.gameserver.data.xml.TeleportData;
+import net.sf.l2j.gameserver.enums.TeleportType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.scripting.Quest;
@@ -15,11 +17,16 @@ public class NoblesseTeleport extends Quest
 	}
 	
 	@Override
+	public String onAdvEvent(String event, Npc npc, Player player)
+	{
+		TeleportData.getInstance().showTeleportList(player, npc, TeleportType.valueOf(event.toUpperCase()));
+		
+		return super.onAdvEvent(event, npc, player);
+	}
+	
+	@Override
 	public String onTalk(Npc npc, Player player)
 	{
-		if (player.isNoble())
-			return "noble.htm";
-		
-		return "nobleteleporter-no.htm";
+		return (player.isNoble()) ? "noble.htm" : "nobleteleporter-no.htm";
 	}
 }

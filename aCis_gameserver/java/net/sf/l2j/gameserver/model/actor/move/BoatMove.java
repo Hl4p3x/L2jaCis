@@ -8,22 +8,17 @@ import net.sf.l2j.gameserver.network.serverpackets.VehicleDeparture;
 import net.sf.l2j.gameserver.network.serverpackets.VehicleInfo;
 import net.sf.l2j.gameserver.network.serverpackets.VehicleStarted;
 
-public class BoatMove extends CreatureMove
+public class BoatMove extends CreatureMove<Boat>
 {
 	private BoatLocation[] _currentPath;
 	private int _pathIndex;
 	
-	public BoatMove(Boat boat)
+	public BoatMove(Boat actor)
 	{
-		super(boat);
+		super(actor);
 		
 		// Boats simply don't bother about other movements.
 		addMoveType(MoveType.FLY);
-	}
-	
-	private Boat getBoat()
-	{
-		return (Boat) _creature;
 	}
 	
 	@Override
@@ -35,8 +30,8 @@ public class BoatMove extends CreatureMove
 		_task.cancel(false);
 		_task = null;
 		
-		getBoat().broadcastPacket(new VehicleStarted(getBoat(), 0));
-		getBoat().broadcastPacket(new VehicleInfo(getBoat()));
+		_actor.broadcastPacket(new VehicleStarted(_actor, 0));
+		_actor.broadcastPacket(new VehicleInfo(_actor));
 	}
 	
 	@Override
@@ -46,16 +41,16 @@ public class BoatMove extends CreatureMove
 	}
 	
 	@Override
-	public boolean updatePosition()
+	public boolean updatePosition(boolean firstRun)
 	{
-		final boolean result = super.updatePosition();
+		final boolean result = super.updatePosition(firstRun);
 		
 		// Refresh all Players passengers positions.
-		for (Player player : getBoat().getPassengers())
+		for (Player player : _actor.getPassengers())
 		{
-			if (player.getBoat() == getBoat())
+			if (player.getBoat() == _actor)
 			{
-				player.setXYZ(getBoat());
+				player.setXYZ(_actor);
 				player.revalidateZone(false);
 			}
 		}
@@ -78,10 +73,10 @@ public class BoatMove extends CreatureMove
 		stop();
 		
 		// Renew Boat entrances when definitively stopped.
-		getBoat().renewBoatEntrances();
+		_actor.renewBoatEntrances();
 		
 		// We are out of path, continue to process the engine.
-		getBoat().runEngine(10);
+		_actor.runEngine(10);
 	}
 	
 	/**
@@ -92,24 +87,21 @@ public class BoatMove extends CreatureMove
 	{
 		// Feed Boat move speed and rotation based on BoatLocation parameter.
 		if (loc.getMoveSpeed() > 0)
-			getBoat().getStat().setMoveSpeed(loc.getMoveSpeed());
-		if (loc.getRotationSpeed() > 0)
-			getBoat().getStat().setRotationSpeed(loc.getRotationSpeed());
+			_actor.getStatus().setMoveSpeed(loc.getMoveSpeed());
 		
-		// Set the current x/y.
-		_xAccurate = getBoat().getX();
-		_yAccurate = getBoat().getY();
+		if (loc.getRotationSpeed() > 0)
+			_actor.getStatus().setRotationSpeed(loc.getRotationSpeed());
 		
 		// Set the destination.
 		_destination.set(loc);
 		
 		// Set the heading.
-		getBoat().getPosition().setHeadingTo(loc);
+		_actor.getPosition().setHeadingTo(loc);
 		
 		registerMoveTask();
 		
 		// Broadcast the movement (angle change, speed change, destination).
-		getBoat().broadcastPacket(new VehicleDeparture(getBoat()));
+		_actor.broadcastPacket(new VehicleDeparture(_actor));
 	}
 	
 	/**
@@ -126,6 +118,6 @@ public class BoatMove extends CreatureMove
 		moveBoatTo(_currentPath[0]);
 		
 		// Broadcast the starting movement.
-		getBoat().broadcastPacket(new VehicleStarted(getBoat(), 1));
+		_actor.broadcastPacket(new VehicleStarted(_actor, 1));
 	}
 }

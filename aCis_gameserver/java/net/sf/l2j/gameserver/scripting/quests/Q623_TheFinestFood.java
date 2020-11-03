@@ -47,7 +47,7 @@ public class Q623_TheFinestFood extends Quest
 		
 		if (event.equalsIgnoreCase("31521-02.htm"))
 		{
-			if (player.getLevel() >= 71)
+			if (player.getStatus().getLevel() >= 71)
 			{
 				st.setState(STATE_STARTED);
 				st.set("cond", "1");

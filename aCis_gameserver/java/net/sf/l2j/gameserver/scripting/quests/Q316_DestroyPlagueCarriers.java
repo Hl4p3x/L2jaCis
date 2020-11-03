@@ -68,7 +68,7 @@ public class Q316_DestroyPlagueCarriers extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF)
 					htmltext = "30155-00.htm";
-				else if (player.getLevel() < 18)
+				else if (player.getStatus().getLevel() < 18)
 					htmltext = "30155-02.htm";
 				else
 					htmltext = "30155-03.htm";

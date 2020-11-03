@@ -120,8 +120,8 @@ public class Point2D
 	 */
 	public double distance2D(int x, int y)
 	{
-		double dx = (double) _x - x;
-		double dy = (double) _y - y;
+		final double dx = (double) _x - x;
+		final double dy = (double) _y - y;
 		
 		return Math.sqrt((dx * dx) + (dy * dy));
 	}

@@ -71,7 +71,7 @@ public enum ClassId
 	MONK(ClassRace.ORC, ClassType.FIGHTER, 1, "Monk", ORC_FIGHTER),
 	TYRANT(ClassRace.ORC, ClassType.FIGHTER, 2, "Tyrant", MONK),
 	
-	ORC_MYSTIC(ClassRace.ORC, ClassType.FIGHTER, 0, "Orc Mystic", null),
+	ORC_MYSTIC(ClassRace.ORC, ClassType.MYSTIC, 0, "Orc Mystic", null),
 	ORC_SHAMAN(ClassRace.ORC, ClassType.MYSTIC, 1, "Orc Shaman", ORC_MYSTIC),
 	OVERLORD(ClassRace.ORC, ClassType.MYSTIC, 2, "Overlord", ORC_SHAMAN),
 	WARCRYER(ClassRace.ORC, ClassType.MYSTIC, 2, "Warcryer", ORC_SHAMAN),
@@ -151,35 +151,14 @@ public enum ClassId
 	
 	public static final ClassId[] VALUES = values();
 	
-	/** The ID of the class */
 	private final int _id;
-	
-	/** The ClassRace object of the class */
 	private final ClassRace _race;
-	
-	/** The ClassType of the class */
 	private final ClassType _type;
-	
-	/** The level of the class */
 	private final int _level;
-	
-	/** The name of the class */
 	private final String _name;
-	
-	/** The parent ClassId of the class */
 	private final ClassId _parent;
-	
-	/** The set of subclasses available for the class */
 	private EnumSet<ClassId> _subclasses;
 	
-	/**
-	 * Implicit constructor.
-	 * @param race : Class race.
-	 * @param type : Class type.
-	 * @param level : Class level.
-	 * @param name : Class name.
-	 * @param parent : Class parent.
-	 */
 	private ClassId(ClassRace race, ClassType type, int level, String name, ClassId parent)
 	{
 		_id = ordinal();
@@ -190,42 +169,6 @@ public enum ClassId
 		_parent = parent;
 	}
 	
-	/**
-	 * Returns the ID of the {@link ClassId}.
-	 * @return int : The ID.
-	 */
-	public final int getId()
-	{
-		return _id;
-	}
-	
-	/**
-	 * Returns the {@link ClassRace} of the {@link ClassId}.
-	 * @return {@link ClassRace} : The race.
-	 */
-	public final ClassRace getRace()
-	{
-		return _race;
-	}
-	
-	/**
-	 * Returns the {@link ClassType} of the {@link ClassId}.
-	 * @return {@link ClassType} : The type.
-	 */
-	public final ClassType getType()
-	{
-		return _type;
-	}
-	
-	/**
-	 * Returns the level of the {@link ClassId}.
-	 * @return int : The level (-1=dummy, 0=base, 1=1st class, 2=2nd class, 3=3rd class)
-	 */
-	public final int level()
-	{
-		return _level;
-	}
-	
 	@Override
 	public String toString()
 	{
@@ -233,8 +176,39 @@ public enum ClassId
 	}
 	
 	/**
-	 * Returns the parent {@link ClassId} of the {@link ClassId}.
-	 * @return {@link ClassId} : The parent.
+	 * @return The associated id of this {@link ClassId}.
+	 */
+	public final int getId()
+	{
+		return _id;
+	}
+	
+	/**
+	 * @return The associated {@link ClassRace} of this {@link ClassId}.
+	 */
+	public final ClassRace getRace()
+	{
+		return _race;
+	}
+	
+	/**
+	 * @return The associated {@link ClassType} of this {@link ClassId}.
+	 */
+	public final ClassType getType()
+	{
+		return _type;
+	}
+	
+	/**
+	 * @return The level of this {@link ClassId} (0=base, 1=1st class, 2=2nd class, 3=3rd class).
+	 */
+	public final int getLevel()
+	{
+		return _level;
+	}
+	
+	/**
+	 * @return The parent {@link ClassId} of this {@link ClassId}, or null if not set.
 	 */
 	public final ClassId getParent()
 	{
@@ -242,10 +216,10 @@ public enum ClassId
 	}
 	
 	/**
-	 * @param classId The parent ClassId to check
-	 * @return True if this Class is a child of the selected ClassId.
+	 * @param classId : The parent {@link ClassId} to check.
+	 * @return True if this {@link ClassId} is a child of the selected {@link ClassId}.
 	 */
-	public final boolean childOf(ClassId classId)
+	public final boolean isChildOf(ClassId classId)
 	{
 		if (_parent == null)
 			return false;
@@ -253,21 +227,21 @@ public enum ClassId
 		if (_parent == classId)
 			return true;
 		
-		return _parent.childOf(classId);
+		return _parent.isChildOf(classId);
 	}
 	
 	/**
-	 * @param classId the parent ClassId to check.
-	 * @return true if this Class is equal to the selected ClassId or a child of the selected ClassId.
+	 * @param classId : The parent {@link ClassId} to check.
+	 * @return True if this {@link ClassId} equals tested {@link ClassId} or is a child of the selected {@link ClassId}.
 	 */
-	public final boolean equalsOrChildOf(ClassId classId)
+	public final boolean equalsOrIsChildOf(ClassId classId)
 	{
-		return this == classId || childOf(classId);
+		return this == classId || isChildOf(classId);
 	}
 	
 	private final void createSubclasses()
 	{
-		// only 2nd class level can have subclasses
+		// Only 2nd class level can have subclasses.
 		if (_level != 2)
 		{
 			_subclasses = null;
@@ -278,70 +252,75 @@ public enum ClassId
 		
 		for (ClassId classId : VALUES)
 		{
-			// only second classes may be taken as subclass
+			// Only second classes may be taken as subclass.
 			if (classId._level != 2)
 				continue;
 			
-			// Overlord, Warsmith or self class may never be taken as subclass
+			// Overlord, Warsmith or self class may never be taken as subclass.
 			if (classId == OVERLORD || classId == WARSMITH || classId == this)
 				continue;
 			
-			// Elves may not sub Dark Elves and vice versa
+			// Elves may not sub Dark Elves and vice versa.
 			if ((_race == ClassRace.ELF && classId._race == ClassRace.DARK_ELF) || (_race == ClassRace.DARK_ELF && classId._race == ClassRace.ELF))
 				continue;
 			
 			_subclasses.add(classId);
 		}
 		
-		// remove class restricted classes
+		// Remove class restricted classes.
 		switch (this)
 		{
 			case DARK_AVENGER:
 			case PALADIN:
 			case TEMPLE_KNIGHT:
 			case SHILLIEN_KNIGHT:
-				// remove restricted classes for tanks
 				_subclasses.removeAll(EnumSet.of(DARK_AVENGER, PALADIN, TEMPLE_KNIGHT, SHILLIEN_KNIGHT));
 				break;
 			
 			case TREASURE_HUNTER:
 			case ABYSS_WALKER:
 			case PLAINS_WALKER:
-				// remove restricted classes for assassins
 				_subclasses.removeAll(EnumSet.of(TREASURE_HUNTER, ABYSS_WALKER, PLAINS_WALKER));
 				break;
 			
 			case HAWKEYE:
 			case SILVER_RANGER:
 			case PHANTOM_RANGER:
-				// remove restricted classes for archers
 				_subclasses.removeAll(EnumSet.of(HAWKEYE, SILVER_RANGER, PHANTOM_RANGER));
 				break;
 			
 			case WARLOCK:
 			case ELEMENTAL_SUMMONER:
 			case PHANTOM_SUMMONER:
-				// remove restricted classes for summoners
 				_subclasses.removeAll(EnumSet.of(WARLOCK, ELEMENTAL_SUMMONER, PHANTOM_SUMMONER));
 				break;
 			
 			case SORCERER:
 			case SPELLSINGER:
 			case SPELLHOWLER:
-				// remove restricted classes for wizards
 				_subclasses.removeAll(EnumSet.of(SORCERER, SPELLSINGER, SPELLHOWLER));
 				break;
 		}
 	}
 	
 	/**
-	 * Returns set of subclasses available for given {@link Player}.<br>
-	 * 1) If the race of your main class is Elf or Dark Elf, you may not select each class as a subclass to the other class.<br>
-	 * 2) You may not select Overlord and Warsmith class as a subclass.<br>
-	 * 3) You may not select a similar class as the subclass. The occupations classified as similar classes are as follows:<br>
-	 * Paladin, Dark Avenger, Temple Knight and Shillien Knight Treasure Hunter, Plainswalker and Abyss Walker Hawkeye, Silver Ranger and Phantom Ranger Warlock, Elemental Summoner and Phantom Summoner Sorcerer, Spellsinger and Spellhowler
+	 * Following conditions are tested:<br>
+	 * <ul>
+	 * <li>If the race of your main class is Elf or Dark Elf, you may not select each class as a subclass to the other class.</li>
+	 * <li>You may not select Overlord and Warsmith class as a subclass.</li>
+	 * <li>You may not select a similar class as the subclass.</li>
+	 * </ul>
+	 * The occupations classified as similar classes are as follows:<br>
+	 * <br>
+	 * <ul>
+	 * <li>Paladin, Dark Avenger, Temple Knight and Shillien Knight</li>
+	 * <li>Treasure Hunter, Plainswalker and Abyss Walker</li>
+	 * <li>Hawkeye, Silver Ranger and Phantom Ranger</li>
+	 * <li>Warlock, Elemental Summoner and Phantom Summoner</li>
+	 * <li>Sorcerer, Spellsinger and Spellhowler</li>
+	 * </ul>
 	 * @param player : The {@link Player} to make checks on.
-	 * @return EnumSet<ClassId> : Available subclasses for given player.
+	 * @return All available subclasses for given {@link Player} under a {@link EnumSet} of {@link ClassId}s.
 	 */
 	public static final EnumSet<ClassId> getAvailableSubclasses(Player player)
 	{
@@ -349,7 +328,7 @@ public enum ClassId
 		if (classId._level < 2)
 			return null;
 		
-		// handle 3rd level class
+		// Handle 3rd level class.
 		if (classId._level == 3)
 			classId = classId._parent;
 		
@@ -358,7 +337,7 @@ public enum ClassId
 	
 	static
 	{
-		// create subclass lists
+		// Create subclass lists.
 		for (ClassId classId : VALUES)
 			classId.createSubclasses();
 	}

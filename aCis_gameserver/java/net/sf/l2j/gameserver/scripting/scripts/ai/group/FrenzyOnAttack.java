@@ -3,10 +3,8 @@ package net.sf.l2j.gameserver.scripting.scripts.ai.group;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -48,10 +46,10 @@ public class FrenzyOnAttack extends L2AttackableAIScript
 	public String onAttack(Npc npc, Creature attacker, int damage, L2Skill skill)
 	{
 		// The only requirements are HPs < 25% and not already under the buff. It's not 100% aswell.
-		if (npc.getCurrentHp() / npc.getMaxHp() < 0.25 && npc.getFirstEffect(ULTIMATE_BUFF) == null && Rnd.get(10) == 0)
+		if (npc.getStatus().getHpRatio() < 0.25 && npc.getFirstEffect(ULTIMATE_BUFF) == null && Rnd.get(10) == 0)
 		{
 			npc.broadcastNpcSay(Rnd.get(ORCS_WORDS));
-			npc.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(npc, npc, ULTIMATE_BUFF, false, false), null);
+			npc.getAI().tryToCast(npc, ULTIMATE_BUFF);
 		}
 		return super.onAttack(npc, attacker, damage, skill);
 	}

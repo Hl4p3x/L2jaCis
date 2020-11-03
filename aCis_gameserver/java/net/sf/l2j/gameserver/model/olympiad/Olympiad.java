@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.HeroManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.enums.OlympiadState;
@@ -46,9 +46,9 @@ public class Olympiad
 	private static final String OLYMPIAD_LOAD_NOBLES = "SELECT olympiad_nobles.char_id, olympiad_nobles.class_id, characters.char_name, olympiad_nobles.olympiad_points, olympiad_nobles.competitions_done, olympiad_nobles.competitions_won, olympiad_nobles.competitions_lost, olympiad_nobles.competitions_drawn FROM olympiad_nobles, characters WHERE characters.obj_Id = olympiad_nobles.char_id";
 	private static final String OLYMPIAD_SAVE_NOBLES = "INSERT INTO olympiad_nobles (`char_id`,`class_id`,`olympiad_points`,`competitions_done`,`competitions_won`,`competitions_lost`, `competitions_drawn`) VALUES (?,?,?,?,?,?,?)";
 	private static final String OLYMPIAD_UPDATE_NOBLES = "UPDATE olympiad_nobles SET olympiad_points = ?, competitions_done = ?, competitions_won = ?, competitions_lost = ?, competitions_drawn = ? WHERE char_id = ?";
-	private static final String OLYMPIAD_GET_HEROS = "SELECT olympiad_nobles.char_id, characters.char_name FROM olympiad_nobles, characters WHERE characters.obj_Id = olympiad_nobles.char_id AND olympiad_nobles.class_id = ? AND olympiad_nobles.competitions_done >= " + Config.ALT_OLY_MIN_MATCHES + " AND olympiad_nobles.competitions_won > 0 ORDER BY olympiad_nobles.olympiad_points DESC, olympiad_nobles.competitions_done DESC, olympiad_nobles.competitions_won DESC";
-	private static final String GET_ALL_CLASSIFIED_NOBLESS = "SELECT char_id from olympiad_nobles_eom WHERE competitions_done >= " + Config.ALT_OLY_MIN_MATCHES + " ORDER BY olympiad_points DESC, competitions_done DESC, competitions_won DESC";
-	private static final String GET_EACH_CLASS_LEADER = "SELECT characters.char_name from olympiad_nobles_eom, characters WHERE characters.obj_Id = olympiad_nobles_eom.char_id AND olympiad_nobles_eom.class_id = ? AND olympiad_nobles_eom.competitions_done >= " + Config.ALT_OLY_MIN_MATCHES + " ORDER BY olympiad_nobles_eom.olympiad_points DESC, olympiad_nobles_eom.competitions_done DESC, olympiad_nobles_eom.competitions_won DESC LIMIT 10";
+	private static final String OLYMPIAD_GET_HEROES = "SELECT olympiad_nobles.char_id, characters.char_name FROM olympiad_nobles, characters WHERE characters.obj_Id = olympiad_nobles.char_id AND olympiad_nobles.class_id = ? AND olympiad_nobles.competitions_done >= ? AND olympiad_nobles.competitions_won > 0 ORDER BY olympiad_nobles.olympiad_points DESC, olympiad_nobles.competitions_done DESC, olympiad_nobles.competitions_won DESC";
+	private static final String GET_ALL_CLASSIFIED_NOBLESS = "SELECT char_id from olympiad_nobles_eom WHERE competitions_done >= ? ORDER BY olympiad_points DESC, competitions_done DESC, competitions_won DESC";
+	private static final String GET_EACH_CLASS_LEADER = "SELECT characters.char_name from olympiad_nobles_eom, characters WHERE characters.obj_Id = olympiad_nobles_eom.char_id AND olympiad_nobles_eom.class_id = ? AND olympiad_nobles_eom.competitions_done >= ? ORDER BY olympiad_nobles_eom.olympiad_points DESC, olympiad_nobles_eom.competitions_done DESC, olympiad_nobles_eom.competitions_won DESC LIMIT 10";
 	
 	private static final String OLYMPIAD_LOAD_POINTS = "SELECT olympiad_points FROM olympiad_nobles_eom WHERE char_id = ?";
 	private static final String OLYMPIAD_DELETE_ALL = "TRUNCATE olympiad_nobles";
@@ -93,7 +93,7 @@ public class Olympiad
 	
 	private void load()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(OLYMPIAD_LOAD_DATA);
 			ResultSet rs = ps.executeQuery())
 		{
@@ -146,7 +146,7 @@ public class Olympiad
 				break;
 		}
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(OLYMPIAD_LOAD_NOBLES);
 			ResultSet rset = ps.executeQuery())
 		{
@@ -196,14 +196,17 @@ public class Olympiad
 		
 		final Map<Integer, Integer> tmpPlace = new HashMap<>();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
-			PreparedStatement ps = con.prepareStatement(GET_ALL_CLASSIFIED_NOBLESS);
-			ResultSet rs = ps.executeQuery())
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(GET_ALL_CLASSIFIED_NOBLESS))
 		{
-			int place = 1;
+			ps.setInt(1, Config.OLY_MIN_MATCHES);
 			
-			while (rs.next())
-				tmpPlace.put(rs.getInt(CHAR_ID), place++);
+			try (ResultSet rs = ps.executeQuery())
+			{
+				int place = 1;
+				while (rs.next())
+					tmpPlace.put(rs.getInt(CHAR_ID), place++);
+			}
 		}
 		catch (Exception e)
 		{
@@ -244,11 +247,11 @@ public class Olympiad
 			return;
 		
 		_compStart = Calendar.getInstance();
-		_compStart.set(Calendar.HOUR_OF_DAY, Config.ALT_OLY_START_TIME);
-		_compStart.set(Calendar.MINUTE, Config.ALT_OLY_MIN);
+		_compStart.set(Calendar.HOUR_OF_DAY, Config.OLY_START_TIME);
+		_compStart.set(Calendar.MINUTE, Config.OLY_MIN);
 		_compStart.set(Calendar.SECOND, 0);
 		
-		_compEnd = _compStart.getTimeInMillis() + Config.ALT_OLY_CPERIOD;
+		_compEnd = _compStart.getTimeInMillis() + Config.OLY_CPERIOD;
 		
 		if (_scheduledOlympiadEnd != null)
 			_scheduledOlympiadEnd.cancel(true);
@@ -280,7 +283,7 @@ public class Olympiad
 			updateMonthlyData();
 			
 			Calendar validationEnd = Calendar.getInstance();
-			_validationEnd = validationEnd.getTimeInMillis() + Config.ALT_OLY_VPERIOD;
+			_validationEnd = validationEnd.getTimeInMillis() + Config.OLY_VPERIOD;
 			
 			loadNoblesRank();
 			_scheduledValdationTask = ThreadPool.schedule(new ValidationEndTask(), getMillisToValidationEnd());
@@ -339,7 +342,7 @@ public class Olympiad
 			LOGGER.info("Olympiad game started.");
 			
 			_gameManager = ThreadPool.scheduleAtFixedRate(OlympiadGameManager.getInstance(), 30000, 30000);
-			if (Config.ALT_OLY_ANNOUNCE_GAMES)
+			if (Config.OLY_ANNOUNCE_GAMES)
 				_gameAnnouncer = ThreadPool.scheduleAtFixedRate(new OlympiadAnnouncer(), 30000, 500);
 			
 			long regEnd = getMillisToCompEnd() - 600000;
@@ -426,7 +429,7 @@ public class Olympiad
 		_olympiadEnd = currentTime.getTimeInMillis();
 		
 		Calendar nextChange = Calendar.getInstance();
-		_nextWeeklyChange = nextChange.getTimeInMillis() + Config.ALT_OLY_WPERIOD;
+		_nextWeeklyChange = nextChange.getTimeInMillis() + Config.OLY_WPERIOD;
 		scheduleWeeklyChange();
 	}
 	
@@ -449,12 +452,12 @@ public class Olympiad
 	private long setNewCompBegin()
 	{
 		_compStart = Calendar.getInstance();
-		_compStart.set(Calendar.HOUR_OF_DAY, Config.ALT_OLY_START_TIME);
-		_compStart.set(Calendar.MINUTE, Config.ALT_OLY_MIN);
+		_compStart.set(Calendar.HOUR_OF_DAY, Config.OLY_START_TIME);
+		_compStart.set(Calendar.MINUTE, Config.OLY_MIN);
 		_compStart.set(Calendar.SECOND, 0);
 		_compStart.add(Calendar.HOUR_OF_DAY, 24);
 		
-		_compEnd = _compStart.getTimeInMillis() + Config.ALT_OLY_CPERIOD;
+		_compEnd = _compStart.getTimeInMillis() + Config.OLY_CPERIOD;
 		
 		LOGGER.info("New Olympiad schedule @ {}.", _compStart.getTime());
 		
@@ -482,8 +485,8 @@ public class Olympiad
 			LOGGER.info("Added weekly Olympiad points to nobles.");
 			
 			Calendar nextChange = Calendar.getInstance();
-			_nextWeeklyChange = nextChange.getTimeInMillis() + Config.ALT_OLY_WPERIOD;
-		}, getMillisToWeekChange(), Config.ALT_OLY_WPERIOD);
+			_nextWeeklyChange = nextChange.getTimeInMillis() + Config.OLY_WPERIOD;
+		}, getMillisToWeekChange(), Config.OLY_WPERIOD);
 	}
 	
 	protected synchronized void addWeeklyPoints()
@@ -495,7 +498,7 @@ public class Olympiad
 		for (StatsSet nobleInfo : _nobles.values())
 		{
 			currentPoints = nobleInfo.getInteger(POINTS);
-			currentPoints += Config.ALT_OLY_WEEKLY_POINTS;
+			currentPoints += Config.OLY_WEEKLY_POINTS;
 			nobleInfo.set(POINTS, currentPoints);
 		}
 	}
@@ -518,7 +521,7 @@ public class Olympiad
 		if (_nobles == null || _nobles.isEmpty())
 			return;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			PreparedStatement ps;
 			for (Map.Entry<Integer, StatsSet> noble : _nobles.entrySet())
@@ -576,7 +579,7 @@ public class Olympiad
 	{
 		saveNobleData();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(OLYMPIAD_SAVE_DATA))
 		{
 			ps.setInt(1, _currentCycle);
@@ -599,7 +602,7 @@ public class Olympiad
 	
 	protected void updateMonthlyData()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(OLYMPIAD_MONTH_CLEAR);
 			PreparedStatement ps2 = con.prepareStatement(OLYMPIAD_MONTH_CREATE))
 		{
@@ -616,15 +619,16 @@ public class Olympiad
 	{
 		_heroesToBe.clear();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
-			PreparedStatement ps = con.prepareStatement(OLYMPIAD_GET_HEROS))
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(OLYMPIAD_GET_HEROES))
 		{
 			for (ClassId id : ClassId.VALUES)
 			{
-				if (id.level() != 3)
+				if (id.getLevel() != 3)
 					continue;
 				
 				ps.setInt(1, id.getId());
+				ps.setInt(2, Config.OLY_MIN_MATCHES);
 				
 				try (ResultSet rs = ps.executeQuery())
 				{
@@ -651,10 +655,11 @@ public class Olympiad
 	{
 		final List<String> names = new ArrayList<>();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(GET_EACH_CLASS_LEADER))
 		{
 			ps.setInt(1, classId);
+			ps.setInt(2, Config.OLY_MIN_MATCHES);
 			
 			try (ResultSet rs = ps.executeQuery())
 			{
@@ -683,29 +688,29 @@ public class Olympiad
 			return 0;
 		
 		final int rank = _noblesRank.get(objId);
-		int points = (player.isHero() || HeroManager.getInstance().isInactiveHero(player.getObjectId())) ? Config.ALT_OLY_HERO_POINTS : 0;
+		int points = (player.isHero() || HeroManager.getInstance().isInactiveHero(player.getObjectId())) ? Config.OLY_HERO_POINTS : 0;
 		switch (rank)
 		{
 			case 1:
-				points += Config.ALT_OLY_RANK1_POINTS;
+				points += Config.OLY_RANK1_POINTS;
 				break;
 			case 2:
-				points += Config.ALT_OLY_RANK2_POINTS;
+				points += Config.OLY_RANK2_POINTS;
 				break;
 			case 3:
-				points += Config.ALT_OLY_RANK3_POINTS;
+				points += Config.OLY_RANK3_POINTS;
 				break;
 			case 4:
-				points += Config.ALT_OLY_RANK4_POINTS;
+				points += Config.OLY_RANK4_POINTS;
 				break;
 			default:
-				points += Config.ALT_OLY_RANK5_POINTS;
+				points += Config.OLY_RANK5_POINTS;
 		}
 		
 		if (clear)
 			noble.set(POINTS, 0);
 		
-		points *= Config.ALT_OLY_GP_PER_POINT;
+		points *= Config.OLY_GP_PER_POINT;
 		return points;
 	}
 	
@@ -721,7 +726,7 @@ public class Olympiad
 	{
 		int result = 0;
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(OLYMPIAD_LOAD_POINTS))
 		{
 			ps.setInt(1, objId);
@@ -765,7 +770,7 @@ public class Olympiad
 	
 	protected void deleteNobles()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(OLYMPIAD_DELETE_ALL))
 		{
 			ps.execute();

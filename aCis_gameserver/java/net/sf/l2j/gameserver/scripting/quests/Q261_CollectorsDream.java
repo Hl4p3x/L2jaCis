@@ -54,7 +54,7 @@ public class Q261_CollectorsDream extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30222-01.htm" : "30222-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30222-01.htm" : "30222-02.htm";
 				break;
 			
 			case STATE_STARTED:

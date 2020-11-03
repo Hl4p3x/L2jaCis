@@ -21,7 +21,7 @@ public class FuncMoveSpeed extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		return value * Formulas.DEX_BONUS[effector.getDEX()];
+		return value * Formulas.DEX_BONUS[effector.getStatus().getDEX()];
 	}
 	
 	public static Func getInstance()

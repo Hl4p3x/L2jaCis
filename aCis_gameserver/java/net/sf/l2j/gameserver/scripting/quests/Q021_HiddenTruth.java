@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Location;
@@ -134,20 +133,20 @@ public class Q021_HiddenTruth extends Quest
 	{
 		if (name.equalsIgnoreCase("1"))
 		{
-			npc.getAI().tryTo(IntentionType.MOVE_TO, PAGE_LOCS[0], null);
+			npc.getAI().tryToMoveTo(PAGE_LOCS[0], null);
 			npc.broadcastNpcSay("Follow me...");
 			
 			startQuestTimer("2", npc, player, 5000);
 		}
 		else if (name.equalsIgnoreCase("2"))
 		{
-			npc.getAI().tryTo(IntentionType.MOVE_TO, PAGE_LOCS[1], null);
+			npc.getAI().tryToMoveTo(PAGE_LOCS[1], null);
 			
 			startQuestTimer("3", npc, player, 12000);
 		}
 		else if (name.equalsIgnoreCase("3"))
 		{
-			npc.getAI().tryTo(IntentionType.MOVE_TO, PAGE_LOCS[2], null);
+			npc.getAI().tryToMoveTo(PAGE_LOCS[2], null);
 			
 			startQuestTimer("4", npc, player, 18000);
 		}
@@ -180,7 +179,7 @@ public class Q021_HiddenTruth extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 63) ? "31522-03.htm" : "31522-01.htm";
+				htmltext = (player.getStatus().getLevel() < 63) ? "31522-03.htm" : "31522-01.htm";
 				break;
 			
 			case STATE_STARTED:

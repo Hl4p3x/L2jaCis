@@ -62,7 +62,7 @@ public class Q015_SweetWhispers extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "31302-00a.htm" : "31302-00.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "31302-00a.htm" : "31302-00.htm";
 				break;
 			
 			case STATE_STARTED:

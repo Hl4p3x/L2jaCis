@@ -64,7 +64,7 @@ public class Q166_MassOfDarkness extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30130-00.htm";
-				else if (player.getLevel() < 2)
+				else if (player.getStatus().getLevel() < 2)
 					htmltext = "30130-02.htm";
 				else
 					htmltext = "30130-03.htm";

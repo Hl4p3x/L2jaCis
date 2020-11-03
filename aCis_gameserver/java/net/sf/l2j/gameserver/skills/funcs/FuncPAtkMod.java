@@ -21,7 +21,7 @@ public class FuncPAtkMod extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		return value * Formulas.STR_BONUS[effector.getSTR()] * effector.getLevelMod();
+		return value * Formulas.STR_BONUS[effector.getStatus().getSTR()] * effector.getStatus().getLevelMod();
 	}
 	
 	public static Func getInstance()

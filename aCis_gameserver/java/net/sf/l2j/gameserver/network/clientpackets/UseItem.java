@@ -1,7 +1,7 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.enums.IntentionType;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.items.ActionType;
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
@@ -13,7 +13,6 @@ import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ItemList;
 import net.sf.l2j.gameserver.network.serverpackets.PetItemList;
@@ -132,7 +131,7 @@ public final class UseItem extends L2GameClientPacket
 			// Equip it, removing first the previous item.
 			if (item.isEquipped())
 			{
-				pet.getInventory().unEquipItemInSlot(item.getLocationSlot());
+				pet.getInventory().unequipItemInSlot(item.getLocationSlot());
 				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.PET_TOOK_OFF_S1).addItemName(item));
 			}
 			else
@@ -168,7 +167,7 @@ public final class UseItem extends L2GameClientPacket
 					if (player.isCursedWeaponEquipped())
 						return;
 					
-					player.getAI().tryTo(IntentionType.USE_ITEM, _objectId, null);
+					player.getAI().tryToUseItem(_objectId);
 					break;
 				
 				default:
@@ -187,7 +186,7 @@ public final class UseItem extends L2GameClientPacket
 		{
 			if (player.getAttackType() == WeaponType.FISHINGROD && item.getItem().getItemType() == EtcItemType.LURE)
 			{
-				player.getInventory().setPaperdollItem(Inventory.PAPERDOLL_LHAND, item);
+				player.getInventory().setPaperdollItem(Paperdoll.LHAND, item);
 				player.broadcastUserInfo();
 				
 				sendPacket(new ItemList(player, false));

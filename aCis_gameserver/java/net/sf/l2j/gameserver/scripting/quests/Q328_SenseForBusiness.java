@@ -77,7 +77,7 @@ public class Q328_SenseForBusiness extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 21) ? "30436-01.htm" : "30436-02.htm";
+				htmltext = (player.getStatus().getLevel() < 21) ? "30436-01.htm" : "30436-02.htm";
 				break;
 			
 			case STATE_STARTED:

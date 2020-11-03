@@ -25,8 +25,6 @@ public class Q101_SwordOfSolidarity extends Quest
 	private static final int ALTRAN_NOTE = 742;
 	
 	private static final int SWORD_OF_SOLIDARITY = 738;
-	private static final int SPIRITSHOT_FOR_BEGINNERS = 5790;
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
 	private static final int LESSER_HEALING_POT = 1060;
 	private static final int ECHO_BATTLE = 4412;
 	private static final int ECHO_LOVE = 4413;
@@ -72,28 +70,15 @@ public class Q101_SwordOfSolidarity extends Quest
 		{
 			st.takeItems(BROKEN_SWORD_HANDLE, 1);
 			st.giveItems(SWORD_OF_SOLIDARITY, 1);
-			st.giveItems(LESSER_HEALING_POT, 100);
 			
-			if (player.isNewbie())
-			{
-				st.showQuestionMark(26);
-				if (player.isMageClass())
-				{
-					st.playTutorialVoice("tutorial_voice_027");
-					st.giveItems(SPIRITSHOT_FOR_BEGINNERS, 3000);
-				}
-				else
-				{
-					st.playTutorialVoice("tutorial_voice_026");
-					st.giveItems(SOULSHOT_FOR_BEGINNERS, 7000);
-				}
-			}
+			st.rewardNewbieShots(7000, 0);
+			st.rewardItems(LESSER_HEALING_POT, 100);
+			st.rewardItems(ECHO_BATTLE, 10);
+			st.rewardItems(ECHO_LOVE, 10);
+			st.rewardItems(ECHO_SOLITUDE, 10);
+			st.rewardItems(ECHO_FEAST, 10);
+			st.rewardItems(ECHO_CELEBRATION, 10);
 			
-			st.giveItems(ECHO_BATTLE, 10);
-			st.giveItems(ECHO_LOVE, 10);
-			st.giveItems(ECHO_SOLITUDE, 10);
-			st.giveItems(ECHO_FEAST, 10);
-			st.giveItems(ECHO_CELEBRATION, 10);
 			player.broadcastPacket(new SocialAction(player, 3));
 			st.playSound(QuestState.SOUND_FINISH);
 			st.exitQuest(false);
@@ -115,7 +100,7 @@ public class Q101_SwordOfSolidarity extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.HUMAN)
 					htmltext = "30008-01a.htm";
-				else if (player.getLevel() < 9)
+				else if (player.getStatus().getLevel() < 9)
 					htmltext = "30008-01.htm";
 				else
 					htmltext = "30008-02.htm";

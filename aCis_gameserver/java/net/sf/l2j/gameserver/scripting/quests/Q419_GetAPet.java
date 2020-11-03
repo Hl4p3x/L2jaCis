@@ -208,7 +208,7 @@ public class Q419_GetAPet extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30731-01.htm" : "30731-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30731-01.htm" : "30731-02.htm";
 				break;
 			
 			case STATE_STARTED:

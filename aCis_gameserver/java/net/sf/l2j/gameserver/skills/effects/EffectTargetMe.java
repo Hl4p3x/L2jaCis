@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.skills.effects;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -23,16 +22,12 @@ public class EffectTargetMe extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		// work only on players, cause mobs got their own aggro system (AGGDAMAGE, AGGREMOVE, etc)
 		if (getEffected() instanceof Player)
 		{
-			final Creature target = getEffector();
-			// add an INTENTION_ATTACK, but only if victim got attacker as target
-			if (getEffected().getTarget() == target)
-				getEffected().getAI().tryTo(IntentionType.ATTACK, target, false);
-			// target the agressor
+			if (getEffected().getTarget() == getEffector())
+				getEffected().getAI().tryToAttack(getEffector());
 			else
-				getEffected().setTarget(target);
+				getEffected().setTarget(getEffector());
 			
 			return true;
 		}

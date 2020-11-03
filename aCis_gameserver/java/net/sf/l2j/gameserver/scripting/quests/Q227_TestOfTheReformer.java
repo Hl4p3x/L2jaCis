@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.scripting.quests;
 
 import net.sf.l2j.commons.util.ArraysUtil;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -151,10 +150,10 @@ public class Q227_TestOfTheReformer extends SecondClassQuest
 				_crimsonWerewolf = addSpawn(CRIMSON_WEREWOLF, -9382, -89852, -2333, 0, false, 300000, true);
 			
 			((Attackable) _crimsonWerewolf).addDamageHate(_olMahumPilgrim_Kakan, 0, 99999);
-			_crimsonWerewolf.getAI().tryTo(IntentionType.ATTACK, _olMahumPilgrim_Kakan, false);
+			_crimsonWerewolf.getAI().tryToAttack(_olMahumPilgrim_Kakan);
 			
 			// ((Attackable) _olMahumPilgrim_Kakan).addDamageHate(_crimsonWerewolf, 0, 99999);
-			_olMahumPilgrim_Kakan.getAI().tryTo(IntentionType.ATTACK, _crimsonWerewolf, false);
+			_olMahumPilgrim_Kakan.getAI().tryToAttack(_crimsonWerewolf);
 		}
 		// NYAKURI
 		else if (event.equalsIgnoreCase("30670-03.htm"))
@@ -169,10 +168,10 @@ public class Q227_TestOfTheReformer extends SecondClassQuest
 				_krudelLizardman = addSpawn(KRUDEL_LIZARDMAN, 126019, -179983, -1781, 0, false, 300000, true);
 			
 			((Attackable) _krudelLizardman).addDamageHate(_olMahumPilgrim_Nyakuri, 0, 99999);
-			_krudelLizardman.getAI().tryTo(IntentionType.ATTACK, _olMahumPilgrim_Nyakuri, false);
+			_krudelLizardman.getAI().tryToAttack(_olMahumPilgrim_Nyakuri);
 			
 			// ((Attackable) _olMahumPilgrim_Nyakuri).addDamageHate(_krudelLizardman, 0, 99999);
-			_olMahumPilgrim_Nyakuri.getAI().tryTo(IntentionType.ATTACK, _krudelLizardman, false);
+			_olMahumPilgrim_Nyakuri.getAI().tryToAttack(_krudelLizardman);
 		}
 		
 		return htmltext;
@@ -207,7 +206,7 @@ public class Q227_TestOfTheReformer extends SecondClassQuest
 		{
 			case STATE_CREATED:
 				if (player.getClassId() == ClassId.CLERIC || player.getClassId() == ClassId.SHILLIEN_ORACLE)
-					htmltext = (player.getLevel() < 39) ? "30118-01.htm" : "30118-03.htm";
+					htmltext = (player.getStatus().getLevel() < 39) ? "30118-01.htm" : "30118-03.htm";
 				else
 					htmltext = "30118-02.htm";
 				break;
@@ -274,10 +273,10 @@ public class Q227_TestOfTheReformer extends SecondClassQuest
 								_olMahumInspector = addSpawn(OL_MAHUM_INSPECTOR, -4034, 40201, -3665, 0, false, 300000, true);
 							
 							((Attackable) _olMahumInspector).addDamageHate(_olMahumPilgrim_Katari, 0, 99999);
-							_olMahumInspector.getAI().tryTo(IntentionType.ATTACK, _olMahumPilgrim_Katari, false);
+							_olMahumInspector.getAI().tryToAttack(_olMahumPilgrim_Katari);
 							
 							// ((Creature) _olMahumPilgrim_Katari).addDamageHate(_olMahumInspector, 0, 99999);
-							_olMahumPilgrim_Katari.getAI().tryTo(IntentionType.ATTACK, _olMahumInspector, false);
+							_olMahumPilgrim_Katari.getAI().tryToAttack(_olMahumInspector);
 						}
 						else if (cond == 8)
 						{
@@ -287,7 +286,7 @@ public class Q227_TestOfTheReformer extends SecondClassQuest
 							{
 								_olMahumBetrayer = addSpawn(OL_MAHUM_BETRAYER, -4106, 40174, -3660, 0, false, 60000, true);
 								_olMahumBetrayer.forceRunStance();
-								_olMahumBetrayer.getAI().tryTo(IntentionType.MOVE_TO, new Location(-7732, 36787, -3709), null);
+								_olMahumBetrayer.getAI().tryToMoveTo(new Location(-7732, 36787, -3709), null);
 							}
 						}
 						else if (cond == 9)

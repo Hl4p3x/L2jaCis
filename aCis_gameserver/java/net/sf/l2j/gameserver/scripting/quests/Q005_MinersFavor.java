@@ -81,7 +81,7 @@ public class Q005_MinersFavor extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 2) ? "30554-01.htm" : "30554-02.htm";
+				htmltext = (player.getStatus().getLevel() < 2) ? "30554-01.htm" : "30554-02.htm";
 				break;
 			
 			case STATE_STARTED:

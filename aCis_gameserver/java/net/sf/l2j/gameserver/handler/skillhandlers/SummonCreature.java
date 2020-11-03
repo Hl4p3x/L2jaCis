@@ -2,6 +2,7 @@ package net.sf.l2j.gameserver.handler.skillhandlers;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.data.xml.SummonItemData;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.ISkillHandler;
@@ -30,14 +31,14 @@ public class SummonCreature implements ISkillHandler
 			return;
 		
 		final Player player = (Player) activeChar;
-		final ItemInstance item = (ItemInstance) player.getAI().getCurrentIntention().getSecondParameter();
+		final ItemInstance item = player.getInventory().getItemByObjectId(player.getAI().getCurrentIntention().getItemObjectId());
 		
 		// Skill cast may have been interrupted of cancelled
 		if (item == null)
 			return;
 		
 		// Check for summon item validity.
-		if (item.getOwnerId() != player.getObjectId() || item.getLocation() != ItemInstance.ItemLocation.INVENTORY)
+		if (item.getOwnerId() != player.getObjectId() || item.getLocation() != ItemLocation.INVENTORY)
 			return;
 		
 		// Owner has a pet listed in world.

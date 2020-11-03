@@ -420,7 +420,7 @@ public final class Q343_UnderTheShadowOfTheIvoryTower extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getClassId().getType() == ClassType.MYSTIC && player.getRace() != ClassRace.ORC) ? ((player.getLevel() < 40) ? "30834-02.htm" : "30834-03.htm") : "30834-01.htm";
+				htmltext = (player.getClassId().getType() == ClassType.MYSTIC && player.getRace() != ClassRace.ORC) ? ((player.getStatus().getLevel() < 40) ? "30834-02.htm" : "30834-03.htm") : "30834-01.htm";
 				break;
 			
 			case STATE_STARTED:

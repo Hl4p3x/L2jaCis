@@ -108,7 +108,7 @@ public class Q632_NecromancersRequest extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 63) ? "31522-01.htm" : "31522-02.htm";
+				htmltext = (player.getStatus().getLevel() < 63) ? "31522-01.htm" : "31522-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -5,8 +5,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.loginserver.model.Account;
 
 /**
@@ -32,7 +32,7 @@ public class AccountTable
 	 */
 	public Account getAccount(String login)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SELECT_ACCOUNT))
 		{
 			ps.setString(1, login);
@@ -58,7 +58,7 @@ public class AccountTable
 	 */
 	public Account createAccount(String login, String hashed, long currentTime)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_ACCOUNT))
 		{
 			ps.setString(1, login);
@@ -83,7 +83,7 @@ public class AccountTable
 	 */
 	public boolean setAccountLastTime(String login, long currentTime)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_ACCOUNT_LAST_TIME))
 		{
 			ps.setLong(1, currentTime);
@@ -105,7 +105,7 @@ public class AccountTable
 	 */
 	public void setAccountAccessLevel(String login, int level)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_ACCOUNT_ACCESS_LEVEL))
 		{
 			ps.setInt(1, level);
@@ -125,7 +125,7 @@ public class AccountTable
 	 */
 	public void setAccountLastServer(String login, int serverId)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_ACCOUNT_LAST_SERVER))
 		{
 			ps.setInt(1, serverId);

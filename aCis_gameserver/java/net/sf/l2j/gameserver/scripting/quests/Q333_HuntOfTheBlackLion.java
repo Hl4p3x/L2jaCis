@@ -649,7 +649,7 @@ public class Q333_HuntOfTheBlackLion extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() < 25)
+				if (player.getStatus().getLevel() < 25)
 					htmltext = "30735-01.htm";
 				else if (!st.hasQuestItems(BLACK_LION_MARK))
 					htmltext = "30735-02.htm";

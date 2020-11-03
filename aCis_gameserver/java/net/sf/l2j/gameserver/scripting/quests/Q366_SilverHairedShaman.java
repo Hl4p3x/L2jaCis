@@ -73,7 +73,7 @@ public class Q366_SilverHairedShaman extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 48) ? "30111-0.htm" : "30111-1.htm";
+				htmltext = (player.getStatus().getLevel() < 48) ? "30111-0.htm" : "30111-1.htm";
 				break;
 			
 			case STATE_STARTED:

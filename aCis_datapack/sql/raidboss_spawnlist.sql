@@ -123,7 +123,7 @@ INSERT INTO `raidboss_spawnlist` VALUES
 -- (25273,23800,119500,-8976,0,36,24,0,0,0), -- Carnamakos (50) -- (Spawn by Quest)
 (25276,154088,-14116,-3736,0,36,24,0,0,0), -- Death Lord Ipos (75)
 (25277,54651,180269,-4976,0,36,24,0,0,0), -- Lilith's Witch Marilion (50)
-(25280,85622,88766,-5120,0,36,24,0,0,0), -- Pagan Watcher Cerberon (55)
+(25280,-12532,-240419,-8160,0,36,24,0,0,0), -- Pagan Watcher Cerberon (55)
 (25281,151053,88124,-5424,0,36,24,0,0,0), -- Anakim's Nemesis Zakaron (70)
 (25282,179311,-7632,-4896,0,36,24,0,0,0), -- Death Lord Shax (75)
 -- (25283,184410,-10111,-5488,0,36,24,0,0,0), -- Lilith (80) -- (Spawn by Seven Signs)

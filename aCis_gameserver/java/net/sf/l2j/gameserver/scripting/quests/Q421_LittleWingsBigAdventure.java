@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.scripting.quests;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -21,8 +20,8 @@ import net.sf.l2j.gameserver.skills.L2Skill;
  * <ul>
  * <li>1-3 leads initial mimyu behavior ;</li>
  * <li>used for leaves support as mask : 4, 8, 16 or 32 = 60 overall ;</li>
- * <li>63 becomes the "marker" to get back to mimyu (60 + 3), meaning you hitted the 4 trees ;</li>
- * <li>setted to 100 if mimyu check is ok.</li>
+ * <li>63 becomes the "marker" to get back to mimyu (60 + 3), meaning you already hit the 4 trees ;</li>
+ * <li>set to 100 if mimyu check is ok.</li>
  * </ul>
  */
 public class Q421_LittleWingsBigAdventure extends Quest
@@ -115,7 +114,7 @@ public class Q421_LittleWingsBigAdventure extends Quest
 		{
 			case STATE_CREATED:
 				// Wrong level.
-				if (player.getLevel() < 45)
+				if (player.getStatus().getLevel() < 45)
 					htmltext = "30610-01.htm";
 				// Got more than one flute, or none.
 				else if (st.getQuestItemsCount(3500) + st.getQuestItemsCount(3501) + st.getQuestItemsCount(3502) != 1)
@@ -275,7 +274,7 @@ public class Q421_LittleWingsBigAdventure extends Quest
 			
 			newNpc.forceRunStance();
 			newNpc.addDamageHate(killer, 0, 999);
-			newNpc.getAI().tryTo(IntentionType.ATTACK, killer, false);
+			newNpc.getAI().tryToAttack(killer);
 		}
 		
 		return null;

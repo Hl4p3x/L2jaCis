@@ -96,7 +96,7 @@ public class Q360_PlunderTheirSupplies extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 52) ? "30873-0a.htm" : "30873-0.htm";
+				htmltext = (player.getStatus().getLevel() < 52) ? "30873-0a.htm" : "30873-0.htm";
 				break;
 			
 			case STATE_STARTED:

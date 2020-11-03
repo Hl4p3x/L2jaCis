@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 
@@ -24,8 +23,8 @@ public final class RequestChangeWaitType extends L2GameClientPacket
 		final WorldObject target = player.getTarget();
 		
 		if (_typeStand)
-			player.getAI().tryTo(IntentionType.STAND, null, null);
+			player.getAI().tryToStand();
 		else
-			player.getAI().tryTo(IntentionType.SIT, target, null);
+			player.getAI().tryToSit(target);
 	}
 }

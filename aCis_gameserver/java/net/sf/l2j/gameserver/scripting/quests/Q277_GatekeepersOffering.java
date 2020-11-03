@@ -55,7 +55,7 @@ public class Q277_GatekeepersOffering extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 15) ? "30576-01.htm" : "30576-02.htm";
+				htmltext = (player.getStatus().getLevel() < 15) ? "30576-01.htm" : "30576-02.htm";
 				break;
 			
 			case STATE_STARTED:

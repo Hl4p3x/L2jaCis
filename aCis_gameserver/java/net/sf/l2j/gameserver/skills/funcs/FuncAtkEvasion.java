@@ -21,7 +21,7 @@ public class FuncAtkEvasion extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		return value + Formulas.BASE_EVASION_ACCURACY[effector.getDEX()] + effector.getLevel();
+		return value + Formulas.BASE_EVASION_ACCURACY[effector.getStatus().getDEX()] + effector.getStatus().getLevel();
 	}
 	
 	public static Func getInstance()

@@ -8,7 +8,6 @@ import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.Formulas;
@@ -57,8 +56,8 @@ public class Manadam implements ISkillHandler
 				
 				double damage = Formulas.calcManaDam(activeChar, target, skill, sps, bsps);
 				
-				double mp = (damage > target.getCurrentMp() ? target.getCurrentMp() : damage);
-				target.reduceCurrentMp(mp);
+				double mp = (damage > target.getStatus().getMp() ? target.getStatus().getMp() : damage);
+				target.getStatus().reduceMp(mp);
 				if (damage > 0)
 				{
 					target.stopEffects(EffectType.SLEEP);
@@ -66,13 +65,7 @@ public class Manadam implements ISkillHandler
 				}
 				
 				if (target instanceof Player)
-				{
-					StatusUpdate sump = new StatusUpdate(target);
-					sump.addAttribute(StatusUpdate.CUR_MP, (int) target.getCurrentMp());
-					target.sendPacket(sump);
-					
 					target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S2_MP_HAS_BEEN_DRAINED_BY_S1).addCharName(activeChar).addNumber((int) mp));
-				}
 				
 				if (activeChar instanceof Player)
 					activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOUR_OPPONENTS_MP_WAS_REDUCED_BY_S1).addNumber((int) mp));

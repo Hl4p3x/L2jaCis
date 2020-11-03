@@ -5,12 +5,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.commons.util.StatsSet;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.enums.MessageType;
 import net.sf.l2j.gameserver.model.World;
@@ -106,7 +106,7 @@ public class CursedWeapon
 		
 		_skillMaxLevel = SkillTable.getInstance().getMaxLevel(_skillId);
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(LOAD_CW))
 			{
@@ -280,7 +280,7 @@ public class CursedWeapon
 			{
 				LOGGER.info("{} is being removed offline.", _name);
 				
-				try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+				try (Connection con = ConnectionPool.getConnection())
 				{
 					// Delete the item
 					try (PreparedStatement ps = con.prepareStatement(DELETE_ITEM))
@@ -578,7 +578,7 @@ public class CursedWeapon
 		cancelDropTimer();
 		
 		// Save data on database.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(INSERT_CW))
 			{
@@ -621,8 +621,7 @@ public class CursedWeapon
 		_player.useEquippableItem(_item, true);
 		
 		// Fully heal player
-		_player.setCurrentHpMp(_player.getMaxHp(), _player.getMaxMp());
-		_player.setCurrentCp(_player.getMaxCp());
+		_player.getStatus().setMaxCpHpMp();
 		
 		// Refresh player stats
 		_player.broadcastUserInfo();
@@ -636,7 +635,7 @@ public class CursedWeapon
 	 */
 	private void removeFromDb()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			try (PreparedStatement ps = con.prepareStatement(DELETE_CW))
 			{
@@ -789,7 +788,7 @@ public class CursedWeapon
 			// Save data.
 			else
 			{
-				try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+				try (Connection con = ConnectionPool.getConnection())
 				{
 					try (PreparedStatement ps = con.prepareStatement(UPDATE_CW))
 					{

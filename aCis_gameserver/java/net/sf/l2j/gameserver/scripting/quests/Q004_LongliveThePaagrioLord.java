@@ -64,7 +64,7 @@ public class Q004_LongliveThePaagrioLord extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ORC)
 					htmltext = "30578-00.htm";
-				else if (player.getLevel() < 2)
+				else if (player.getStatus().getLevel() < 2)
 					htmltext = "30578-01.htm";
 				else
 					htmltext = "30578-02.htm";

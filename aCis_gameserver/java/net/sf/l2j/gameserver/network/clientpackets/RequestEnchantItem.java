@@ -4,6 +4,8 @@ import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.ArmorSetData;
+import net.sf.l2j.gameserver.enums.Paperdoll;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.ArmorSet;
@@ -11,7 +13,6 @@ import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Armor;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.EnchantResult;
 import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
@@ -148,10 +149,10 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 					else if (it instanceof Armor && item.getEnchantLevel() == 6)
 					{
 						// Checks if player is wearing a chest item
-						final ItemInstance chestItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
-						if (chestItem != null)
+						final int chestId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+						if (chestId != 0)
 						{
-							final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestItem.getItemId());
+							final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestId);
 							if (armorSet != null && armorSet.isEnchanted6(player)) // has all parts of set enchanted to 6 or more
 							{
 								final int skillId = armorSet.getEnchant6skillId();
@@ -191,10 +192,10 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 					else if (it instanceof Armor && item.getEnchantLevel() >= 6)
 					{
 						// Checks if player is wearing a chest item
-						final ItemInstance chestItem = player.getInventory().getPaperdollItem(Inventory.PAPERDOLL_CHEST);
-						if (chestItem != null)
+						final int chestId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+						if (chestId != 0)
 						{
-							final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestItem.getItemId());
+							final ArmorSet armorSet = ArmorSetData.getInstance().getSet(chestId);
 							if (armorSet != null && armorSet.isEnchanted6(player)) // has all parts of set enchanted to 6 or more
 							{
 								final int skillId = armorSet.getEnchant6skillId();
@@ -260,7 +261,7 @@ public final class RequestEnchantItem extends AbstractEnchantPacket
 						player.sendPacket(EnchantResult.UNK_RESULT_1);
 					
 					StatusUpdate su = new StatusUpdate(player);
-					su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
+					su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
 					player.sendPacket(su);
 				}
 			}

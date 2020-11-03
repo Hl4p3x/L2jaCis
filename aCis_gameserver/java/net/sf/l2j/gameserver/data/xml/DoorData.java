@@ -145,10 +145,10 @@ public class DoorData implements IXmlReader
 			set.set("runSpd", 0);
 			set.set("radius", 16);
 			
-			final DoorTemplate template = new DoorTemplate(set);
-			final Door door = new Door(IdFactory.getInstance().getNextId(), template);
-			door.setCurrentHpMp(door.getMaxHp(), door.getMaxMp());
+			final Door door = new Door(IdFactory.getInstance().getNextId(), new DoorTemplate(set));
+			door.getStatus().setMaxHpMp();
 			door.getPosition().set(posX, posY, posZ);
+			
 			_doors.put(door.getDoorId(), door);
 		}));
 	}

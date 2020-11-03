@@ -57,7 +57,7 @@ public class Q170_DangerousSeduction extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.DARK_ELF)
 					htmltext = "30305-00.htm";
-				else if (player.getLevel() < 21)
+				else if (player.getStatus().getLevel() < 21)
 					htmltext = "30305-02.htm";
 				else
 					htmltext = "30305-03.htm";

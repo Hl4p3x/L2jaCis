@@ -82,7 +82,7 @@ public class Q002_WhatWomenWant extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.ELF && player.getRace() != ClassRace.HUMAN)
 					htmltext = "30223-00.htm";
-				else if (player.getLevel() < 2)
+				else if (player.getStatus().getLevel() < 2)
 					htmltext = "30223-01.htm";
 				else
 					htmltext = "30223-02.htm";

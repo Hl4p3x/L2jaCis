@@ -27,7 +27,7 @@ public class ExPartyRoomMember extends L2GameServerPacket
 			writeD(member.getObjectId());
 			writeS(member.getName());
 			writeD(member.getActiveClass());
-			writeD(member.getLevel());
+			writeD(member.getStatus().getLevel());
 			writeD(1); // TODO Implement bbs behavior.
 			
 			if (_room.isLeader(member))

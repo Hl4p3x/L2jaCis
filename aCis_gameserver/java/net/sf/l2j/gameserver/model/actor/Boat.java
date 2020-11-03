@@ -6,18 +6,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.math.MathUtil;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.actors.OperateType;
 import net.sf.l2j.gameserver.model.actor.ai.type.BoatAI;
 import net.sf.l2j.gameserver.model.actor.ai.type.CreatureAI;
 import net.sf.l2j.gameserver.model.actor.move.BoatMove;
-import net.sf.l2j.gameserver.model.actor.stat.BoatStat;
+import net.sf.l2j.gameserver.model.actor.status.BoatStatus;
 import net.sf.l2j.gameserver.model.actor.template.CreatureTemplate;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
@@ -46,6 +45,18 @@ public class Boat extends Creature
 	}
 	
 	@Override
+	public BoatStatus getStatus()
+	{
+		return (BoatStatus) _status;
+	}
+	
+	@Override
+	public void setStatus()
+	{
+		_status = new BoatStatus(this);
+	}
+	
+	@Override
 	public BoatMove getMove()
 	{
 		return (BoatMove) _move;
@@ -55,18 +66,6 @@ public class Boat extends Creature
 	public void setMove()
 	{
 		_move = new BoatMove(this);
-	}
-	
-	@Override
-	public BoatStat getStat()
-	{
-		return (BoatStat) super.getStat();
-	}
-	
-	@Override
-	public void initCharStat()
-	{
-		setStat(new BoatStat(this));
 	}
 	
 	@Override
@@ -82,7 +81,7 @@ public class Boat extends Creature
 		
 		setTeleporting(true);
 		
-		getAI().tryTo(IntentionType.ACTIVE, null, null);
+		getAI().tryToActive();
 		
 		for (Player player : _passengers)
 			player.teleportTo(x, y, z, randomOffset);
@@ -143,12 +142,6 @@ public class Boat extends Creature
 	public Weapon getSecondaryWeaponItem()
 	{
 		return null;
-	}
-	
-	@Override
-	public int getLevel()
-	{
-		return 0;
 	}
 	
 	@Override
@@ -395,7 +388,7 @@ public class Boat extends Creature
 	}
 	
 	@Override
-	public void onAction(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	public void onAction(Player player, boolean isCtrlPressed, boolean isShiftPressed)
 	{
 	}
 	

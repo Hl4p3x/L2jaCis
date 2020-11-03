@@ -54,7 +54,7 @@ public class Q313_CollectSpores extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 8) ? "30150-02.htm" : "30150-03.htm";
+				htmltext = (player.getStatus().getLevel() < 8) ? "30150-02.htm" : "30150-03.htm";
 				break;
 			
 			case STATE_STARTED:

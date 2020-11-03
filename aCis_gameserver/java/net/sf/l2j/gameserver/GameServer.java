@@ -6,15 +6,15 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.logging.LogManager;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.mmocore.SelectorConfig;
 import net.sf.l2j.commons.mmocore.SelectorThread;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.util.SysUtil;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.communitybbs.Manager.ForumsBBSManager;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.cache.CrestCache;
@@ -57,6 +57,7 @@ import net.sf.l2j.gameserver.data.xml.DoorData;
 import net.sf.l2j.gameserver.data.xml.FishData;
 import net.sf.l2j.gameserver.data.xml.HennaData;
 import net.sf.l2j.gameserver.data.xml.HerbDropData;
+import net.sf.l2j.gameserver.data.xml.InstantTeleportData;
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
 import net.sf.l2j.gameserver.data.xml.MultisellData;
@@ -71,7 +72,7 @@ import net.sf.l2j.gameserver.data.xml.SoulCrystalData;
 import net.sf.l2j.gameserver.data.xml.SpellbookData;
 import net.sf.l2j.gameserver.data.xml.StaticObjectData;
 import net.sf.l2j.gameserver.data.xml.SummonItemData;
-import net.sf.l2j.gameserver.data.xml.TeleportLocationData;
+import net.sf.l2j.gameserver.data.xml.TeleportData;
 import net.sf.l2j.gameserver.data.xml.WalkerRouteData;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.AdminCommandHandler;
@@ -132,17 +133,19 @@ public class GameServer
 			LogManager.getLogManager().readConfiguration(is);
 		}
 		
-		StringUtil.printSection("aCis");
-		
-		// Initialize config
+		StringUtil.printSection("Config");
 		Config.loadGameServer();
 		
-		// Factories
-		L2DatabaseFactory.getInstance();
+		StringUtil.printSection("Poolers");
+		ConnectionPool.init();
 		ThreadPool.init();
 		
 		StringUtil.printSection("IdFactory");
 		IdFactory.getInstance();
+		
+		StringUtil.printSection("Cache");
+		HtmCache.getInstance();
+		CrestCache.getInstance();
 		
 		StringUtil.printSection("World");
 		World.getInstance();
@@ -178,9 +181,6 @@ public class GameServer
 		PlayerData.getInstance();
 		PlayerInfoTable.getInstance();
 		PlayerLevelData.getInstance();
-		NewbieBuffData.getInstance();
-		TeleportLocationData.getInstance();
-		HtmCache.getInstance();
 		PartyMatchRoomManager.getInstance();
 		RaidPointManager.getInstance();
 		
@@ -191,7 +191,6 @@ public class GameServer
 			LOGGER.info("Community server is disabled.");
 		
 		StringUtil.printSection("Clans");
-		CrestCache.getInstance();
 		ClanTable.getInstance();
 		
 		StringUtil.printSection("Geodata & Pathfinding");
@@ -236,6 +235,9 @@ public class GameServer
 		GrandBossManager.getInstance();
 		DayNightManager.getInstance().notifyChangeMode();
 		DimensionalRiftManager.getInstance();
+		NewbieBuffData.getInstance();
+		InstantTeleportData.getInstance();
+		TeleportData.getInstance();
 		
 		StringUtil.printSection("Olympiads & Heroes");
 		OlympiadGameManager.getInstance();
@@ -265,7 +267,7 @@ public class GameServer
 		if (Config.ALLOW_WEDDING)
 			CoupleManager.getInstance();
 		
-		if (Config.ALT_FISH_CHAMPIONSHIP_ENABLED)
+		if (Config.ALLOW_FISH_CHAMPIONSHIP)
 			FishingChampionshipManager.getInstance();
 		
 		StringUtil.printSection("Handlers");
@@ -323,7 +325,7 @@ public class GameServer
 		
 		try
 		{
-			_selectorThread.openServerSocket(bindAddress, Config.PORT_GAME);
+			_selectorThread.openServerSocket(bindAddress, Config.GAMESERVER_PORT);
 		}
 		catch (Exception e)
 		{

@@ -8,19 +8,30 @@ import net.sf.l2j.gameserver.network.SystemMessageId;
 /**
  * This class groups all attack data related to a {@link Creature}.
  */
-public class PlayerAttack extends PlayableAttack
+public class PlayerAttack extends PlayableAttack<Player>
 {
-	public PlayerAttack(Creature creature)
+	public PlayerAttack(Player creature)
 	{
 		super(creature);
 	}
 	
 	@Override
-	public void doAttack(Creature target)
+	public boolean doAttack(Creature target)
 	{
-		super.doAttack(target);
+		final boolean isHit = super.doAttack(target);
+		if (isHit)
+		{
+			// If hit by a CW or by an hero while holding a CW, CP are reduced to 0.
+			if (target instanceof Player && !target.isInvul())
+			{
+				final Player targetPlayer = (Player) target;
+				if (_actor.isCursedWeaponEquipped() || (_actor.isHero() && targetPlayer.isCursedWeaponEquipped()))
+					targetPlayer.getStatus().setCp(0);
+			}
+		}
 		
-		((Player) _creature).clearRecentFakeDeath();
+		_actor.clearRecentFakeDeath();
+		return isHit;
 	}
 	
 	@Override
@@ -29,26 +40,25 @@ public class PlayerAttack extends PlayableAttack
 		if (!super.canDoAttack(target))
 			return false;
 		
-		final Player player = _creature.getActingPlayer();
-		final Weapon weaponItem = player.getActiveWeaponItem();
+		final Weapon weaponItem = _actor.getActiveWeaponItem();
 		
 		switch (weaponItem.getItemType())
 		{
 			case FISHINGROD:
-				player.sendPacket(SystemMessageId.CANNOT_ATTACK_WITH_FISHING_POLE);
+				_actor.sendPacket(SystemMessageId.CANNOT_ATTACK_WITH_FISHING_POLE);
 				return false;
 			
 			case BOW:
-				if (!_creature.checkAndEquipArrows())
+				if (!_actor.checkAndEquipArrows())
 				{
-					player.sendPacket(SystemMessageId.NOT_ENOUGH_ARROWS);
+					_actor.sendPacket(SystemMessageId.NOT_ENOUGH_ARROWS);
 					return false;
 				}
 				
 				final int mpConsume = weaponItem.getMpConsume();
-				if (mpConsume > 0 && mpConsume > _creature.getCurrentMp())
+				if (mpConsume > 0 && mpConsume > _actor.getStatus().getMp())
 				{
-					player.sendPacket(SystemMessageId.NOT_ENOUGH_MP);
+					_actor.sendPacket(SystemMessageId.NOT_ENOUGH_MP);
 					return false;
 				}
 		}

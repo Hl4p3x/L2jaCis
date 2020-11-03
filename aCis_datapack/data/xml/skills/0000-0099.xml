@@ -1313,12 +1313,14 @@
 		<set name="operateType" val="ACTIVE" />
 		<set name="isDebuff" val="true" />
 		<enchant1 name="magicLvl" val="#enchantMagicLvl" />
-		<enchant1 name="effectPower" val="#ench1effectPower"/>
 		<enchant2 name="magicLvl" val="#enchantMagicLvl" />
 		<enchant2 name="mpConsume" val="#ench2MpConsume"/>
 		<for>
 			<effect count="10" name="DamOverTime" time="3" val="#dot" stackOrder="#abnormalLvl" stackType="poison" abnormal="poison" effectPower="35" effectType="POISON" />
 		</for>
+		<enchant1for>
+			<effect count="10" name="DamOverTime" time="3" val="144" stackOrder="8" stackType="poison" abnormal="poison" effectPower="#ench1effectPower" effectType="POISON" />
+		</enchant1for>
 	</skill>
 	<skill id="86" levels="3" name="Reflect Damage" enchantLevels1="30" enchantLevels2="30" >
 		<table name="#enchantMagicLvl"> 76 76 76 77 77 77 78 78 78 79 79 79 80 80 80 81 81 81 82 82 82 82 83 83 83 84 84 85 85 85 </table>

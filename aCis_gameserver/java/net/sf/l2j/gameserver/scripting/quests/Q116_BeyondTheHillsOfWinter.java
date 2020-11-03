@@ -84,7 +84,7 @@ public class Q116_BeyondTheHillsOfWinter extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 30 || player.getRace() != ClassRace.DWARF) ? "30535-00.htm" : "30535-01.htm";
+				htmltext = (player.getStatus().getLevel() < 30 || player.getRace() != ClassRace.DWARF) ? "30535-00.htm" : "30535-01.htm";
 				break;
 			
 			case STATE_STARTED:

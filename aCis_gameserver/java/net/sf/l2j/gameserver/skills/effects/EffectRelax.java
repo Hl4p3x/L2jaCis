@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.skills.effects;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -26,7 +25,7 @@ public class EffectRelax extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		getEffected().getAI().tryTo(IntentionType.SIT, null, null);
+		((Player) getEffected()).sitDown();
 		
 		return super.onStart();
 	}
@@ -40,19 +39,19 @@ public class EffectRelax extends AbstractEffect
 		if (!((Player) getEffected()).isSitting() && !((Player) getEffected()).isSittingNow())
 			return false;
 		
-		if (getEffected().getCurrentHp() + 1 > getEffected().getMaxHp())
+		if (getEffected().getStatus().getHp() + 1 > getEffected().getStatus().getMaxHp())
 		{
 			getEffected().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_DEACTIVATED_HP_FULL));
 			return false;
 		}
 		
-		if (getTemplate().getValue() > getEffected().getCurrentMp())
+		if (getTemplate().getValue() > getEffected().getStatus().getMp())
 		{
 			getEffected().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP));
 			return false;
 		}
 		
-		getEffected().reduceCurrentMp(getTemplate().getValue());
+		getEffected().getStatus().reduceMp(getTemplate().getValue());
 		return true;
 	}
 	

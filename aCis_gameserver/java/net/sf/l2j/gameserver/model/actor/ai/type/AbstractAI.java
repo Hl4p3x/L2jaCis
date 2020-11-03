@@ -1,21 +1,29 @@
 package net.sf.l2j.gameserver.model.actor.ai.type;
 
+import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.IntentionType;
+import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Boat;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.ai.Intention;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.location.Location;
-import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.network.serverpackets.AutoAttackStart;
 import net.sf.l2j.gameserver.network.serverpackets.AutoAttackStop;
+import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.taskmanager.AttackStanceTaskManager;
 
+/**
+ * A layer used to process {@link Intention}s of an {@link Creature}.<br>
+ * <br>
+ * Each {@link Creature} holds 3 {@link Intention}s : past, current and future.<br>
+ * <br>
+ * AI behavior is then affected by potential {@link AiEventType}s, or by own AI type.
+ */
 abstract class AbstractAI
 {
 	protected final Creature _actor;
@@ -24,84 +32,64 @@ abstract class AbstractAI
 	protected Intention _currentIntention = new Intention();
 	protected Intention _nextIntention = new Intention();
 	
-	protected volatile boolean _thinking = false;
-	
 	protected AbstractAI(Creature actor)
 	{
 		_actor = actor;
 	}
 	
-	protected abstract void onIntentionIdle();
-	
-	protected abstract void onIntentionActive();
-	
-	protected abstract void onIntentionSit(WorldObject target);
-	
-	protected abstract void onIntentionStand();
-	
-	protected abstract void onIntentionAttack(Creature target, boolean isShiftPressed);
-	
-	protected abstract void onIntentionCast(SkillUseHolder skillUseHolder, ItemInstance itemInstance);
-	
-	protected abstract void onIntentionMoveTo(Location loc, Boat boat);
-	
-	protected abstract void onIntentionFollow(Creature target, boolean isShiftPressed);
-	
-	protected abstract void onIntentionPickUp(WorldObject object, boolean isShiftPressed);
-	
-	protected abstract void onIntentionInteract(WorldObject object, boolean isShiftPressed);
-	
-	protected abstract void onIntentionUseItem(Integer objectId);
-	
-	protected abstract void onIntentionFakeDeath(boolean startFakeDeath);
-	
-	protected abstract void onEvtAttacked(Creature attacker);
-	
 	protected abstract void onEvtAggression(Creature target, int aggro);
-	
-	protected abstract void onEvtEvaded(Creature attacker);
 	
 	protected abstract void onEvtArrived();
 	
-	protected abstract void onEvtArrivedBlocked(SpawnLocation loc);
+	protected abstract void onEvtArrivedBlocked();
+	
+	protected abstract void onEvtAttacked(Creature attacker);
+	
+	protected abstract void onEvtBowAttackReuse();
 	
 	protected abstract void onEvtCancel();
 	
 	protected abstract void onEvtDead();
 	
+	protected abstract void onEvtEvaded(Creature attacker);
+	
 	protected abstract void onEvtFinishedAttack();
 	
+	protected abstract void onEvtFinishedAttackBow();
+	
 	protected abstract void onEvtFinishedCasting();
+	
+	protected abstract void onEvtOwnerAttacked(Creature attacker);
 	
 	protected abstract void onEvtSatDown(WorldObject target);
 	
 	protected abstract void onEvtStoodUp();
 	
-	protected abstract void onEvtFinishedAttackBow();
-	
-	protected abstract void onEvtBowAttackReused();
-	
 	protected abstract void onEvtTeleported();
 	
-	protected abstract void onEvtOwnerAttacked(Creature attacker);
+	protected abstract void thinkActive();
 	
 	protected abstract void thinkAttack();
 	
 	protected abstract void thinkCast();
 	
-	protected abstract ItemInstance thinkPickUp();
+	protected abstract void thinkFakeDeath();
+	
+	protected abstract void thinkFollow();
+	
+	protected abstract void thinkIdle();
 	
 	protected abstract void thinkInteract();
 	
-	protected abstract void thinkUseItem();
+	protected abstract void thinkMoveTo();
+	
+	protected abstract ItemInstance thinkPickUp();
 	
 	protected abstract void thinkSit();
 	
 	protected abstract void thinkStand();
 	
-	protected abstract void thinkMoveTo();
-	
-	protected abstract void thinkFollow();
+	protected abstract void thinkUseItem();
 	
 	@Override
 	public String toString()
@@ -121,7 +109,7 @@ abstract class AbstractAI
 	
 	protected final synchronized void setPreviousIntention(Intention intention)
 	{
-		_previousIntention.update(intention);
+		_previousIntention.updateUsing(intention);
 	}
 	
 	public final synchronized Intention getCurrentIntention()
@@ -129,35 +117,214 @@ abstract class AbstractAI
 		return _currentIntention;
 	}
 	
-	protected final synchronized void setCurrentIntention(IntentionType type, Object firstParameter, Object secondParameter)
-	{
-		_currentIntention.update(type, firstParameter, secondParameter);
-	}
-	
 	public final synchronized Intention getNextIntention()
 	{
 		return _nextIntention;
 	}
 	
-	protected final synchronized void setNextIntention(IntentionType type, Object firstParameter, Object secondParameter)
-	{
-		_nextIntention.update(type, firstParameter, secondParameter);
-	}
-	
 	protected final synchronized void setNextIntention(Intention intention)
 	{
-		_nextIntention.update(intention);
+		_nextIntention.updateUsing(intention);
 	}
 	
 	/**
-	 * Attempt to change the current intention to the provided {@link IntentionType} type parameter by calling changeCurrentIntention.<br>
-	 * <br>
-	 * If the {@link Creature} is currently not able to act, it schedules the {@link Intention} by calling setNextIntention.
-	 * @param type : The new {@link IntentionType} to set.
-	 * @param firstParameter : The first {@link Object} parameter of the {@link Intention}.
-	 * @param secondParameter : The second {@link Object} parameter of the {@link Intention}.
+	 * The core method used by sub-intentions, doing following actions :
+	 * <ul>
+	 * <li>Stop follow movement if necessary.</li>
+	 * <li>Refresh previous intention with current {@link Intention}.</li>
+	 * <li>Reset next {@link Intention}.</li>
+	 * </ul>
 	 */
-	public synchronized void tryTo(IntentionType type, Object firstParameter, Object secondParameter)
+	protected synchronized void prepareIntention()
+	{
+		_actor.getMove().cancelFollowTask();
+		
+		// Refresh previous intention with current intention.
+		setPreviousIntention(_currentIntention);
+		
+		// Reset next intention.
+		_nextIntention.updateAsIdle();
+	}
+	
+	protected synchronized void doActiveIntention()
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsActive();
+		
+		thinkActive();
+	}
+	
+	protected synchronized void doAttackIntention(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsAttack(target, isCtrlPressed, isShiftPressed);
+		
+		thinkAttack();
+	}
+	
+	protected synchronized void doCastIntention(Creature target, L2Skill skill, boolean isCtrlPressed, boolean isShiftPressed, int itemObjectId)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsCast(getActor(), target, skill, isCtrlPressed, isShiftPressed, itemObjectId);
+		
+		thinkCast();
+	}
+	
+	protected synchronized void doFakeDeathIntention(boolean startFakeDeath)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsFakeDeath(startFakeDeath);
+		
+		thinkFakeDeath();
+	}
+	
+	protected synchronized void doFollowIntention(Creature target, boolean isShiftPressed)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsFollow(target, isShiftPressed);
+		
+		thinkFollow();
+	}
+	
+	protected synchronized void doIdleIntention()
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsIdle();
+		
+		thinkIdle();
+	}
+	
+	protected synchronized void doInteractIntention(WorldObject target, boolean isCtrlPressed, boolean isShiftPressed)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsInteract(target, isCtrlPressed, isShiftPressed);
+		
+		thinkInteract();
+	}
+	
+	protected synchronized void doMoveToIntention(Location loc, Boat boat)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsMoveTo(loc, boat);
+		
+		thinkMoveTo();
+	}
+	
+	protected synchronized void doPickUpIntention(int itemObjectId, boolean isShiftPressed)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsPickUp(itemObjectId, isShiftPressed);
+		
+		thinkPickUp();
+	}
+	
+	protected synchronized void doSitIntention(WorldObject target)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsSit(target);
+		
+		thinkSit();
+	}
+	
+	protected synchronized void doStandIntention()
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsStand();
+		
+		thinkStand();
+	}
+	
+	protected synchronized void doUseItemIntention(int itemObjectId)
+	{
+		prepareIntention();
+		
+		// Feed related values.
+		_currentIntention.updateAsUseItem(itemObjectId);
+		
+		thinkUseItem();
+	}
+	
+	/**
+	 * Launch the onIntention method corresponding to an existing {@link Intention}.
+	 * @param intention : The new {@link Intention} to set.
+	 */
+	protected final synchronized void doIntention(Intention intention)
+	{
+		switch (intention.getType())
+		{
+			case ACTIVE:
+				doActiveIntention();
+				break;
+			
+			case ATTACK:
+				doAttackIntention(intention.getFinalTarget(), intention.isCtrlPressed(), intention.isShiftPressed());
+				break;
+			
+			case CAST:
+				doCastIntention(intention.getFinalTarget(), intention.getSkill(), intention.isCtrlPressed(), intention.isShiftPressed(), intention.getItemObjectId());
+				break;
+			
+			case FAKE_DEATH:
+				doFakeDeathIntention(intention.isCtrlPressed());
+				break;
+			
+			case FOLLOW:
+				doFollowIntention(intention.getFinalTarget(), intention.isShiftPressed());
+				break;
+			
+			case IDLE:
+				doIdleIntention();
+				break;
+			
+			case INTERACT:
+				doInteractIntention(intention.getTarget(), intention.isCtrlPressed(), intention.isShiftPressed());
+				break;
+			
+			case MOVE_TO:
+				doMoveToIntention(intention.getLoc(), intention.getBoat());
+				break;
+			
+			case PICK_UP:
+				doPickUpIntention(intention.getItemObjectId(), intention.isShiftPressed());
+				break;
+			
+			case SIT:
+				doSitIntention(intention.getTarget());
+				break;
+			
+			case STAND:
+				doStandIntention();
+				break;
+			
+			case USE_ITEM:
+				doUseItemIntention(intention.getItemObjectId());
+				break;
+		}
+	}
+	
+	public synchronized void tryToActive()
 	{
 		if (_actor.denyAiAction())
 		{
@@ -166,99 +333,218 @@ abstract class AbstractAI
 		}
 		
 		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
-		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || _actor.getAI().canScheduleAfter(_currentIntention.getType(), type))
-			setNextIntention(type, firstParameter, secondParameter);
-		else
-			changeCurrentIntention(type, firstParameter, secondParameter);
-	}
-	
-	/**
-	 * Launch the onIntention method corresponding to the {@link IntentionType} set as parameter.<br>
-	 * <br>
-	 * Also do following actions :
-	 * <ul>
-	 * <li>Stop follow movement if necessary.</li>
-	 * <li>Refresh previous intention with current {@link Intention}.</li>
-	 * <li>Reset next {@link Intention}.</li>
-	 * </ul>
-	 * @param type : The new {@link IntentionType} to set.
-	 * @param firstParameter : The first {@link Object} parameter of the {@link Intention}.
-	 * @param secondParameter : The second {@link Object} parameter of the {@link Intention}.
-	 */
-	protected synchronized void changeCurrentIntention(IntentionType type, Object firstParameter, Object secondParameter)
-	{
-		_actor.getMove().cancelFollowTask();
-		
-		// Refresh previous intention with current intention.
-		setPreviousIntention(_currentIntention);
-		
-		// Reset current intention.
-		_currentIntention.reset();
-		
-		// Reset next intention.
-		_nextIntention.reset();
-		
-		// Launch the onIntention method corresponding to the IntentionType.
-		switch (type)
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.ACTIVE))
 		{
-			case IDLE:
-				onIntentionIdle();
-				break;
-			
-			case ACTIVE:
-				onIntentionActive();
-				break;
-			
-			case SIT:
-				onIntentionSit((WorldObject) firstParameter);
-				break;
-			
-			case STAND:
-				onIntentionStand();
-				break;
-			
-			case ATTACK:
-				onIntentionAttack((Creature) firstParameter, (boolean) secondParameter);
-				break;
-			
-			case CAST:
-				onIntentionCast((SkillUseHolder) firstParameter, (ItemInstance) secondParameter);
-				break;
-			
-			case MOVE_TO:
-				onIntentionMoveTo((Location) firstParameter, (Boat) secondParameter);
-				break;
-			
-			case FOLLOW:
-				onIntentionFollow((Creature) firstParameter, (boolean) secondParameter);
-				break;
-			
-			case PICK_UP:
-				onIntentionPickUp((WorldObject) firstParameter, (boolean) secondParameter);
-				break;
-			
-			case INTERACT:
-				onIntentionInteract((WorldObject) firstParameter, (boolean) secondParameter);
-				break;
-			
-			case USE_ITEM:
-				onIntentionUseItem((Integer) firstParameter);
-				break;
-			
-			case FAKE_DEATH:
-				onIntentionFakeDeath((boolean) firstParameter);
-				break;
+			getNextIntention().updateAsActive();
+			clientActionFailed();
+			return;
 		}
+		
+		doActiveIntention();
 	}
 	
-	/**
-	 * Launch the onIntention method corresponding to an existing {@link Intention}.
-	 * @see #changeCurrentIntention(IntentionType, Object, Object)
-	 * @param intention : The new {@link Intention} to set.
-	 */
-	protected final synchronized void changeCurrentIntention(Intention intention)
+	public synchronized void tryToAttack(Creature target, boolean isCtrlPressed, boolean isShiftPressed)
 	{
-		changeCurrentIntention(intention.getType(), intention.getFirstParameter(), intention.getSecondParameter());
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.ATTACK))
+		{
+			getNextIntention().updateAsAttack(target, isCtrlPressed, isShiftPressed);
+			clientActionFailed();
+			return;
+		}
+		
+		doAttackIntention(target, isCtrlPressed, isShiftPressed);
+	}
+	
+	public synchronized void tryToAttack(Creature target)
+	{
+		tryToAttack(target, false, false);
+	}
+	
+	public synchronized void tryToCast(Creature target, L2Skill skill, boolean isCtrlPressed, boolean isShiftPressed, int itemObjectId)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.CAST))
+		{
+			getNextIntention().updateAsCast(_actor, target, skill, isCtrlPressed, isShiftPressed, itemObjectId);
+			clientActionFailed();
+			return;
+		}
+		
+		doCastIntention(target, skill, isCtrlPressed, isShiftPressed, itemObjectId);
+	}
+	
+	public synchronized void tryToCast(Creature target, L2Skill skill)
+	{
+		tryToCast(target, skill, false, false, 0);
+	}
+	
+	public synchronized void tryToCast(Creature target, int id, int level)
+	{
+		final L2Skill skill = SkillTable.getInstance().getInfo(id, level);
+		if (skill != null)
+			tryToCast(target, skill, false, false, 0);
+	}
+	
+	public synchronized void tryToFollow(Creature target, boolean isShiftPressed)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.FOLLOW))
+		{
+			getNextIntention().updateAsFollow(target, isShiftPressed);
+			clientActionFailed();
+			return;
+		}
+		
+		doFollowIntention(target, isShiftPressed);
+	}
+	
+	public synchronized void tryToIdle()
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.IDLE))
+		{
+			getNextIntention().updateAsIdle();
+			clientActionFailed();
+			return;
+		}
+		
+		doIdleIntention();
+	}
+	
+	public synchronized void tryToInteract(WorldObject target, boolean isCtrlPressed, boolean isShiftPressed)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.INTERACT))
+		{
+			getNextIntention().updateAsInteract(target, isCtrlPressed, isShiftPressed);
+			clientActionFailed();
+			return;
+		}
+		
+		doInteractIntention(target, isCtrlPressed, isShiftPressed);
+	}
+	
+	public synchronized void tryToMoveTo(Location loc, Boat boat)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.MOVE_TO))
+		{
+			getNextIntention().updateAsMoveTo(loc, boat);
+			clientActionFailed();
+			return;
+		}
+		
+		doMoveToIntention(loc, boat);
+	}
+	
+	public synchronized void tryToPickUp(int itemObjectId, boolean isShiftPressed)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.PICK_UP))
+		{
+			getNextIntention().updateAsPickUp(itemObjectId, isShiftPressed);
+			clientActionFailed();
+			return;
+		}
+		
+		doPickUpIntention(itemObjectId, isShiftPressed);
+	}
+	
+	public synchronized void tryToSit(WorldObject target)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.SIT))
+		{
+			getNextIntention().updateAsSit(target);
+			return;
+		}
+		
+		doSitIntention(target);
+	}
+	
+	public synchronized void tryToStand()
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.STAND))
+		{
+			getNextIntention().updateAsStand();
+			return;
+		}
+		
+		doStandIntention();
+	}
+	
+	public synchronized void tryToUseItem(int itemObjectId)
+	{
+		if (_actor.denyAiAction())
+		{
+			clientActionFailed();
+			return;
+		}
+		
+		// These situations are waited out regardless. Any Intention that is added is scheduled as nextIntention.
+		if (_actor.getAttack().isAttackingNow() || _actor.getCast().isCastingNow() || _actor.isSittingNow() || _actor.isStandingNow() || canScheduleAfter(_currentIntention.getType(), IntentionType.USE_ITEM))
+		{
+			getNextIntention().updateAsUseItem(itemObjectId);
+			return;
+		}
+		
+		doUseItemIntention(itemObjectId);
 	}
 	
 	/**
@@ -301,7 +587,7 @@ abstract class AbstractAI
 				break;
 			
 			case BOW_ATTACK_REUSED:
-				onEvtBowAttackReused();
+				onEvtBowAttackReuse();
 				break;
 			
 			case ARRIVED:
@@ -309,7 +595,7 @@ abstract class AbstractAI
 				break;
 			
 			case ARRIVED_BLOCKED:
-				onEvtArrivedBlocked((SpawnLocation) firstParameter);
+				onEvtArrivedBlocked();
 				break;
 			
 			case CANCEL:
@@ -342,10 +628,14 @@ abstract class AbstractAI
 		}
 	}
 	
-	protected final synchronized void onEvtThink()
+	protected synchronized void onEvtThink()
 	{
 		switch (_currentIntention.getType())
 		{
+			case ACTIVE:
+				thinkActive();
+				break;
+			
 			case ATTACK:
 				thinkAttack();
 				break;
@@ -354,12 +644,28 @@ abstract class AbstractAI
 				thinkCast();
 				break;
 			
-			case PICK_UP:
-				thinkPickUp();
+			case FAKE_DEATH:
+				thinkFakeDeath();
+				break;
+			
+			case FOLLOW:
+				thinkFollow();
+				break;
+			
+			case IDLE:
+				thinkIdle();
 				break;
 			
 			case INTERACT:
 				thinkInteract();
+				break;
+			
+			case MOVE_TO:
+				thinkMoveTo();
+				break;
+			
+			case PICK_UP:
+				thinkPickUp();
 				break;
 			
 			case SIT:
@@ -368,14 +674,6 @@ abstract class AbstractAI
 			
 			case STAND:
 				thinkStand();
-				break;
-			
-			case MOVE_TO:
-				thinkMoveTo();
-				break;
-			
-			case FOLLOW:
-				thinkFollow();
 				break;
 			
 			case USE_ITEM:
@@ -463,8 +761,37 @@ abstract class AbstractAI
 		_actor.getMove().cancelFollowTask();
 	}
 	
-	protected boolean targetLost(WorldObject target)
+	/**
+	 * @param target : The {@link WorldObject} used as parameter.
+	 * @return True if the given {@link WorldObject} is missing out (null, not registered, not on same region).
+	 */
+	public boolean isTargetLost(WorldObject target)
 	{
-		return World.getInstance().getObject(target.getObjectId()) == null;
+		if (target == null)
+			return true;
+		
+		if (World.getInstance().getObject(target.getObjectId()) == null)
+			return true;
+		
+		return !getActor().knows(target);
+	}
+	
+	/**
+	 * @param target : The {@link WorldObject} used as parameter.
+	 * @param skill : The {@link L2Skill} used as parameter.
+	 * @return True if the given {@link WorldObject} is missing out (null, not registered, not on same region), giving a given {@link L2Skill}.
+	 */
+	public boolean isTargetLost(WorldObject target, L2Skill skill)
+	{
+		if (target == null)
+			return true;
+		
+		if (World.getInstance().getObject(target.getObjectId()) == null)
+			return true;
+		
+		if (skill != null && skill.getSkillType() == SkillType.SUMMON_FRIEND)
+			return false;
+		
+		return !getActor().knows(target);
 	}
 }

@@ -26,13 +26,13 @@ public class EffectManaDamOverTime extends AbstractEffect
 		if (getEffected().isDead())
 			return false;
 		
-		if (getSkill().isToggle() && getTemplate().getValue() > getEffected().getCurrentMp())
+		if (getSkill().isToggle() && getTemplate().getValue() > getEffected().getStatus().getMp())
 		{
 			getEffected().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP));
 			return false;
 		}
 		
-		getEffected().reduceCurrentMp(getTemplate().getValue());
+		getEffected().getStatus().reduceMp(getTemplate().getValue());
 		return true;
 	}
 }

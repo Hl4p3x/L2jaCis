@@ -50,7 +50,6 @@
 		<set name="isDebuff" val="true" />
 		<set name="effectRange" val="1300"/>
 		<enchant1 name="magicLvl" val="#enchantMagicLvl"/>
-		<enchant1 name="effectPower" val="#ench1effectPower"/>
 		<enchant2 name="magicLvl" val="#enchantMagicLvl"/>
 		<enchant2 name="mpConsume" val="#ench2MpConsume"/>
 		<enchant2 name="power" val="#ench2Power"/>
@@ -58,6 +57,10 @@
 			<effect name="Stun" time="9" val="0" effectPower="50" effectType="STUN" stackOrder="1" stackType="stun" />
 			<effect name="RemoveTarget" noicon="1" val="0" effectPower="50" effectType="DEBUFF" />
 		</for>
+		<enchant1for>
+			<effect name="Stun" time="9" val="0" effectPower="#ench1effectPower" effectType="STUN" stackOrder="1" stackType="stun" />
+			<effect name="RemoveTarget" noicon="1" val="0" effectPower="50" effectType="DEBUFF" />
+		</enchant1for>
 	</skill>
 	<skill id="102" levels="16" name="Entangle" enchantLevels1="30" enchantLevels2="30" >
 		<table name="#enchantMagicLvl"> 76 76 76 77 77 77 78 78 78 79 79 79 80 80 80 81 81 81 82 82 82 82 83 83 83 84 84 85 85 85 </table>
@@ -755,12 +758,12 @@
 		</for>
 	</skill>
 	<skill id="150" levels="3" name="Weight Limit">
-		<table name="#rate"> 2 3 4 </table>
+		<table name="#weightLimit"> 2 3 4 </table>
 		<set name="target" val="SELF" />
 		<set name="skillType" val="BUFF" />
 		<set name="operateType" val="PASSIVE" />
 		<for>
-			<mul stat="maxLoad" val="#rate" />
+			<mul stat="weightLimit" val="#weightLimit" />
 		</for>
 	</skill>
 	<skill id="153" levels="4" name="Shield Mastery">

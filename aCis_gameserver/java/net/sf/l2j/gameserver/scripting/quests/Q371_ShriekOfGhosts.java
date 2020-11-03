@@ -139,7 +139,7 @@ public class Q371_ShriekOfGhosts extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 59) ? "30867-01.htm" : "30867-02.htm";
+				htmltext = (player.getStatus().getLevel() < 59) ? "30867-01.htm" : "30867-02.htm";
 				break;
 			
 			case STATE_STARTED:

@@ -1,18 +1,15 @@
 package net.sf.l2j.gameserver.model.actor.attack;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.GaugeColor;
-import net.sf.l2j.gameserver.enums.IntentionType;
-import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
@@ -20,7 +17,6 @@ import net.sf.l2j.gameserver.enums.skills.Stats;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.container.creature.ChanceSkillList;
@@ -32,18 +28,19 @@ import net.sf.l2j.gameserver.network.serverpackets.Attack;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.SetupGauge;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
-import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.skills.Formulas;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 /**
  * This class groups all attack data related to a {@link Creature}.
+ * @param <T> : The {@link Creature} used as actor.
  */
-public class CreatureAttack
+public class CreatureAttack<T extends Creature>
 {
 	public static final CLogger LOGGER = new CLogger(CreatureAttack.class.getName());
 	
-	protected final Creature _creature;
+	protected final T _actor;
+	
 	protected volatile boolean _isAttackingNow;
 	protected volatile boolean _isBowCoolingDown;
 	
@@ -54,9 +51,9 @@ public class CreatureAttack
 	
 	protected ScheduledFuture<?> _attackTask;
 	
-	public CreatureAttack(Creature creature)
+	public CreatureAttack(T actor)
 	{
-		_creature = creature;
+		_actor = actor;
 	}
 	
 	public boolean isAttackingNow()
@@ -64,9 +61,9 @@ public class CreatureAttack
 		return _isAttackingNow;
 	}
 	
-	public boolean isBowAttackReused()
+	public boolean isBowCoolingDown()
 	{
-		return !_isBowCoolingDown;
+		return _isBowCoolingDown;
 	}
 	
 	/**
@@ -75,15 +72,15 @@ public class CreatureAttack
 	 */
 	public boolean canDoAttack(Creature target)
 	{
-		if (_creature.isAttackingDisabled())
+		if (_actor.isAttackingDisabled())
 			return false;
 		
-		if (!target.isAttackableBy(_creature) || !_creature.knows(target))
+		if (!target.isAttackableBy(_actor) || !_actor.knows(target))
 			return false;
 		
-		if (!GeoEngine.getInstance().canSeeTarget(_creature, target))
+		if (!GeoEngine.getInstance().canSeeTarget(_actor, target))
 		{
-			_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_SEE_TARGET));
+			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_SEE_TARGET));
 			return false;
 		}
 		
@@ -106,17 +103,17 @@ public class CreatureAttack
 		// Somethng happens to the target between the attacker attacking and the actual damage being dealt.
 		// There is no PEACE zone check here. If the attack starts outside and in the meantime the mainTarget walks into a PEACE zone, it gets hit.
 		final Creature mainTarget = _hitHolders[0]._target;
-		if (mainTarget.isDead() || !_creature.knows(mainTarget))
+		if (mainTarget.isDead() || !_actor.knows(mainTarget))
 		{
 			stop();
 			return;
 		}
 		
-		final Player player = _creature.getActingPlayer();
+		final Player player = _actor.getActingPlayer();
 		if (player != null && player.getSummon() != mainTarget)
 			player.updatePvPStatus(mainTarget);
 		
-		_creature.rechargeShots(true, false);
+		_actor.rechargeShots(true, false);
 		
 		switch (_weaponType)
 		{
@@ -129,19 +126,28 @@ public class CreatureAttack
 					
 					_attackTask = ThreadPool.schedule(() -> onFinishedAttack(), _afterAttackDelay);
 				}, _afterAttackDelay);
-				
 				break;
+			
 			case POLE:
 				for (HitHolder hitHolder : _hitHolders)
 					doHit(hitHolder);
 				
 				_attackTask = ThreadPool.schedule(() -> onFinishedAttack(), _afterAttackDelay);
 				break;
+			
 			case BOW:
 				doHit(_hitHolders[0]);
 				
-				_attackTask = ThreadPool.schedule(() -> onFinishedAttackBow(), 0);
+				_attackTask = ThreadPool.schedule(() ->
+				{
+					_isBowCoolingDown = false;
+					_actor.getAI().notifyEvent(AiEventType.BOW_ATTACK_REUSED, null, null);
+					
+				}, _afterAttackDelay);
+				
+				onFinishedAttackBow();
 				break;
+			
 			default:
 				doHit(_hitHolders[0]);
 				
@@ -152,21 +158,16 @@ public class CreatureAttack
 	
 	private void onFinishedAttackBow()
 	{
-		_attackTask = ThreadPool.schedule(() ->
-		{
-			_isBowCoolingDown = false;
-			_creature.getAI().notifyEvent(AiEventType.BOW_ATTACK_REUSED, null, null);
-			
-		}, _afterAttackDelay);
+		clearAttackTask(false);
 		
-		clearAttackTask();
-		_creature.getAI().notifyEvent(AiEventType.FINISHED_ATTACK_BOW, null, null);
+		_actor.getAI().notifyEvent(AiEventType.FINISHED_ATTACK_BOW, null, null);
 	}
 	
 	private void onFinishedAttack()
 	{
-		clearAttackTask();
-		_creature.getAI().notifyEvent(AiEventType.FINISHED_ATTACK, null, null);
+		clearAttackTask(false);
+		
+		_actor.getAI().notifyEvent(AiEventType.FINISHED_ATTACK, null, null);
 	}
 	
 	private void doHit(HitHolder hitHolder)
@@ -175,26 +176,26 @@ public class CreatureAttack
 		if (hitHolder._miss)
 		{
 			if (target.hasAI())
-				target.getAI().notifyEvent(AiEventType.EVADED, _creature, null);
+				target.getAI().notifyEvent(AiEventType.EVADED, _actor, null);
 			
 			if (target.getChanceSkills() != null)
-				target.getChanceSkills().onEvadedHit(_creature);
+				target.getChanceSkills().onEvadedHit(_actor);
 			
 			if (target instanceof Player)
-				target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AVOIDED_S1_ATTACK).addCharName(_creature));
+				target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AVOIDED_S1_ATTACK).addCharName(_actor));
 		}
 		
-		_creature.sendDamageMessage(target, hitHolder._damage, false, hitHolder._crit, hitHolder._miss);
+		_actor.sendDamageMessage(target, hitHolder._damage, false, hitHolder._crit, hitHolder._miss);
 		
 		// Character will be petrified if attacking a raid related object that's more than 8 levels lower
-		if (!Config.RAID_DISABLE_CURSE && target.isRaidRelated() && _creature.getLevel() > target.getLevel() + 8)
+		if (!Config.RAID_DISABLE_CURSE && target.isRaidRelated() && _actor.getStatus().getLevel() > target.getStatus().getLevel() + 8)
 		{
 			final L2Skill skill = FrequentSkill.RAID_CURSE2.getSkill();
 			if (skill != null)
 			{
 				// Send visual and skill effects. Caster is the victim.
-				_creature.broadcastPacket(new MagicSkillUse(_creature, _creature, skill.getId(), skill.getLevel(), 300, 0));
-				skill.getEffects(_creature, _creature);
+				_actor.broadcastPacket(new MagicSkillUse(_actor, _actor, skill.getId(), skill.getLevel(), 300, 0));
+				skill.getEffects(_actor, _actor);
 			}
 			
 			hitHolder._damage = 0; // prevents messing up drop calculation
@@ -202,10 +203,10 @@ public class CreatureAttack
 		
 		if (!hitHolder._miss && hitHolder._damage > 0)
 		{
-			_creature.getAI().startAttackStance();
+			_actor.getAI().startAttackStance();
 			
 			if (target.hasAI())
-				target.getAI().notifyEvent(AiEventType.ATTACKED, _creature, null);
+				target.getAI().notifyEvent(AiEventType.ATTACKED, _actor, null);
 			
 			int reflectedDamage = 0;
 			
@@ -213,50 +214,40 @@ public class CreatureAttack
 			if (!_isBow && !target.isInvul())
 			{
 				// quick fix for no drop from raid if boss attack high-level char with damage reflection
-				if (!target.isRaidRelated() || _creature.getActingPlayer() == null || _creature.getActingPlayer().getLevel() <= target.getLevel() + 8)
+				if (!target.isRaidRelated() || _actor.getActingPlayer() == null || _actor.getActingPlayer().getStatus().getLevel() <= target.getStatus().getLevel() + 8)
 				{
 					// Calculate reflection damage to reduce HP of attacker if necessary
-					final double reflectPercent = target.getStat().calcStat(Stats.REFLECT_DAMAGE_PERCENT, 0, null, null);
+					final double reflectPercent = target.getStatus().calcStat(Stats.REFLECT_DAMAGE_PERCENT, 0, null, null);
 					if (reflectPercent > 0)
 					{
 						reflectedDamage = (int) (reflectPercent / 100. * hitHolder._damage);
 						
-						if (reflectedDamage > target.getMaxHp())
-							reflectedDamage = target.getMaxHp();
+						if (reflectedDamage > target.getStatus().getMaxHp())
+							reflectedDamage = target.getStatus().getMaxHp();
 					}
 				}
 			}
 			
 			// Reduce target HPs
-			target.reduceCurrentHp(hitHolder._damage, _creature, null);
+			target.reduceCurrentHp(hitHolder._damage, _actor, null);
 			
 			// Reduce attacker HPs in case of a reflect.
 			if (reflectedDamage > 0)
-				_creature.reduceCurrentHp(reflectedDamage, target, true, false, null);
+				_actor.reduceCurrentHp(reflectedDamage, target, true, false, null);
 			
-			if (!_isBow) // Do not absorb if weapon is of type bow
+			// Calculate the absorbed HP percentage. Do not absorb if weapon is a bow.
+			if (!_isBow)
 			{
-				// Absorb HP from the damage inflicted
-				final double absorbPercent = _creature.getStat().calcStat(Stats.ABSORB_DAMAGE_PERCENT, 0, null, null);
-				
+				final double absorbPercent = _actor.getStatus().calcStat(Stats.ABSORB_DAMAGE_PERCENT, 0, null, null);
 				if (absorbPercent > 0)
-				{
-					final int maxCanAbsorb = (int) (_creature.getMaxHp() - _creature.getCurrentHp());
-					int absorbDamage = (int) (absorbPercent / 100. * hitHolder._damage);
-					
-					if (absorbDamage > maxCanAbsorb)
-						absorbDamage = maxCanAbsorb; // Can't absord more than max hp
-						
-					if (absorbDamage > 0)
-						_creature.setCurrentHp(_creature.getCurrentHp() + absorbDamage);
-				}
+					_actor.getStatus().addHp(absorbPercent / 100. * hitHolder._damage);
 			}
 			
 			// Manage cast break of the target (calculating rate, sending message...)
 			Formulas.calcCastBreak(target, hitHolder._damage);
 			
 			// Maybe launch chance skills on us
-			final ChanceSkillList chanceSkills = _creature.getChanceSkills();
+			final ChanceSkillList chanceSkills = _actor.getChanceSkills();
 			if (chanceSkills != null)
 			{
 				chanceSkills.onHit(target, false, hitHolder._crit);
@@ -268,110 +259,65 @@ public class CreatureAttack
 			
 			// Maybe launch chance skills on target
 			if (target.getChanceSkills() != null)
-				target.getChanceSkills().onHit(_creature, true, hitHolder._crit);
+				target.getChanceSkills().onHit(_actor, true, hitHolder._crit);
 			
 			// Launch weapon Special ability effect if available
 			if (hitHolder._crit)
 			{
-				final Weapon activeWeapon = _creature.getActiveWeaponItem();
+				final Weapon activeWeapon = _actor.getActiveWeaponItem();
 				if (activeWeapon != null)
-					activeWeapon.castSkillOnCrit(_creature, target);
+					activeWeapon.castSkillOnCrit(_actor, target);
 			}
 		}
 	}
 	
 	/**
-	 * Launch a physical attack against a target (Simple, Bow, Pole or Dual).<BR>
-	 * <BR>
-	 * <B><U>Actions</U> :</B>
-	 * <ul>
-	 * <li>No checks are performed in this function.</li>
-	 * <li>Get the active weapon (always equipped in the right hand)</li>
-	 * <li>Calls the apropriate doAttackBy {@link WeaponType} function to schedule the attack</li>
-	 * </ul>
-	 * <ul>
-	 * </ul>
-	 * @param target
+	 * Launch a physical attack against a {@link Creature}.
+	 * @param target : The {@link Creature} used as target.
+	 * @return True if the hit was actually successful, false otherwise.
 	 */
-	public void doAttack(Creature target)
+	public boolean doAttack(Creature target)
 	{
-		// Get the Attack Speed of the Creature (delay (in milliseconds) before next attack)
-		final int timeAtk = Formulas.calculateTimeBetweenAttacks(_creature);
-		final Weapon weaponItem = _creature.getActiveWeaponItem();
-		final Attack attack = new Attack(_creature, _creature.isChargedShot(ShotType.SOULSHOT), (weaponItem != null) ? weaponItem.getCrystalType().getId() : 0);
+		final int timeAtk = Formulas.calculateTimeBetweenAttacks(_actor);
+		final Weapon weaponItem = _actor.getActiveWeaponItem();
+		final Attack attack = new Attack(_actor, _actor.isChargedShot(ShotType.SOULSHOT), (weaponItem != null) ? weaponItem.getCrystalType().getId() : 0);
 		
-		_creature.getPosition().setHeadingTo(target);
+		_actor.getPosition().setHeadingTo(target);
 		
-		boolean hitted;
-		final WeaponType weaponItemType = _creature.getAttackType();
-		switch (weaponItemType)
+		boolean isHit;
+		
+		switch (_actor.getAttackType())
 		{
 			case BOW:
-				hitted = doAttackHitByBow(attack, target, timeAtk, weaponItem);
+				isHit = doAttackHitByBow(attack, target, timeAtk, weaponItem);
 				break;
 			
 			case POLE:
-				hitted = doAttackHitByPole(attack, target, timeAtk / 2);
+				isHit = doAttackHitByPole(attack, target, timeAtk / 2);
 				break;
 			
 			case DUAL:
 			case DUALFIST:
-				hitted = doAttackHitByDual(attack, target, timeAtk / 2);
+				isHit = doAttackHitByDual(attack, target, timeAtk / 2);
 				break;
 			
 			case FIST:
-				hitted = (_creature.getSecondaryWeaponItem() instanceof Armor) ? doAttackHitSimple(attack, target, timeAtk / 2) : doAttackHitByDual(attack, target, timeAtk / 2);
+				isHit = (_actor.getSecondaryWeaponItem() instanceof Armor) ? doAttackHitSimple(attack, target, timeAtk / 2) : doAttackHitByDual(attack, target, timeAtk / 2);
 				break;
 			
 			default:
-				hitted = doAttackHitSimple(attack, target, timeAtk / 2);
+				isHit = doAttackHitSimple(attack, target, timeAtk / 2);
 				break;
 		}
 		
-		// Check if hit isn't missed
-		if (hitted)
-		{
-			// IA implementation for ON_ATTACK_ACT (mob which attacks a player).
-			if (_creature instanceof Attackable)
-			{
-				// Bypass behavior if the victim isn't a player
-				final Player victim = target.getActingPlayer();
-				if (victim != null)
-				{
-					final Npc mob = ((Npc) _creature);
-					
-					final List<Quest> scripts = mob.getTemplate().getEventQuests(ScriptEventType.ON_ATTACK_ACT);
-					if (scripts != null)
-						for (final Quest quest : scripts)
-							quest.notifyAttackAct(mob, victim);
-				}
-			}
-			
-			// If we didn't miss the hit, discharge the shoulshots, if any
-			_creature.setChargedShot(ShotType.SOULSHOT, false);
-			
-			final Player player = _creature.getActingPlayer();
-			if (player != null)
-			{
-				if (player.isCursedWeaponEquipped())
-				{
-					// If hitted by a cursed weapon, Cp is reduced to 0
-					if (!target.isInvul())
-						target.setCurrentCp(0);
-				}
-				else if (player.isHero())
-				{
-					if (target instanceof Player && ((Player) target).isCursedWeaponEquipped())
-						// If a cursed weapon is hitted by a Hero, Cp is reduced to 0
-						target.setCurrentCp(0);
-				}
-			}
-		}
+		// Check if hit isn't missed ; if we didn't miss the hit, discharge the shoulshots, if any.
+		if (isHit)
+			_actor.setChargedShot(ShotType.SOULSHOT, false);
 		
-		// If the Server->Client packet Attack contains at least 1 hit, send the Server->Client packet Attack
-		// to the Creature AND to all Player in the _KnownPlayers of the Creature
 		if (attack.hasHits())
-			_creature.broadcastPacket(attack);
+			_actor.broadcastPacket(attack);
+		
+		return isHit;
 	}
 	
 	/**
@@ -401,20 +347,20 @@ public class CreatureAttack
 		byte shld1 = 0;
 		boolean crit1 = false;
 		
-		_creature.reduceArrowCount();
-		_creature.getStatus().reduceMp(_creature.getActiveWeaponItem().getMpConsume());
+		_actor.reduceArrowCount();
+		_actor.getStatus().reduceMp(_actor.getActiveWeaponItem().getMpConsume());
 		
-		final boolean miss1 = Formulas.calcHitMiss(_creature, target);
+		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
 		if (!miss1)
 		{
-			shld1 = Formulas.calcShldUse(_creature, target, null);
-			crit1 = Formulas.calcCrit(_creature.getStat().getCriticalHit(target, null));
-			damage1 = (int) Formulas.calcPhysDam(_creature, target, null, shld1, crit1, attack.soulshot);
+			shld1 = Formulas.calcShldUse(_actor, target, null);
+			crit1 = Formulas.calcCrit(_actor, target, null);
+			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
 		}
 		
 		int reuse = weapon.getReuseDelay();
 		if (reuse != 0)
-			reuse = (reuse * 345) / _creature.getStat().getPAtkSpd();
+			reuse = (reuse * 345) / _actor.getStatus().getPAtkSpd();
 		
 		setAttackTask(new HitHolder[]
 		{
@@ -423,10 +369,10 @@ public class CreatureAttack
 		
 		_attackTask = ThreadPool.schedule(() -> onHitTimer(), sAtk);
 		
-		if (_creature instanceof Player)
+		if (_actor instanceof Player)
 		{
-			_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.GETTING_READY_TO_SHOOT_AN_ARROW));
-			_creature.sendPacket(new SetupGauge(GaugeColor.RED, sAtk + reuse));
+			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.GETTING_READY_TO_SHOOT_AN_ARROW));
+			_actor.sendPacket(new SetupGauge(GaugeColor.RED, sAtk + reuse));
 		}
 		attack.hit(attack.createHit(target, damage1, miss1, crit1, shld1));
 		
@@ -459,21 +405,21 @@ public class CreatureAttack
 		boolean crit1 = false;
 		boolean crit2 = false;
 		
-		final boolean miss1 = Formulas.calcHitMiss(_creature, target);
+		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
 		if (!miss1)
 		{
-			shld1 = Formulas.calcShldUse(_creature, target, null);
-			crit1 = Formulas.calcCrit(_creature.getStat().getCriticalHit(target, null));
-			damage1 = (int) Formulas.calcPhysDam(_creature, target, null, shld1, crit1, attack.soulshot);
+			shld1 = Formulas.calcShldUse(_actor, target, null);
+			crit1 = Formulas.calcCrit(_actor, target, null);
+			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
 			damage1 /= 2;
 		}
 		
-		final boolean miss2 = Formulas.calcHitMiss(_creature, target);
+		final boolean miss2 = Formulas.calcHitMiss(_actor, target);
 		if (!miss2)
 		{
-			shld2 = Formulas.calcShldUse(_creature, target, null);
-			crit2 = Formulas.calcCrit(_creature.getStat().getCriticalHit(target, null));
-			damage2 = (int) Formulas.calcPhysDam(_creature, target, null, shld2, crit2, attack.soulshot);
+			shld2 = Formulas.calcShldUse(_actor, target, null);
+			crit2 = Formulas.calcCrit(_actor, target, null);
+			damage2 = (int) Formulas.calcPhysDam(_actor, target, null, shld2, crit2, attack.soulshot);
 			damage2 /= 2;
 		}
 		
@@ -505,28 +451,28 @@ public class CreatureAttack
 	 */
 	private boolean doAttackHitByPole(Attack attack, Creature target, int sAtk)
 	{
-		final int maxRadius = _creature.getPhysicalAttackRange();
-		final int maxAngleDiff = (int) _creature.getStat().calcStat(Stats.POWER_ATTACK_ANGLE, 120, null, null);
+		final int maxRadius = _actor.getStatus().getPhysicalAttackRange();
+		final int maxAngleDiff = (int) _actor.getStatus().calcStat(Stats.POWER_ATTACK_ANGLE, 120, null, null);
 		final boolean canHitPlayable = target instanceof Playable;
 		// Get the number of targets (-1 because the main target is already used)
-		final int attackRandomCountMax = (int) _creature.getStat().calcStat(Stats.ATTACK_COUNT_MAX, 0, null, null) - 1;
+		final int attackRandomCountMax = (int) _actor.getStatus().calcStat(Stats.ATTACK_COUNT_MAX, 0, null, null) - 1;
 		final ArrayList<HitHolder> hitHolders = new ArrayList<>();
 		final HitHolder firstAttack = getHitHolder(attack, target);
 		
 		hitHolders.add(firstAttack);
 		
-		boolean hitted = firstAttack._miss;
+		boolean isHit = firstAttack._miss;
 		int attackcount = 0;
 		
-		for (final Creature obj : _creature.getKnownTypeInRadius(Creature.class, maxRadius))
+		for (final Creature obj : _actor.getKnownTypeInRadius(Creature.class, maxRadius))
 		{
 			if (obj == target)
 				continue;
 			
-			if (!_creature.isFacing(obj, maxAngleDiff))
+			if (!_actor.isFacing(obj, maxAngleDiff))
 				continue;
 			
-			if (_creature instanceof Playable && obj.isAttackableBy(_creature) && obj.isAttackableWithoutForceBy((Playable) _creature))
+			if (_actor instanceof Playable && obj.isAttackableBy(_actor) && obj.isAttackableWithoutForceBy((Playable) _actor))
 			{
 				if (obj instanceof Playable && (obj.isInsideZone(ZoneId.PEACE) || !canHitPlayable))
 					continue;
@@ -538,10 +484,10 @@ public class CreatureAttack
 				final HitHolder nextAttack = getHitHolder(attack, obj);
 				hitHolders.add(nextAttack);
 				
-				hitted |= nextAttack._miss;
+				isHit |= nextAttack._miss;
 			}
 			
-			if (_creature instanceof Attackable && obj.isAttackableBy(_creature))
+			if (_actor instanceof Attackable && obj.isAttackableBy(_actor))
 			{
 				attackcount++;
 				if (attackcount > attackRandomCountMax)
@@ -550,7 +496,7 @@ public class CreatureAttack
 				final HitHolder nextAttack = getHitHolder(attack, obj);
 				hitHolders.add(nextAttack);
 				
-				hitted |= nextAttack._miss;
+				isHit |= nextAttack._miss;
 			}
 		}
 		
@@ -560,7 +506,7 @@ public class CreatureAttack
 		for (HitHolder hitHolder : hitHolders)
 			attack.hit(attack.createHit(hitHolder._target, hitHolder._damage, hitHolder._miss, hitHolder._crit, hitHolder._shld));
 		
-		return hitted;
+		return isHit;
 	}
 	
 	/**
@@ -585,12 +531,12 @@ public class CreatureAttack
 		int damage1 = 0;
 		byte shld1 = 0;
 		boolean crit1 = false;
-		final boolean miss1 = Formulas.calcHitMiss(_creature, target);
+		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
 		if (!miss1)
 		{
-			shld1 = Formulas.calcShldUse(_creature, target, null);
-			crit1 = Formulas.calcCrit(_creature.getStat().getCriticalHit(target, null));
-			damage1 = (int) Formulas.calcPhysDam(_creature, target, null, shld1, crit1, attack.soulshot);
+			shld1 = Formulas.calcShldUse(_actor, target, null);
+			crit1 = Formulas.calcCrit(_actor, target, null);
+			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
 		}
 		
 		setAttackTask(new HitHolder[]
@@ -611,12 +557,12 @@ public class CreatureAttack
 		byte shld1 = 0;
 		boolean crit1 = false;
 		
-		final boolean miss1 = Formulas.calcHitMiss(_creature, target);
+		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
 		if (!miss1)
 		{
-			shld1 = Formulas.calcShldUse(_creature, target, null);
-			crit1 = Formulas.calcCrit(_creature.getStat().getCriticalHit(target, null));
-			damage1 = (int) Formulas.calcPhysDam(_creature, target, null, shld1, crit1, attack.soulshot);
+			shld1 = Formulas.calcShldUse(_actor, target, null);
+			crit1 = Formulas.calcCrit(_actor, target, null);
+			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
 		}
 		
 		return new HitHolder(target, damage1, crit1, miss1, shld1);
@@ -627,10 +573,7 @@ public class CreatureAttack
 	 */
 	public final void stop()
 	{
-		if (_isBow)
-			_isBowCoolingDown = false;
-		
-		clearAttackTask();
+		clearAttackTask(true);
 		
 		if (_attackTask != null)
 		{
@@ -638,8 +581,8 @@ public class CreatureAttack
 			_attackTask = null;
 		}
 		
-		_creature.getAI().tryTo(IntentionType.ACTIVE, null, null);
-		_creature.getAI().clientActionFailed();
+		_actor.getAI().tryToActive();
+		_actor.getAI().clientActionFailed();
 	}
 	
 	/**
@@ -650,7 +593,7 @@ public class CreatureAttack
 		if (_isAttackingNow)
 		{
 			stop();
-			_creature.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.ATTACK_FAILED));
+			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.ATTACK_FAILED));
 		}
 	}
 	
@@ -664,16 +607,19 @@ public class CreatureAttack
 		_isBowCoolingDown = _isBow;
 	}
 	
-	private void clearAttackTask()
+	private void clearAttackTask(boolean clearBowCooldown)
 	{
 		_hitHolders = null;
 		_weaponType = null;
 		_afterAttackDelay = 0;
 		_isAttackingNow = false;
 		_isBow = false;
+		
+		if (clearBowCooldown)
+			_isBowCoolingDown = false;
 	}
 	
-	class HitHolder
+	static class HitHolder
 	{
 		Creature _target;
 		int _damage;

@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
@@ -192,7 +191,7 @@ public class Q114_ResurrectionOfAnOldManager extends Quest
 				_golem = (Attackable) addSpawn(GOLEM, 96977, -110625, -3322, 0, true, 300000, true);
 				_golem.broadcastNpcSay("You, " + player.getName() + ", you attacked Wendy. Prepare to die!");
 				_golem.addDamageHate(player, 0, 999);
-				_golem.getAI().tryTo(IntentionType.ATTACK, player, false);
+				_golem.getAI().tryToAttack(player);
 			}
 			else
 				htmltext = "32047-19a.htm";
@@ -287,7 +286,7 @@ public class Q114_ResurrectionOfAnOldManager extends Quest
 		{
 			case STATE_CREATED:
 				QuestState pavelReq = player.getQuestState("Q121_PavelTheGiant");
-				htmltext = (pavelReq == null || !pavelReq.isCompleted() || player.getLevel() < 49) ? "32041-00.htm" : "32041-01.htm";
+				htmltext = (pavelReq == null || !pavelReq.isCompleted() || player.getStatus().getLevel() < 49) ? "32041-00.htm" : "32041-01.htm";
 				break;
 			
 			case STATE_STARTED:

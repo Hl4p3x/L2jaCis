@@ -139,4 +139,77 @@ public class SpawnLocation extends Location
 		_x += (int) (Math.cos(radian) * offset);
 		_y += (int) (Math.sin(radian) * offset);
 	}
+	
+	/**
+	 * @param target : The {@link WorldObject} target to check.
+	 * @return True if this {@link SpawnLocation} is behind the {@link WorldObject} target.
+	 */
+	public boolean isBehind(WorldObject target)
+	{
+		if (target == null)
+			return false;
+		
+		final double maxAngleDiff = 60;
+		final double angleChar = MathUtil.calculateAngleFrom(_x, _y, target.getX(), target.getY());
+		final double angleTarget = MathUtil.convertHeadingToDegree(target.getHeading());
+		
+		double angleDiff = angleChar - angleTarget;
+		
+		if (angleDiff <= -360 + maxAngleDiff)
+			angleDiff += 360;
+		
+		if (angleDiff >= 360 - maxAngleDiff)
+			angleDiff -= 360;
+		
+		return Math.abs(angleDiff) <= maxAngleDiff;
+	}
+	
+	/**
+	 * @param target : The {@link WorldObject} target to check.
+	 * @return True if this {@link SpawnLocation} is in front of the {@link WorldObject} target.
+	 */
+	public boolean isInFrontOf(WorldObject target)
+	{
+		if (target == null)
+			return false;
+		
+		final double maxAngleDiff = 60;
+		final double angleTarget = MathUtil.calculateAngleFrom(target.getX(), target.getY(), _x, _y);
+		final double angleChar = MathUtil.convertHeadingToDegree(target.getHeading());
+		
+		double angleDiff = angleChar - angleTarget;
+		
+		if (angleDiff <= -360 + maxAngleDiff)
+			angleDiff += 360;
+		
+		if (angleDiff >= 360 - maxAngleDiff)
+			angleDiff -= 360;
+		
+		return Math.abs(angleDiff) <= maxAngleDiff;
+	}
+	
+	/**
+	 * @param target : The {@link WorldObject} target to check.
+	 * @param maxAngle : The angle to check.
+	 * @return True if this {@link SpawnLocation} is facing the {@link WorldObject} target.
+	 */
+	public boolean isFacing(WorldObject target, int maxAngle)
+	{
+		if (target == null)
+			return false;
+		
+		final double maxAngleDiff = maxAngle / 2;
+		final double angleTarget = MathUtil.calculateAngleFrom(_x, _y, target.getX(), target.getY());
+		final double angleChar = MathUtil.convertHeadingToDegree(getHeading());
+		
+		double angleDiff = angleChar - angleTarget;
+		
+		if (angleDiff <= -360 + maxAngleDiff)
+			angleDiff += 360;
+		
+		if (angleDiff >= 360 - maxAngleDiff)
+			angleDiff -= 360;
+		
+		return Math.abs(angleDiff) <= maxAngleDiff;
+	}
 }

@@ -114,7 +114,7 @@ public class Q117_TheOceanOfDistantStars extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 39) ? "32053-00.htm" : "32053-01.htm";
+				htmltext = (player.getStatus().getLevel() < 39) ? "32053-00.htm" : "32053-01.htm";
 				break;
 			
 			case STATE_STARTED:

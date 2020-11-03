@@ -73,7 +73,7 @@ public class Q608_SlayTheEnemyCommander extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 75)
+				if (player.getStatus().getLevel() >= 75)
 				{
 					if (player.getAllianceWithVarkaKetra() >= 4 && st.hasQuestItems(KETRA_ALLIANCE_4) && !st.hasQuestItems(TOTEM_OF_WISDOM))
 						htmltext = "31370-01.htm";

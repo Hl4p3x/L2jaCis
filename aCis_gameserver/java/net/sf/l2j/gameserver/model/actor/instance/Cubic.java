@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.SkillTable;
@@ -12,6 +12,7 @@ import net.sf.l2j.gameserver.data.manager.DuelManager;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.items.ShotType;
+import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.handler.ISkillHandler;
 import net.sf.l2j.gameserver.handler.SkillHandler;
@@ -32,7 +33,6 @@ import net.sf.l2j.gameserver.taskmanager.AttackStanceTaskManager;
 
 public class Cubic
 {
-	// Type of cubics
 	public static final int STORM_CUBIC = 1;
 	public static final int VAMPIRIC_CUBIC = 2;
 	public static final int LIFE_CUBIC = 3;
@@ -43,12 +43,11 @@ public class Cubic
 	public static final int SPARK_CUBIC = 8;
 	public static final int ATTRACT_CUBIC = 9;
 	
-	// Max range of cubic skills
-	public static final int MAX_MAGIC_RANGE = 900;
-	
-	// Cubic skills
 	public static final int SKILL_CUBIC_HEAL = 4051;
 	public static final int SKILL_CUBIC_CURE = 5579;
+	
+	private static final int MAX_MAGIC_RANGE = 900;
+	private static final int CAST_DELAY = 2000;
 	
 	private Player _owner;
 	
@@ -62,6 +61,7 @@ public class Cubic
 	
 	private Future<?> _actionTask;
 	private Future<?> _disappearTask;
+	private Future<?> _castTask;
 	
 	public Cubic(Player owner, int id, int level, int mAtk, int activationTime, int activationChance, int totalLifeTime, boolean givenByOther)
 	{
@@ -136,11 +136,6 @@ public class Cubic
 		return _owner;
 	}
 	
-	public final int getMCriticalHit(Creature target, L2Skill skill)
-	{
-		return _owner.getMCriticalHit(target, skill);
-	}
-	
 	public int getMAtk()
 	{
 		return _matk;
@@ -166,6 +161,15 @@ public class Cubic
 		{
 			_disappearTask.cancel(false);
 			_disappearTask = null;
+		}
+	}
+	
+	public void stopCastTask()
+	{
+		if (_castTask != null)
+		{
+			_castTask.cancel(false);
+			_castTask = null;
 		}
 	}
 	
@@ -298,21 +302,21 @@ public class Cubic
 		{
 			for (Player member : party.getMembers())
 			{
-				final double testedRatio = member.getCurrentHp() / member.getMaxHp();
-				if (!member.isDead() && testedRatio < 1. && ratio > testedRatio && _owner.isIn3DRadius(member, MAX_MAGIC_RANGE))
+				final double hpRatio = member.getStatus().getHpRatio();
+				if (!member.isDead() && hpRatio < 1.0 && ratio > hpRatio && _owner.isIn3DRadius(member, MAX_MAGIC_RANGE))
 				{
 					target = member;
-					ratio = testedRatio;
+					ratio = hpRatio;
 				}
 			}
 		}
 		else
 		{
-			final double testedRatio = _owner.getCurrentHp() / _owner.getMaxHp();
-			if (testedRatio < 1.)
+			final double hpRatio = _owner.getStatus().getHpRatio();
+			if (hpRatio < 1.0)
 			{
 				target = _owner;
-				ratio = testedRatio;
+				ratio = hpRatio;
 			}
 		}
 		
@@ -346,15 +350,16 @@ public class Cubic
 	}
 	
 	/**
-	 * Stop entirely this {@link Cubic} action (both action/disappear tasks are dropped, id is removed from {@link Player} owner.
+	 * Stop entirely this {@link Cubic} action - all tasks are dropped, id is removed from {@link Player} owner.
 	 * @param doBroadcast : If true, we broadcast UserInfo/CharInfo.
 	 */
 	public void stop(boolean doBroadcast)
 	{
 		stopAction();
 		cancelDisappear();
+		stopCastTask();
 		
-		_owner.removeCubic(_id);
+		_owner.getCubicList().removeCubic(_id);
 		
 		if (doBroadcast)
 			_owner.broadcastUserInfo();
@@ -386,13 +391,16 @@ public class Cubic
 				target
 			};
 			
-			final ISkillHandler handler = SkillHandler.getInstance().getHandler(skill.getSkillType());
-			if (handler != null)
-				handler.useSkill(_owner, skill, targets);
-			else
-				skill.useSkill(_owner, targets);
+			_castTask = ThreadPool.schedule(() ->
+			{
+				final ISkillHandler handler = SkillHandler.getInstance().getHandler(skill.getSkillType());
+				if (handler != null)
+					handler.useSkill(_owner, skill, targets);
+				else
+					skill.useSkill(_owner, targets);
+			}, CAST_DELAY);
 			
-			_owner.broadcastPacket(new MagicSkillUse(_owner, target, skill.getId(), skill.getLevel(), 0, 0));
+			_owner.broadcastPacket(new MagicSkillUse(_owner, target, skill.getId(), skill.getLevel(), CAST_DELAY, CAST_DELAY));
 		}
 		else
 		{
@@ -418,62 +426,61 @@ public class Cubic
 				target
 			};
 			
-			switch (skill.getSkillType())
+			_castTask = ThreadPool.schedule(() ->
 			{
-				case PARALYZE:
-				case STUN:
-				case ROOT:
-				case AGGDAMAGE:
-					useCubicDisabler(skill.getSkillType(), skill, targets);
-					break;
-				
-				case MDAM:
-					useCubicMdam(skill, targets);
-					break;
-				
-				case POISON:
-				case DEBUFF:
-				case DOT:
-					useCubicContinuous(skill, targets);
-					break;
-				
-				case DRAIN:
-					((L2SkillDrain) skill).useCubicSkill(this, targets);
-					break;
-				
-				default:
-					SkillHandler.getInstance().getHandler(skill.getSkillType()).useSkill(_owner, skill, targets);
-					break;
-			}
-			_owner.broadcastPacket(new MagicSkillUse(_owner, target, skill.getId(), skill.getLevel(), 0, 0));
+				switch (skill.getSkillType())
+				{
+					case PARALYZE:
+					case STUN:
+					case ROOT:
+					case AGGDAMAGE:
+						useDisablerSkill(skill, target);
+						break;
+					
+					case MDAM:
+						useMdamSkill(skill, target);
+						break;
+					
+					case POISON:
+					case DEBUFF:
+					case DOT:
+						useContinuousSkill(skill, target);
+						break;
+					
+					case DRAIN:
+						useDrainSkill((L2SkillDrain) skill, target);
+						break;
+					
+					default:
+						SkillHandler.getInstance().getHandler(skill.getSkillType()).useSkill(_owner, skill, targets);
+						break;
+				}
+			}, CAST_DELAY);
+			
+			_owner.broadcastPacket(new MagicSkillUse(_owner, target, skill.getId(), skill.getLevel(), CAST_DELAY, CAST_DELAY));
 		}
 	}
 	
-	public void useCubicContinuous(L2Skill skill, WorldObject[] targets)
+	private void useDisablerSkill(L2Skill skill, Creature target)
 	{
-		final boolean bss = getOwner().isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+		if (target.isDead())
+			return;
 		
-		for (WorldObject obj : targets)
+		final boolean bss = getOwner().isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+		final byte shld = Formulas.calcShldUse(getOwner(), target, skill);
+		
+		if (!Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss))
+			return;
+		
+		if (skill.getSkillType() == SkillType.AGGDAMAGE)
 		{
-			if (!(obj instanceof Creature))
-				continue;
+			if (target instanceof Attackable)
+				target.getAI().notifyEvent(AiEventType.AGGRESSION, getOwner(), (int) ((150 * skill.getPower()) / (target.getStatus().getLevel() + 7)));
 			
-			final Creature target = ((Creature) obj);
-			if (target.isDead())
-				continue;
-			
-			if (skill.isOffensive())
-			{
-				final byte shld = Formulas.calcShldUse(getOwner(), target, skill);
-				final boolean acted = Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss);
-				
-				if (!acted)
-				{
-					getOwner().sendPacket(SystemMessageId.ATTACK_FAILED);
-					continue;
-				}
-			}
-			
+			skill.getEffects(this, target);
+		}
+		else
+		{
 			// If this is a debuff, let the duel manager know about it so the debuff can be removed after the duel (player & target must be in the same duel)
 			if (target instanceof Player && ((Player) target).isInDuel() && skill.getSkillType() == SkillType.DEBUFF && getOwner().getDuelId() == ((Player) target).getDuelId())
 			{
@@ -485,94 +492,98 @@ public class Cubic
 		}
 	}
 	
-	public void useCubicMdam(L2Skill skill, WorldObject[] targets)
+	private void useMdamSkill(L2Skill skill, Creature target)
 	{
-		final boolean bss = getOwner().isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+		if (target.isDead())
+			return;
 		
-		for (WorldObject obj : targets)
+		final boolean mcrit = Formulas.calcMCrit(getOwner(), target, skill);
+		final byte shld = Formulas.calcShldUse(getOwner(), target, skill);
+		
+		int damage = (int) Formulas.calcMagicDam(this, target, skill, mcrit, shld);
+		
+		// If target is reflecting the skill then no damage is done Ignoring vengance-like reflections
+		if ((Formulas.calcSkillReflect(target, skill) & Formulas.SKILL_REFLECT_SUCCEED) > 0)
+			damage = 0;
+		
+		if (damage > 0)
 		{
-			if (!(obj instanceof Creature))
-				continue;
+			// Manage cast break of the target (calculating rate, sending message...)
+			Formulas.calcCastBreak(target, damage);
 			
-			final Creature target = ((Creature) obj);
-			if (target.isDead())
-				continue;
+			getOwner().sendDamageMessage(target, damage, mcrit, false, false);
 			
-			final boolean mcrit = Formulas.calcMCrit(getMCriticalHit(target, skill));
-			final byte shld = Formulas.calcShldUse(getOwner(), target, skill);
-			
-			int damage = (int) Formulas.calcMagicDam(this, target, skill, mcrit, shld);
-			
-			// If target is reflecting the skill then no damage is done Ignoring vengance-like reflections
-			if ((Formulas.calcSkillReflect(target, skill) & Formulas.SKILL_REFLECT_SUCCEED) > 0)
-				damage = 0;
-			
-			if (damage > 0)
+			if (skill.hasEffects())
 			{
-				// Manage cast break of the target (calculating rate, sending message...)
-				Formulas.calcCastBreak(target, damage);
+				// activate attacked effects, if any
+				target.stopSkillEffects(skill.getId());
 				
-				getOwner().sendDamageMessage(target, damage, mcrit, false, false);
+				if (target.getFirstEffect(skill) != null)
+					target.removeEffect(target.getFirstEffect(skill));
 				
-				if (skill.hasEffects())
-				{
-					// activate attacked effects, if any
-					target.stopSkillEffects(skill.getId());
-					
-					if (target.getFirstEffect(skill) != null)
-						target.removeEffect(target.getFirstEffect(skill));
-					
-					if (Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss))
-						skill.getEffects(this, target);
-				}
-				
-				target.reduceCurrentHp(damage, getOwner(), skill);
+				final boolean bss = getOwner().isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+				if (Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss))
+					skill.getEffects(this, target);
 			}
+			
+			target.reduceCurrentHp(damage, getOwner(), skill);
 		}
 	}
 	
-	public void useCubicDisabler(SkillType type, L2Skill skill, WorldObject[] targets)
+	private void useContinuousSkill(L2Skill skill, Creature target)
 	{
-		final boolean bss = getOwner().isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+		if (target.isDead())
+			return;
 		
-		for (WorldObject obj : targets)
+		if (skill.isOffensive())
 		{
-			if (!(obj instanceof Creature))
-				continue;
-			
-			final Creature target = ((Creature) obj);
-			if (target.isDead())
-				continue;
-			
 			final byte shld = Formulas.calcShldUse(getOwner(), target, skill);
+			final boolean bss = getOwner().isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+			final boolean acted = Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss);
 			
-			switch (type)
+			if (!acted)
 			{
-				case STUN:
-				case PARALYZE:
-				case ROOT:
-					if (Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss))
-					{
-						// If this is a debuff, let the duel manager know about it so the debuff can be removed after the duel (player & target must be in the same duel)
-						if (target instanceof Player && ((Player) target).isInDuel() && skill.getSkillType() == SkillType.DEBUFF && getOwner().getDuelId() == ((Player) target).getDuelId())
-						{
-							for (AbstractEffect effect : skill.getEffects(getOwner(), target))
-								DuelManager.getInstance().onBuff(((Player) target), effect);
-						}
-						else
-							skill.getEffects(this, target);
-					}
-					break;
+				getOwner().sendPacket(SystemMessageId.ATTACK_FAILED);
+				return;
+			}
+		}
+		
+		// If this is a debuff, let the duel manager know about it so the debuff can be removed after the duel (player & target must be in the same duel)
+		if (target instanceof Player && ((Player) target).isInDuel() && skill.getSkillType() == SkillType.DEBUFF && getOwner().getDuelId() == ((Player) target).getDuelId())
+		{
+			for (AbstractEffect effect : skill.getEffects(getOwner(), target))
+				DuelManager.getInstance().onBuff(((Player) target), effect);
+		}
+		else
+			skill.getEffects(this, target);
+	}
+	
+	private void useDrainSkill(L2SkillDrain skill, Creature target)
+	{
+		if (target.isAlikeDead() && skill.getTargetType() != SkillTargetType.CORPSE_MOB)
+			return;
+		
+		final boolean mcrit = Formulas.calcMCrit(getOwner(), target, skill);
+		final byte shld = Formulas.calcShldUse(getOwner(), target, skill);
+		final int damage = (int) Formulas.calcMagicDam(this, target, skill, mcrit, shld);
+		
+		// Check to see if we should damage the target
+		if (damage > 0)
+		{
+			// Add HPs to the Cubic owner.
+			getOwner().getStatus().addHp(skill.getAbsorbAbs() + skill.getAbsorbPart() * damage);
+			
+			// That section is launched for drain skills made on ALIVE targets.
+			if (!target.isDead() || skill.getTargetType() != SkillTargetType.CORPSE_MOB)
+			{
+				// Reduce HPs of the Creature target.
+				target.reduceCurrentHp(damage, getOwner(), skill);
 				
-				case AGGDAMAGE:
-					if (Formulas.calcCubicSkillSuccess(this, target, skill, shld, bss))
-					{
-						if (target instanceof Attackable)
-							target.getAI().notifyEvent(AiEventType.AGGRESSION, getOwner(), (int) ((150 * skill.getPower()) / (target.getLevel() + 7)));
-						
-						skill.getEffects(this, target);
-					}
-					break;
+				// Manage cast break of the target (calculating rate, sending message...)
+				Formulas.calcCastBreak(target, damage);
+				
+				// Send message.
+				getOwner().sendDamageMessage(target, damage, mcrit, false, false);
 			}
 		}
 	}

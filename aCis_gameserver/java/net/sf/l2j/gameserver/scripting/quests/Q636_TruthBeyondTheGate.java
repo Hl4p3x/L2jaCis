@@ -64,7 +64,7 @@ public class Q636_TruthBeyondTheGate extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 73) ? "31329-01.htm" : "31329-02.htm";
+				htmltext = (player.getStatus().getLevel() < 73) ? "31329-01.htm" : "31329-02.htm";
 				break;
 			
 			case STATE_STARTED:

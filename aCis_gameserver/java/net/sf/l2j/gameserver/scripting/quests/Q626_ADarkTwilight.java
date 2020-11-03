@@ -105,7 +105,7 @@ public class Q626_ADarkTwilight extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 60) ? "31517-02.htm" : "31517-01.htm";
+				htmltext = (player.getStatus().getLevel() < 60) ? "31517-02.htm" : "31517-01.htm";
 				break;
 			
 			case STATE_STARTED:

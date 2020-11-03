@@ -20,10 +20,6 @@ public class Blow implements ISkillHandler
 		SkillType.BLOW
 	};
 	
-	public static final int FRONT = 50;
-	public static final int SIDE = 60;
-	public static final int BEHIND = 70;
-	
 	@Override
 	public void useSkill(Creature activeChar, L2Skill skill, WorldObject[] targets)
 	{
@@ -41,35 +37,35 @@ public class Blow implements ISkillHandler
 			if (target.isAlikeDead())
 				continue;
 			
-			byte _successChance = SIDE;
-			
-			if (activeChar.isBehindTarget())
-				_successChance = BEHIND;
-			else if (activeChar.isInFrontOfTarget())
-				_successChance = FRONT;
+			int successChance = 60;
+			if (activeChar.isBehind(target))
+				successChance = 70;
+			else if (activeChar.isInFrontOf(target))
+				successChance = 50;
 			
 			// If skill requires Crit or skill requires behind, calculate chance based on DEX, Position and on self BUFF
 			boolean success = true;
 			if ((skill.getCondition() & L2Skill.COND_BEHIND) != 0)
-				success = (_successChance == BEHIND);
+				success = (successChance == 70);
+			
 			if ((skill.getCondition() & L2Skill.COND_CRIT) != 0)
-				success = (success && Formulas.calcBlow(activeChar, target, _successChance));
+				success = (success && Formulas.calcBlow(activeChar, target, successChance));
 			
 			if (success)
 			{
-				// Calculate skill evasion
-				boolean skillIsEvaded = Formulas.calcPhysicalSkillEvasion(target, skill);
-				if (skillIsEvaded)
+				// Calculate skill evasion.
+				if (Formulas.calcPhysicalSkillEvasion(target, skill))
 				{
 					if (activeChar instanceof Player)
-						((Player) activeChar).sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_DODGES_ATTACK).addCharName(target));
+						activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_DODGES_ATTACK).addCharName(target));
 					
 					if (target instanceof Player)
-						((Player) target).sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AVOIDED_S1_ATTACK).addCharName(activeChar));
+						target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AVOIDED_S1_ATTACK).addCharName(activeChar));
 					
-					// no futher calculations needed.
 					continue;
 				}
+				
+				final byte shld = Formulas.calcShldUse(activeChar, target, skill);
 				
 				// Calculate skill reflect
 				final byte reflect = Formulas.calcSkillReflect(target, skill);
@@ -83,7 +79,6 @@ public class Blow implements ISkillHandler
 					}
 					else
 					{
-						final byte shld = Formulas.calcShldUse(activeChar, target, skill);
 						target.stopSkillEffects(skill.getId());
 						if (Formulas.calcSkillSuccess(activeChar, target, skill, shld, true))
 						{
@@ -95,24 +90,23 @@ public class Blow implements ISkillHandler
 					}
 				}
 				
-				byte shld = Formulas.calcShldUse(activeChar, target, skill);
-				
-				// Crit rate base crit rate for skill, modified with STR bonus
-				boolean crit = false;
-				if (Formulas.calcCrit(skill.getBaseCritRate() * 10 * Formulas.getSTRBonus(activeChar)))
-					crit = true;
-				
+				// Default damages.
 				double damage = (int) Formulas.calcBlowDamage(activeChar, target, skill, shld, ss);
-				if (crit)
+				
+				// Critical check, modified with STR bonus.
+				if (Formulas.calcCrit(skill.getBaseCritRate() * 10 * Formulas.getSTRBonus(activeChar)))
 				{
 					damage *= 2;
 					
-					// Vicious Stance is special after C5, and only for BLOW skills
-					final AbstractEffect vicious = activeChar.getFirstEffect(312);
-					if (vicious != null && damage > 1)
+					// Vicious Stance is special after C5, and only for BLOW skills.
+					if (damage > 1)
 					{
-						for (Func func : vicious.getStatFuncs())
-							damage = (int) func.calc(activeChar, target, skill, damage, damage);
+						final AbstractEffect vicious = activeChar.getFirstEffect(312);
+						if (vicious != null)
+						{
+							for (Func func : vicious.getStatFuncs())
+								damage = (int) func.calc(activeChar, target, skill, damage, damage);
+						}
 					}
 				}
 				
@@ -128,15 +122,15 @@ public class Blow implements ISkillHandler
 						activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_PERFORMING_COUNTERATTACK).addCharName(target));
 					
 					// Formula from Diego post, 700 from rpg tests
-					double vegdamage = (700 * target.getPAtk(activeChar) / activeChar.getPDef(target));
+					double vegdamage = (700 * target.getStatus().getPAtk(activeChar) / activeChar.getStatus().getPDef(target));
 					activeChar.reduceCurrentHp(vegdamage, target, skill);
 				}
 				
 				// Manage cast break of the target (calculating rate, sending message...)
 				Formulas.calcCastBreak(target, damage);
 				
-				if (activeChar instanceof Player)
-					((Player) activeChar).sendDamageMessage(target, (int) damage, false, true, false);
+				// Send damage message.
+				activeChar.sendDamageMessage(target, (int) damage, false, true, false);
 			}
 			else
 				activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.ATTACK_FAILED));

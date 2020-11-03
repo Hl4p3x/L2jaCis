@@ -213,7 +213,7 @@ public class Q605_AllianceWithKetraOrcs extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 74)
+				if (player.getStatus().getLevel() >= 74)
 					htmltext = "31371-01.htm";
 				else
 				{

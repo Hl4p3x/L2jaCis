@@ -2,9 +2,9 @@ package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.container.player.BlockList;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.FriendAddRequest;
+import net.sf.l2j.gameserver.network.serverpackets.FriendAddRequestResult;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public final class RequestFriendInvite extends L2GameClientPacket
@@ -25,38 +25,47 @@ public final class RequestFriendInvite extends L2GameClientPacket
 			return;
 		
 		final Player target = World.getInstance().getPlayer(_targetName);
-		
-		if (target == null || !target.isOnline() || !target.getAppearance().isVisible())
+		if (target == null || !target.isOnline())
 		{
-			player.sendPacket(SystemMessageId.THE_USER_YOU_REQUESTED_IS_NOT_IN_GAME);
+			player.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
+			player.sendPacket(FriendAddRequestResult.STATIC_FAIL);
 			return;
 		}
 		
 		if (target == player)
 		{
-			player.sendPacket(SystemMessageId.YOU_CANNOT_ADD_YOURSELF_TO_OWN_FRIEND_LIST);
+			player.sendPacket(SystemMessageId.YOU_CANNOT_ADD_YOURSELF_TO_YOUR_OWN_FRIENDS_LIST);
+			player.sendPacket(FriendAddRequestResult.STATIC_FAIL);
 			return;
 		}
 		
-		if (BlockList.isBlocked(target, player))
+		if (target.getBlockList().isBlockingAll())
 		{
-			player.sendPacket(SystemMessageId.FAILED_TO_INVITE_A_FRIEND);
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addString(target.getName()));
+			return;
+		}
+		
+		if (target.getBlockList().isInBlockList(player))
+		{
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_ADDED_YOU_TO_IGNORE_LIST2).addString(target.getName()));
 			return;
 		}
 		
 		if (player.getFriendList().contains(target.getObjectId()))
 		{
 			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_ALREADY_IN_FRIENDS_LIST).addString(_targetName));
+			player.sendPacket(FriendAddRequestResult.STATIC_FAIL);
 			return;
 		}
 		
-		if (!target.isProcessingRequest())
+		if (target.isProcessingRequest())
 		{
-			player.onTransactionRequest(target);
-			target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_REQUESTED_TO_BECOME_FRIENDS).addCharName(player));
-			target.sendPacket(new FriendAddRequest(player.getName()));
+			player.sendPacket(SystemMessageId.WAITING_FOR_ANOTHER_REPLY);
+			player.sendPacket(FriendAddRequestResult.STATIC_FAIL);
+			return;
 		}
-		else
-			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_IS_BUSY_TRY_LATER).addString(_targetName));
+		
+		player.onTransactionRequest(target);
+		target.sendPacket(new FriendAddRequest(player.getName()));
 	}
 }

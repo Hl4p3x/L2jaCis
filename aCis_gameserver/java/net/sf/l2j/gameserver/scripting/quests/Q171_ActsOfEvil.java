@@ -117,7 +117,7 @@ public class Q171_ActsOfEvil extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 27) ? "30381-01a.htm" : "30381-01.htm";
+				htmltext = (player.getStatus().getLevel() < 27) ? "30381-01a.htm" : "30381-01.htm";
 				break;
 			
 			case STATE_STARTED:

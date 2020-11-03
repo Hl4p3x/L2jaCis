@@ -80,7 +80,7 @@ public class Q008_AnAdventureBegins extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 3 && player.getRace() == ClassRace.DARK_ELF)
+				if (player.getStatus().getLevel() >= 3 && player.getRace() == ClassRace.DARK_ELF)
 					htmltext = "30134-02.htm";
 				else
 					htmltext = "30134-01.htm";

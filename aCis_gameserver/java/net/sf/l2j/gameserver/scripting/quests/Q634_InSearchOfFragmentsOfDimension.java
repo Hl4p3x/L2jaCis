@@ -63,7 +63,7 @@ public class Q634_InSearchOfFragmentsOfDimension extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "01a.htm" : "01.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "01a.htm" : "01.htm";
 				break;
 			
 			case STATE_STARTED:
@@ -83,7 +83,7 @@ public class Q634_InSearchOfFragmentsOfDimension extends Quest
 		if (st == null)
 			return null;
 		
-		st.dropItems(DIMENSION_FRAGMENT, (int) (npc.getLevel() * 0.15 + 1.6), -1, 900000);
+		st.dropItems(DIMENSION_FRAGMENT, (int) (npc.getStatus().getLevel() * 0.15 + 1.6), -1, 900000);
 		
 		return null;
 	}

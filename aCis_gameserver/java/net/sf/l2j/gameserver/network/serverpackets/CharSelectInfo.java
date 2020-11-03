@@ -6,10 +6,11 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.sf.l2j.L2DatabaseFactory;
+import net.sf.l2j.commons.pool.ConnectionPool;
+
 import net.sf.l2j.gameserver.data.sql.ClanTable;
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.CharSelectSlot;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.GameClient;
 
@@ -103,41 +104,41 @@ public class CharSelectInfo extends L2GameServerPacket
 			writeD(0x00);
 			writeD(0x00);
 			
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_HAIRALL));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_REAR));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_LEAR));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_NECK));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_RFINGER));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_LFINGER));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_HEAD));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_RHAND));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_LHAND));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_GLOVES));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_CHEST));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_LEGS));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_FEET));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_BACK));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_RHAND));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_HAIR));
-			writeD(slot.getPaperdollObjectId(Inventory.PAPERDOLL_FACE));
+			writeD(slot.getPaperdollObjectId(Paperdoll.HAIRALL));
+			writeD(slot.getPaperdollObjectId(Paperdoll.REAR));
+			writeD(slot.getPaperdollObjectId(Paperdoll.LEAR));
+			writeD(slot.getPaperdollObjectId(Paperdoll.NECK));
+			writeD(slot.getPaperdollObjectId(Paperdoll.RFINGER));
+			writeD(slot.getPaperdollObjectId(Paperdoll.LFINGER));
+			writeD(slot.getPaperdollObjectId(Paperdoll.HEAD));
+			writeD(slot.getPaperdollObjectId(Paperdoll.RHAND));
+			writeD(slot.getPaperdollObjectId(Paperdoll.LHAND));
+			writeD(slot.getPaperdollObjectId(Paperdoll.GLOVES));
+			writeD(slot.getPaperdollObjectId(Paperdoll.CHEST));
+			writeD(slot.getPaperdollObjectId(Paperdoll.LEGS));
+			writeD(slot.getPaperdollObjectId(Paperdoll.FEET));
+			writeD(slot.getPaperdollObjectId(Paperdoll.CLOAK));
+			writeD(slot.getPaperdollObjectId(Paperdoll.RHAND));
+			writeD(slot.getPaperdollObjectId(Paperdoll.HAIR));
+			writeD(slot.getPaperdollObjectId(Paperdoll.FACE));
 			
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_HAIRALL));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_REAR));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_LEAR));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_NECK));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_RFINGER));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_LFINGER));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_HEAD));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_RHAND));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_LHAND));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_GLOVES));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_CHEST));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_LEGS));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_FEET));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_BACK));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_RHAND));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_HAIR));
-			writeD(slot.getPaperdollItemId(Inventory.PAPERDOLL_FACE));
+			writeD(slot.getPaperdollItemId(Paperdoll.HAIRALL));
+			writeD(slot.getPaperdollItemId(Paperdoll.REAR));
+			writeD(slot.getPaperdollItemId(Paperdoll.LEAR));
+			writeD(slot.getPaperdollItemId(Paperdoll.NECK));
+			writeD(slot.getPaperdollItemId(Paperdoll.RFINGER));
+			writeD(slot.getPaperdollItemId(Paperdoll.LFINGER));
+			writeD(slot.getPaperdollItemId(Paperdoll.HEAD));
+			writeD(slot.getPaperdollItemId(Paperdoll.RHAND));
+			writeD(slot.getPaperdollItemId(Paperdoll.LHAND));
+			writeD(slot.getPaperdollItemId(Paperdoll.GLOVES));
+			writeD(slot.getPaperdollItemId(Paperdoll.CHEST));
+			writeD(slot.getPaperdollItemId(Paperdoll.LEGS));
+			writeD(slot.getPaperdollItemId(Paperdoll.FEET));
+			writeD(slot.getPaperdollItemId(Paperdoll.CLOAK));
+			writeD(slot.getPaperdollItemId(Paperdoll.RHAND));
+			writeD(slot.getPaperdollItemId(Paperdoll.HAIR));
+			writeD(slot.getPaperdollItemId(Paperdoll.FACE));
 			
 			writeD(slot.getHairStyle());
 			writeD(slot.getHairColor());
@@ -164,7 +165,7 @@ public class CharSelectInfo extends L2GameServerPacket
 	{
 		final List<CharSelectSlot> list = new ArrayList<>();
 		
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SELECT_INFOS))
 		{
 			ps.setString(1, loginName);
@@ -239,7 +240,7 @@ public class CharSelectInfo extends L2GameServerPacket
 					slot.setClassId(activeClassId);
 					
 					// Get the augmentation for equipped weapon.
-					final int weaponObjId = slot.getPaperdollObjectId(Inventory.PAPERDOLL_RHAND);
+					final int weaponObjId = slot.getPaperdollObjectId(Paperdoll.RHAND);
 					if (weaponObjId > 0)
 					{
 						try (PreparedStatement ps3 = con.prepareStatement(SELECT_AUGMENTS))

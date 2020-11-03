@@ -3,8 +3,6 @@ package net.sf.l2j.gameserver.model.actor.ai.type;
 import net.sf.l2j.gameserver.model.actor.Boat;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.serverpackets.VehicleDeparture;
 
 public class BoatAI extends CreatureAI
@@ -25,16 +23,6 @@ public class BoatAI extends CreatureAI
 	public Boat getActor()
 	{
 		return (Boat) _actor;
-	}
-	
-	@Override
-	protected void onIntentionAttack(Creature target, boolean isShiftPressed)
-	{
-	}
-	
-	@Override
-	protected void onIntentionCast(SkillUseHolder skillUseHolder, ItemInstance itemInstance)
-	{
 	}
 	
 	@Override

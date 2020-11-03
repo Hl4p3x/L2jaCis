@@ -5,8 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Map.Entry;
 
+import net.sf.l2j.commons.pool.ConnectionPool;
+
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.communitybbs.Manager.MailBBSManager;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
@@ -90,8 +91,8 @@ public class EnterWorld extends L2GameClientPacket
 			if (Config.GM_STARTUP_INVISIBLE && AdminData.getInstance().hasAccess("admin_hide", player.getAccessLevel()))
 				player.getAppearance().setVisible(false);
 			
-			if (Config.GM_STARTUP_SILENCE && AdminData.getInstance().hasAccess("admin_silence", player.getAccessLevel()))
-				player.setInRefusalMode(true);
+			if (Config.GM_STARTUP_BLOCK_ALL)
+				player.getBlockList().setInBlockingAll(true);
 			
 			if (Config.GM_STARTUP_AUTO_LIST && AdminData.getInstance().hasAccess("admin_gmlist", player.getAccessLevel()))
 				AdminData.getInstance().addGm(player, false);
@@ -100,7 +101,7 @@ public class EnterWorld extends L2GameClientPacket
 		}
 		
 		// Set dead status if applies
-		if (player.getCurrentHp() < 0.5 && player.isMortal())
+		if (player.getStatus().getHp() < 0.5 && player.isMortal())
 			player.setIsDead(true);
 		
 		player.getMacroList().sendUpdate();
@@ -180,6 +181,8 @@ public class EnterWorld extends L2GameClientPacket
 			
 			for (SubPledge sp : clan.getAllSubPledges())
 				player.sendPacket(new PledgeShowMemberListAll(clan, sp.getId()));
+			
+			player.sendPacket(new UserInfo(player));
 		}
 		
 		// Updating Seal of Strife Buff/Debuff
@@ -232,7 +235,7 @@ public class EnterWorld extends L2GameClientPacket
 			player.sendPacket(SystemMessage.getSystemMessage((GameTimeTaskManager.getInstance().isNight()) ? SystemMessageId.NIGHT_S1_EFFECT_APPLIES : SystemMessageId.DAY_S1_EFFECT_DISAPPEARS).addSkillName(L2Skill.SKILL_SHADOW_SENSE));
 		
 		// Load quests.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_PLAYER_QUESTS))
 		{
 			ps.setInt(1, objectId);
@@ -294,7 +297,7 @@ public class EnterWorld extends L2GameClientPacket
 			player.sendPacket(new Die(player));
 		
 		// Unread mails make a popup appears.
-		if (Config.ENABLE_COMMUNITY_BOARD && MailBBSManager.getInstance().checkUnreadMail(player) > 0)
+		if (Config.ENABLE_COMMUNITY_BOARD && MailBBSManager.getInstance().checkIfUnreadMail(player))
 		{
 			player.sendPacket(SystemMessageId.NEW_MAIL);
 			player.sendPacket(new PlaySound("systemmsg_e.1233"));
@@ -334,8 +337,13 @@ public class EnterWorld extends L2GameClientPacket
 			player.sendPacket(SystemMessageId.CLAN_MEMBERSHIP_TERMINATED);
 		
 		// Attacker or spectator logging into a siege zone will be ported at town.
-		if (!player.isGM() && (!player.isInSiege() || player.getSiegeState() < 2) && player.isInsideZone(ZoneId.SIEGE))
+		if (player.isInsideZone(ZoneId.SIEGE) && player.getSiegeState() < 2)
 			player.teleportTo(TeleportType.TOWN);
+		
+		// Tutorial
+		final QuestState qs = player.getQuestState("Tutorial");
+		if (qs != null)
+			qs.getQuest().notifyEvent("UC", null, player);
 		
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}

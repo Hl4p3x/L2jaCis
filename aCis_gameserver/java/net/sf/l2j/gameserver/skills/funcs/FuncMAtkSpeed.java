@@ -21,7 +21,7 @@ public class FuncMAtkSpeed extends Func
 	@Override
 	public double calc(Creature effector, Creature effected, L2Skill skill, double base, double value)
 	{
-		return value * Formulas.WIT_BONUS[effector.getWIT()];
+		return value * Formulas.WIT_BONUS[effector.getStatus().getWIT()];
 	}
 	
 	public static Func getInstance()

@@ -31,7 +31,7 @@ public final class RequestExEnchantSkillInfo extends L2GameClientPacket
 		if (player == null)
 			return;
 		
-		if (player.getClassId().level() < 3 || player.getLevel() < 76)
+		if (player.getClassId().getLevel() < 3 || player.getStatus().getLevel() < 76)
 			return;
 		
 		final Folk folk = player.getCurrentFolk();
@@ -52,7 +52,7 @@ public final class RequestExEnchantSkillInfo extends L2GameClientPacket
 		if (esn == null)
 			return;
 		
-		final ExEnchantSkillInfo esi = new ExEnchantSkillInfo(_skillId, _skillLevel, esn.getSp(), esn.getExp(), esn.getEnchantRate(player.getLevel()));
+		final ExEnchantSkillInfo esi = new ExEnchantSkillInfo(_skillId, _skillLevel, esn.getSp(), esn.getExp(), esn.getEnchantRate(player.getStatus().getLevel()));
 		if (Config.ES_SP_BOOK_NEEDED && esn.getItem() != null)
 			esi.addRequirement(4, esn.getItem().getId(), esn.getItem().getValue(), 0);
 		

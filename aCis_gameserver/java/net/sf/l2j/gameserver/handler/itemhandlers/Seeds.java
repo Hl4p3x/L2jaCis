@@ -3,14 +3,12 @@ package net.sf.l2j.gameserver.handler.itemhandlers;
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.CastleManorManager;
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
-import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
-import net.sf.l2j.gameserver.model.holder.SkillUseHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.manor.Seed;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -61,7 +59,7 @@ public class Seeds implements IItemHandler
 			if (skills[0] == null)
 				return;
 			
-			playable.getAI().tryTo(IntentionType.CAST, new SkillUseHolder(playable, monster, skills[0].getSkill(), false, false), null);
+			playable.getAI().tryToCast(monster, skills[0].getSkill());
 		}
 	}
 }

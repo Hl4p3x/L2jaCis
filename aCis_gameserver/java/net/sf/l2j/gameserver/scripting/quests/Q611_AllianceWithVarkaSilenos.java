@@ -213,7 +213,7 @@ public class Q611_AllianceWithVarkaSilenos extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				if (player.getLevel() >= 74)
+				if (player.getStatus().getLevel() >= 74)
 					htmltext = "31378-01.htm";
 				else
 				{

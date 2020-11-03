@@ -48,7 +48,7 @@ public class Q406_PathToAnElvenKnight extends Quest
 		{
 			if (player.getClassId() != ClassId.ELVEN_FIGHTER)
 				htmltext = (player.getClassId() == ClassId.ELVEN_KNIGHT) ? "30327-02a.htm" : "30327-02.htm";
-			else if (player.getLevel() < 19)
+			else if (player.getStatus().getLevel() < 19)
 				htmltext = "30327-03.htm";
 			else if (st.hasQuestItems(ELVEN_KNIGHT_BROOCH))
 				htmltext = "30327-04.htm";

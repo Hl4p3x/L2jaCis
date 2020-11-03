@@ -1,10 +1,10 @@
 package net.sf.l2j.gameserver.scripting.quests;
 
+import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.actors.ClassRace;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.scripting.QuestState;
@@ -20,12 +20,10 @@ public class Q104_SpiritOfMirrors extends Quest
 	private static final int WAND_SPIRITBOUND_3 = 1137;
 	
 	// Rewards
-	private static final int SPIRITSHOT_NO_GRADE = 2509;
-	private static final int SOULSHOT_NO_GRADE = 1835;
 	private static final int WAND_OF_ADEPT = 747;
-	private static final int SPIRITSHOT_FOR_BEGINNERS = 5790;
-	private static final int SOULSHOT_FOR_BEGINNERS = 5789;
 	private static final int LESSER_HEALING_POT = 1060;
+	private static final int SOULSHOT_NO_GRADE = 1835;
+	private static final int SPIRITSHOT_NO_GRADE = 2509;
 	private static final int ECHO_BATTLE = 4412;
 	private static final int ECHO_LOVE = 4413;
 	private static final int ECHO_SOLITUDE = 4414;
@@ -84,7 +82,7 @@ public class Q104_SpiritOfMirrors extends Quest
 			case STATE_CREATED:
 				if (player.getRace() != ClassRace.HUMAN)
 					htmltext = "30017-00.htm";
-				else if (player.getLevel() < 10)
+				else if (player.getStatus().getLevel() < 10)
 					htmltext = "30017-01.htm";
 				else
 					htmltext = "30017-02.htm";
@@ -106,33 +104,20 @@ public class Q104_SpiritOfMirrors extends Quest
 							st.takeItems(WAND_SPIRITBOUND_3, -1);
 							
 							st.giveItems(WAND_OF_ADEPT, 1);
-							st.rewardItems(LESSER_HEALING_POT, 100);
 							
 							if (player.isMageClass())
-								st.giveItems(SPIRITSHOT_NO_GRADE, 500);
+								st.rewardItems(SPIRITSHOT_NO_GRADE, 500);
 							else
-								st.giveItems(SOULSHOT_NO_GRADE, 1000);
+								st.rewardItems(SOULSHOT_NO_GRADE, 1000);
 							
-							if (player.isNewbie())
-							{
-								st.showQuestionMark(26);
-								if (player.isMageClass())
-								{
-									st.playTutorialVoice("tutorial_voice_027");
-									st.giveItems(SPIRITSHOT_FOR_BEGINNERS, 3000);
-								}
-								else
-								{
-									st.playTutorialVoice("tutorial_voice_026");
-									st.giveItems(SOULSHOT_FOR_BEGINNERS, 7000);
-								}
-							}
+							st.rewardNewbieShots(0, 3000);
+							st.rewardItems(LESSER_HEALING_POT, 100);
+							st.rewardItems(ECHO_BATTLE, 10);
+							st.rewardItems(ECHO_LOVE, 10);
+							st.rewardItems(ECHO_SOLITUDE, 10);
+							st.rewardItems(ECHO_FEAST, 10);
+							st.rewardItems(ECHO_CELEBRATION, 10);
 							
-							st.giveItems(ECHO_BATTLE, 10);
-							st.giveItems(ECHO_LOVE, 10);
-							st.giveItems(ECHO_SOLITUDE, 10);
-							st.giveItems(ECHO_FEAST, 10);
-							st.giveItems(ECHO_CELEBRATION, 10);
 							player.broadcastPacket(new SocialAction(player, 3));
 							st.playSound(QuestState.SOUND_FINISH);
 							st.exitQuest(false);
@@ -169,7 +154,7 @@ public class Q104_SpiritOfMirrors extends Quest
 		if (st == null)
 			return null;
 		
-		if (st.getItemEquipped(Inventory.PAPERDOLL_RHAND) == GALLINS_OAK_WAND)
+		if (st.getItemIdFrom(Paperdoll.RHAND) == GALLINS_OAK_WAND)
 		{
 			switch (npc.getNpcId())
 			{

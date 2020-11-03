@@ -650,7 +650,7 @@ public final class GamePacketHandler implements IPacketHandler<GameClient>, ICli
 						msg = new GameGuardReply();
 						break;
 					case 0xcc:
-						msg = new RequestSendFriendMsg();
+						msg = new RequestSendL2FriendSay();
 						break;
 					case 0xcd:
 						msg = new RequestShowMiniMap();

@@ -135,7 +135,7 @@ public class Q345_MethodToRaiseTheDead extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 35) ? "30970-00.htm" : "30970-01.htm";
+				htmltext = (player.getStatus().getLevel() < 35) ? "30970-00.htm" : "30970-01.htm";
 				break;
 			
 			case STATE_STARTED:

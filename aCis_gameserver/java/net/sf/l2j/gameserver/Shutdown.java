@@ -1,12 +1,12 @@
 package net.sf.l2j.gameserver;
 
-import net.sf.l2j.commons.concurrent.ThreadPool;
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
-import net.sf.l2j.commons.network.StatusType;
+import net.sf.l2j.commons.network.ServerType;
+import net.sf.l2j.commons.pool.ConnectionPool;
+import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.manager.BufferManager;
 import net.sf.l2j.gameserver.data.manager.CastleManorManager;
 import net.sf.l2j.gameserver.data.manager.CoupleManager;
@@ -171,7 +171,7 @@ public class Shutdown extends Thread
 			
 			try
 			{
-				L2DatabaseFactory.getInstance().shutdown();
+				ConnectionPool.shutdown();
 			}
 			catch (Throwable t)
 			{
@@ -286,8 +286,8 @@ public class Shutdown extends Thread
 				// Rehabilitate previous server status if shutdown is aborted.
 				if (_shutdownMode == ABORT)
 				{
-					if (LoginServerThread.getInstance().getServerStatus() == StatusType.DOWN)
-						LoginServerThread.getInstance().setServerStatus((Config.SERVER_GMONLY) ? StatusType.GM_ONLY : StatusType.AUTO);
+					if (LoginServerThread.getInstance().getServerType() == ServerType.DOWN)
+						LoginServerThread.getInstance().setServerType((Config.SERVER_GMONLY) ? ServerType.GM_ONLY : ServerType.AUTO);
 					
 					break;
 				}
@@ -315,8 +315,8 @@ public class Shutdown extends Thread
 				}
 				
 				// avoids new players from logging in
-				if (_secondsShut <= 60 && LoginServerThread.getInstance().getServerStatus() != StatusType.DOWN)
-					LoginServerThread.getInstance().setServerStatus(StatusType.DOWN);
+				if (_secondsShut <= 60 && LoginServerThread.getInstance().getServerType() != ServerType.DOWN)
+					LoginServerThread.getInstance().setServerType(ServerType.DOWN);
 				
 				_secondsShut--;
 				

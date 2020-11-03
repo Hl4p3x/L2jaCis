@@ -99,7 +99,7 @@ public class Q644_GraveRobberAnnihilation extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 20) ? "32017-06.htm" : "32017-01.htm";
+				htmltext = (player.getStatus().getLevel() < 20) ? "32017-06.htm" : "32017-01.htm";
 				break;
 			
 			case STATE_STARTED:

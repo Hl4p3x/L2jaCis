@@ -2,7 +2,6 @@ package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.commons.lang.StringUtil;
 
-import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.data.xml.PlayerData;
@@ -133,9 +132,7 @@ public final class RequestCharacterCreate extends L2GameClientPacket
 		}
 		
 		// Set default values.
-		player.setCurrentCp(0);
-		player.setCurrentHp(player.getMaxHp());
-		player.setCurrentMp(player.getMaxMp());
+		player.getStatus().setMaxHpMp();
 		
 		// send acknowledgement
 		sendPacket(CharCreateOk.STATIC_PACKET);
@@ -174,15 +171,9 @@ public final class RequestCharacterCreate extends L2GameClientPacket
 		}
 		
 		// Tutorial runs here.
-		if (!Config.DISABLE_TUTORIAL)
-		{
-			if (player.getQuestState("Tutorial") == null)
-			{
-				final Quest quest = ScriptData.getInstance().getQuest("Tutorial");
-				if (quest != null)
-					quest.newQuestState(player).setState(Quest.STATE_STARTED);
-			}
-		}
+		final Quest quest = ScriptData.getInstance().getQuest("Tutorial");
+		if (quest != null)
+			quest.newQuestState(player).setState(Quest.STATE_STARTED);
 		
 		player.setOnlineStatus(true, false);
 		player.deleteMe();

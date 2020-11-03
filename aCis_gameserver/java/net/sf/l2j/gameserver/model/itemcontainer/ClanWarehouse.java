@@ -1,8 +1,8 @@
 package net.sf.l2j.gameserver.model.itemcontainer;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.items.ItemLocation;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.item.instance.ItemInstance.ItemLocation;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 
 public final class ClanWarehouse extends ItemContainer
@@ -39,8 +39,11 @@ public final class ClanWarehouse extends ItemContainer
 	}
 	
 	@Override
-	public boolean validateCapacity(int slots)
+	public boolean validateCapacity(int slotCount)
 	{
-		return _items.size() + slots <= Config.WAREHOUSE_SLOTS_CLAN;
+		if (slotCount == 0)
+			return true;
+		
+		return _items.size() + slotCount <= Config.WAREHOUSE_SLOTS_CLAN;
 	}
 }

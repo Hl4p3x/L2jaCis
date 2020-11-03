@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.util.StatsSet;
 
-import net.sf.l2j.L2DatabaseFactory;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
 
@@ -30,7 +30,7 @@ public class GrandBossManager
 	
 	protected GrandBossManager()
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(SELECT_GRAND_BOSS_DATA);
 			ResultSet rset = ps.executeQuery())
 		{
@@ -117,7 +117,7 @@ public class GrandBossManager
 	 */
 	private void updateDb(int bossId, boolean statusOnly)
 	{
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection())
+		try (Connection con = ConnectionPool.getConnection())
 		{
 			final StatsSet info = _storedInfo.get(bossId);
 			final GrandBoss boss = _bosses.get(bossId);
@@ -140,8 +140,8 @@ public class GrandBossManager
 					ps.setInt(3, boss.getZ());
 					ps.setInt(4, boss.getHeading());
 					ps.setLong(5, info.getLong("respawn_time"));
-					ps.setDouble(6, (boss.isDead()) ? boss.getMaxHp() : boss.getCurrentHp());
-					ps.setDouble(7, (boss.isDead()) ? boss.getMaxMp() : boss.getCurrentMp());
+					ps.setDouble(6, (boss.isDead()) ? boss.getStatus().getMaxHp() : boss.getStatus().getHp());
+					ps.setDouble(7, (boss.isDead()) ? boss.getStatus().getMaxMp() : boss.getStatus().getMp());
 					ps.setInt(8, _bossStatus.get(bossId));
 					ps.setInt(9, bossId);
 					ps.executeUpdate();
@@ -160,7 +160,7 @@ public class GrandBossManager
 	public void cleanUp()
 	{
 		// Store to database.
-		try (Connection con = L2DatabaseFactory.getInstance().getConnection();
+		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps1 = con.prepareStatement(UPDATE_GRAND_BOSS_DATA2);
 			PreparedStatement ps2 = con.prepareStatement(UPDATE_GRAND_BOSS_DATA))
 		{
@@ -183,8 +183,8 @@ public class GrandBossManager
 					ps2.setInt(3, boss.getZ());
 					ps2.setInt(4, boss.getHeading());
 					ps2.setLong(5, info.getLong("respawn_time"));
-					ps2.setDouble(6, (boss.isDead()) ? boss.getMaxHp() : boss.getCurrentHp());
-					ps2.setDouble(7, (boss.isDead()) ? boss.getMaxMp() : boss.getCurrentMp());
+					ps2.setDouble(6, (boss.isDead()) ? boss.getStatus().getMaxHp() : boss.getStatus().getHp());
+					ps2.setDouble(7, (boss.isDead()) ? boss.getStatus().getMaxMp() : boss.getStatus().getMp());
 					ps2.setInt(8, _bossStatus.get(bossId));
 					ps2.setInt(9, bossId);
 					ps2.addBatch();

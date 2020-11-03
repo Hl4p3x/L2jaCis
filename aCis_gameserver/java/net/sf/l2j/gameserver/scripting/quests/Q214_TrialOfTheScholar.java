@@ -122,7 +122,7 @@ public class Q214_TrialOfTheScholar extends SecondClassQuest
 		}
 		else if (event.equalsIgnoreCase("30461-09.htm"))
 		{
-			if (player.getLevel() < 36)
+			if (player.getStatus().getLevel() < 36)
 			{
 				st.playSound(QuestState.SOUND_ITEMGET);
 				st.giveItems(MIRIEN_INSTRUCTION, 1);
@@ -310,7 +310,7 @@ public class Q214_TrialOfTheScholar extends SecondClassQuest
 			case STATE_CREATED:
 				if (player.getClassId() != ClassId.HUMAN_WIZARD && player.getClassId() != ClassId.ELVEN_WIZARD && player.getClassId() != ClassId.DARK_WIZARD)
 					htmltext = "30461-01.htm";
-				else if (player.getLevel() < 35)
+				else if (player.getStatus().getLevel() < 35)
 					htmltext = "30461-02.htm";
 				else
 					htmltext = "30461-03.htm";
@@ -340,7 +340,7 @@ public class Q214_TrialOfTheScholar extends SecondClassQuest
 								htmltext = "30461-08.htm";
 							else
 							{
-								if (player.getLevel() < 36)
+								if (player.getStatus().getLevel() < 36)
 									htmltext = "30461-11.htm";
 								else
 								{

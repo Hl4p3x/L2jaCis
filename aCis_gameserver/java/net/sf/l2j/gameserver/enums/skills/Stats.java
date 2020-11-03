@@ -145,7 +145,8 @@ public enum Stats
 	PDEF_MCREATURES("pDef-magicCreature", false),
 	
 	// ExSkill :)
-	MAX_LOAD("maxLoad", false),
+	WEIGHT_LIMIT("weightLimit", false),
+	WEIGHT_PENALTY("weightPenalty", false),
 	INV_LIM("inventoryLimit", false),
 	WH_LIM("whLimit", false),
 	FREIGHT_LIM("FreightLimit", false),

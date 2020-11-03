@@ -65,7 +65,7 @@ public class Q050_LanoscosSpecialBait extends Quest
 		switch (st.getState())
 		{
 			case STATE_CREATED:
-				htmltext = (player.getLevel() < 27) ? "31570-02.htm" : "31570-01.htm";
+				htmltext = (player.getStatus().getLevel() < 27) ? "31570-02.htm" : "31570-01.htm";
 				break;
 			
 			case STATE_STARTED:

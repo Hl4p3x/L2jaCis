@@ -120,7 +120,7 @@ public class Q246_PossessorOfAPreciousSoul extends Quest
 		{
 			case STATE_CREATED:
 				if (st.hasQuestItems(CARADINE_LETTER_1))
-					htmltext = (!player.isSubClassActive() || player.getLevel() < 65) ? "31740-02.htm" : "31740-01.htm";
+					htmltext = (!player.isSubClassActive() || player.getStatus().getLevel() < 65) ? "31740-02.htm" : "31740-01.htm";
 				break;
 			
 			case STATE_STARTED:

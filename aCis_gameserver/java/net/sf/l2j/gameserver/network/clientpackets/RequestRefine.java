@@ -1,6 +1,7 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
 import net.sf.l2j.gameserver.data.xml.AugmentationData;
+import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.Augmentation;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
@@ -83,7 +84,7 @@ public final class RequestRefine extends AbstractRefinePacket
 		// unequip item
 		if (targetItem.isEquipped())
 		{
-			ItemInstance[] unequipped = player.getInventory().unEquipItemInSlotAndRecord(targetItem.getLocationSlot());
+			ItemInstance[] unequipped = player.getInventory().unequipItemInSlotAndRecord(targetItem.getLocationSlot());
 			InventoryUpdate iu = new InventoryUpdate();
 			
 			for (ItemInstance itm : unequipped)
@@ -121,7 +122,7 @@ public final class RequestRefine extends AbstractRefinePacket
 		player.sendPacket(iu);
 		
 		StatusUpdate su = new StatusUpdate(player);
-		su.addAttribute(StatusUpdate.CUR_LOAD, player.getCurrentLoad());
+		su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
 		player.sendPacket(su);
 	}
 }
