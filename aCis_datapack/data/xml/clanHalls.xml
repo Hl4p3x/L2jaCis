@@ -130,7 +130,7 @@
 			<spawn type="BANISH" x="20192" y="145920" z="-3125"/>
 		</spawns>
 	</clanhall>
-	<clanhall id="34" name="Devastated Castle" desc="Contestable Clan Hall" loc="Aden" siegeLength="3600000" scheduleConfig="14;0;0;12;0" relatedNpcIds="35408;35409;35417;35418;35419;35420;35421">
+	<clanhall id="34" name="Devastated Castle" desc="Contestable Clan Hall" loc="Aden" siegeLength="3600000" scheduleConfig="14;0;0;12;0" relatedNpcIds="35408;35409;35411;35412;35413;35414;35415;35416;35417;35418;35419;35420;35421">
 		<spawns>
 			<!-- owner_restart_point_list -->
 			<spawn type="OWNER" x="177930" y="-18629" z="-2240"/>

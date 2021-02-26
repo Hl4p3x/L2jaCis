@@ -37,8 +37,8 @@ public final class RequestAllyInfo extends L2GameClientPacket
 			player.sendPacket(sm);
 			
 			sm = SystemMessage.getSystemMessage(SystemMessageId.ALLIANCE_LEADER_S2_OF_S1);
-			sm.addString(ai.getLeaderC());
-			sm.addString(ai.getLeaderP());
+			sm.addString(ai.getClanName());
+			sm.addString(ai.getLeaderName());
 			player.sendPacket(sm);
 			
 			sm = SystemMessage.getSystemMessage(SystemMessageId.CONNECTION_S1_TOTAL_S2);

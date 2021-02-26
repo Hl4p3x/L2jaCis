@@ -22,7 +22,7 @@ public class RecipeShopSellList extends L2GameServerPacket
 		_objectId = manufacturer.getObjectId();
 		_mp = (int) manufacturer.getStatus().getMp();
 		_maxMp = manufacturer.getStatus().getMaxMp();
-		_manufactureList = new ArrayList<>(manufacturer.getManufactureList().getList());
+		_manufactureList = new ArrayList<>(manufacturer.getManufactureList());
 	}
 	
 	@Override

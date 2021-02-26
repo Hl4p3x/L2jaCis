@@ -10,11 +10,12 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 /**
  * An ordered, concurrent queue container holding {@link Cubic}s of a {@link Player}.
  */
-public class CubicList
+public class CubicList extends ConcurrentLinkedQueue<Cubic>
 {
+	private static final long serialVersionUID = 1L;
+	
 	public static final int SKILL_CUBIC_MASTERY = 143;
 	
-	private final Queue<Cubic> _cubics = new ConcurrentLinkedQueue<>();
 	private final Player _owner;
 	
 	public CubicList(Player owner)
@@ -23,20 +24,12 @@ public class CubicList
 	}
 	
 	/**
-	 * @return The {@link Queue} holding {@link Cubic}s associated to this {@link Player}.
-	 */
-	public Queue<Cubic> getCubics()
-	{
-		return _cubics;
-	}
-	
-	/**
 	 * @param id : The id to check.
 	 * @return The {@link Cubic} corresponding to the id set as parameter, or null if not existing.
 	 */
 	public Cubic getCubic(int id)
 	{
-		return _cubics.stream().filter(c -> c.getId() == id).findFirst().orElse(null);
+		return stream().filter(c -> c.getId() == id).findFirst().orElse(null);
 	}
 	
 	/**
@@ -57,9 +50,9 @@ public class CubicList
 		else
 		{
 			if (isFull())
-				_cubics.poll().stop(false);
+				poll().stop(false);
 			
-			_cubics.add(new Cubic(_owner, id, level, (int) matk, activationTime, activationChance, totalLifetime, givenByOther));
+			add(new Cubic(_owner, id, level, (int) matk, activationTime, activationChance, totalLifetime, givenByOther));
 			
 			_owner.broadcastUserInfo();
 		}
@@ -71,7 +64,7 @@ public class CubicList
 	 */
 	public void removeCubic(int id)
 	{
-		_cubics.remove(getCubic(id));
+		remove(getCubic(id));
 	}
 	
 	/**
@@ -80,9 +73,9 @@ public class CubicList
 	 */
 	public final void stopCubics(boolean doBroadcast)
 	{
-		if (!_cubics.isEmpty())
+		if (!isEmpty())
 		{
-			for (final Cubic cubic : _cubics)
+			for (final Cubic cubic : this)
 				cubic.stop(false);
 			
 			if (doBroadcast)
@@ -95,10 +88,10 @@ public class CubicList
 	 */
 	public final void stopCubicsGivenByOthers()
 	{
-		if (!_cubics.isEmpty())
+		if (!isEmpty())
 		{
 			boolean doBroadcast = false;
-			for (final Cubic cubic : _cubics)
+			for (final Cubic cubic : this)
 			{
 				if (cubic.givenByOther())
 				{
@@ -116,6 +109,6 @@ public class CubicList
 	 */
 	public final boolean isFull()
 	{
-		return _cubics.size() > _owner.getSkillLevel(SKILL_CUBIC_MASTERY);
+		return size() > _owner.getSkillLevel(SKILL_CUBIC_MASTERY);
 	}
 }

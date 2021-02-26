@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.enums.skills;
 
 import java.lang.reflect.Constructor;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.skills.l2skills.L2SkillAppearance;
@@ -143,11 +143,11 @@ public enum SkillType
 	
 	private final Class<? extends L2Skill> _class;
 	
-	public L2Skill makeSkill(StatsSet set)
+	public L2Skill makeSkill(StatSet set)
 	{
 		try
 		{
-			Constructor<? extends L2Skill> c = _class.getConstructor(StatsSet.class);
+			Constructor<? extends L2Skill> c = _class.getConstructor(StatSet.class);
 			
 			return c.newInstance(set);
 		}

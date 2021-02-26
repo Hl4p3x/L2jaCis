@@ -60,15 +60,11 @@ public abstract class AbstractEffect
 		_count = template.getCounter();
 		
 		// Support for retail herbs duration when _effected has a Summon.
-		int temp = template.getPeriod();
+		int period = template.getPeriod();
+		if (_skill.getId() > 2277 && _skill.getId() < 2286 && (_effected instanceof Servitor || (_effected instanceof Player && ((Player) _effected).getSummon() != null)))
+			period /= 2;
 		
-		if (_skill.getId() > 2277 && _skill.getId() < 2286)
-		{
-			if (_effected instanceof Servitor || (_effected instanceof Player && ((Player) _effected).getSummon() != null))
-				temp /= 2;
-		}
-		
-		_period = temp;
+		_period = period;
 		_periodStartTime = System.currentTimeMillis();
 	}
 	
@@ -194,7 +190,7 @@ public abstract class AbstractEffect
 			
 			final int initialDelay = Math.max((_period - getTime()) * 1000, 5);
 			if (_count > 1)
-				_currentFuture = ThreadPool.scheduleAtFixedRate(this::startEffect, initialDelay, _period * 1000);
+				_currentFuture = ThreadPool.scheduleAtFixedRate(this::startEffect, initialDelay, _period * 1000L);
 			else
 				_currentFuture = ThreadPool.schedule(this::startEffect, initialDelay);
 		}
@@ -268,14 +264,8 @@ public abstract class AbstractEffect
 	{
 		if (_state != EffectState.ACTING)
 			scheduleEffect();
-		else
-		{
-			if (_period != 0)
-			{
-				startEffectTask();
-				return;
-			}
-		}
+		else if (_period != 0)
+			startEffectTask();
 	}
 	
 	public final void scheduleEffect()
@@ -336,9 +326,8 @@ public abstract class AbstractEffect
 				stopEffectTask();
 				
 				// Cancel the effect in the the abnormal effect map of the Creature.
-				if (getInUse() || !(_count > 1 || _period > 0))
-					if (_startConditionsCorrect)
-						onExit();
+				if (_startConditionsCorrect && (getInUse() || !(_count > 1 || _period > 0)))
+					onExit();
 			}
 		}
 	}

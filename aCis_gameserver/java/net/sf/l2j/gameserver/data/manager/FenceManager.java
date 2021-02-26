@@ -6,6 +6,7 @@ import java.util.List;
 import net.sf.l2j.commons.logging.CLogger;
 
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.instance.Fence;
 
 /**
@@ -75,6 +76,12 @@ public class FenceManager
 	 */
 	public final Fence addFence(int x, int y, int z, int type, int sizeX, int sizeY, int height)
 	{
+		if (World.isOutOfWorld(x, x + sizeX, y, y + sizeY))
+		{
+			LOGGER.error("Fence coords are outside of world.");
+			return null;
+		}
+		
 		final FenceSize fsx = getFenceSize(sizeX);
 		final FenceSize fsy = getFenceSize(sizeY);
 		

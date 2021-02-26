@@ -1,5 +1,7 @@
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
+import java.util.StringTokenizer;
+
 import net.sf.l2j.commons.network.ServerType;
 import net.sf.l2j.commons.util.SysUtil;
 
@@ -16,83 +18,67 @@ public class AdminMaintenance implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
 	{
-		"admin_server",
-		
-		"admin_server_shutdown",
-		"admin_server_restart",
-		"admin_server_abort",
-		
-		"admin_server_gm_only",
-		"admin_server_all",
-		"admin_server_max_player",
+		"admin_server"
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
-		if (command.equals("admin_server"))
-			sendHtmlForm(activeChar);
-		else if (command.startsWith("admin_server_shutdown"))
+		final StringTokenizer st = new StringTokenizer(command, " ");
+		st.nextToken();
+		
+		if (!st.hasMoreTokens())
 		{
-			try
-			{
-				Shutdown.getInstance().startShutdown(activeChar, null, Integer.parseInt(command.substring(22)), false);
-			}
-			catch (StringIndexOutOfBoundsException e)
-			{
-				sendHtmlForm(activeChar);
-			}
+			sendHtmlForm(player);
+			return;
 		}
-		else if (command.startsWith("admin_server_restart"))
+		
+		try
 		{
-			try
+			switch (st.nextToken())
 			{
-				Shutdown.getInstance().startShutdown(activeChar, null, Integer.parseInt(command.substring(21)), true);
-			}
-			catch (StringIndexOutOfBoundsException e)
-			{
-				sendHtmlForm(activeChar);
-			}
-		}
-		else if (command.startsWith("admin_server_abort"))
-		{
-			Shutdown.getInstance().abort(activeChar);
-		}
-		else if (command.equals("admin_server_gm_only"))
-		{
-			LoginServerThread.getInstance().setServerType(ServerType.GM_ONLY);
-			Config.SERVER_GMONLY = true;
-			
-			activeChar.sendMessage("Server is now set as GMonly.");
-			sendHtmlForm(activeChar);
-		}
-		else if (command.equals("admin_server_all"))
-		{
-			LoginServerThread.getInstance().setServerType(ServerType.AUTO);
-			Config.SERVER_GMONLY = false;
-			
-			activeChar.sendMessage("Server isn't set as GMonly anymore.");
-			sendHtmlForm(activeChar);
-		}
-		else if (command.startsWith("admin_server_max_player"))
-		{
-			try
-			{
-				final int number = Integer.parseInt(command.substring(24));
+				case "shutdown":
+					Shutdown.getInstance().startShutdown(player, null, Integer.parseInt(st.nextToken()), false);
+					break;
 				
-				LoginServerThread.getInstance().setMaxPlayer(number);
-				activeChar.sendMessage("Server maximum player amount is set to " + number + ".");
-				sendHtmlForm(activeChar);
-			}
-			catch (Exception e)
-			{
-				activeChar.sendMessage("The parameter must be a valid number.");
+				case "restart":
+					Shutdown.getInstance().startShutdown(player, null, Integer.parseInt(st.nextToken()), true);
+					break;
+				
+				case "abort":
+					Shutdown.getInstance().abort(player);
+					break;
+				
+				case "gmonly":
+					LoginServerThread.getInstance().setServerType(ServerType.GM_ONLY);
+					Config.SERVER_GMONLY = true;
+					
+					player.sendMessage("Server is now set as GMonly.");
+					break;
+				
+				case "all":
+					LoginServerThread.getInstance().setServerType(ServerType.AUTO);
+					Config.SERVER_GMONLY = false;
+					
+					player.sendMessage("Server isn't set as GMonly anymore.");
+					break;
+				
+				case "max":
+					final int number = Integer.parseInt(st.nextToken());
+					
+					LoginServerThread.getInstance().setMaxPlayer(number);
+					player.sendMessage("Server maximum player amount is set to " + number + ".");
+					break;
 			}
 		}
-		return true;
+		catch (Exception e)
+		{
+			player.sendMessage("Usage: //server <shutdown|restart|abort|gmonly|all|max>.");
+		}
+		sendHtmlForm(player);
 	}
 	
-	private static void sendHtmlForm(Player activeChar)
+	private static void sendHtmlForm(Player player)
 	{
 		final NpcHtmlMessage html = new NpcHtmlMessage(0);
 		html.setFile("data/html/admin/maintenance.htm");
@@ -102,7 +88,7 @@ public class AdminMaintenance implements IAdminCommandHandler
 		html.replace("%status%", LoginServerThread.getInstance().getServerType().getName());
 		html.replace("%max_players%", LoginServerThread.getInstance().getMaxPlayers());
 		html.replace("%time%", GameTimeTaskManager.getInstance().getGameTimeFormated());
-		activeChar.sendPacket(html);
+		player.sendPacket(html);
 	}
 	
 	@Override

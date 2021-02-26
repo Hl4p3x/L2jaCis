@@ -555,7 +555,7 @@ abstract class AbstractAI
 	 * @param firstParameter : The first {@link Object} parameter of the event.
 	 * @param secondParameter : The second {@link Object} parameter of the event.
 	 */
-	public final synchronized void notifyEvent(AiEventType evt, Object firstParameter, Object secondParameter)
+	public final void notifyEvent(AiEventType evt, Object firstParameter, Object secondParameter)
 	{
 		if ((!_actor.isVisible() && !_actor.isTeleporting()) || !_actor.hasAI())
 			return;

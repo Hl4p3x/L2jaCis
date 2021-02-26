@@ -38,7 +38,10 @@ public class ZoneNPoly extends ZoneForm
 	@Override
 	public boolean intersectsRectangle(int ax1, int ax2, int ay1, int ay2)
 	{
-		int tX, tY, uX, uY;
+		int tX;
+		int tY;
+		int uX;
+		int uY;
 		
 		// First check if a point of the polygon lies inside the rectangle
 		if (_x[0] > ax1 && _x[0] < ax2 && _y[0] > ay1 && _y[0] < ay2)

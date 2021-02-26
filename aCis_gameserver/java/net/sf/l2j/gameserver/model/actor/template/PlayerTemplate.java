@@ -2,8 +2,8 @@ package net.sf.l2j.gameserver.model.actor.template;
 
 import java.util.List;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
@@ -45,7 +45,7 @@ public class PlayerTemplate extends CreatureTemplate
 	
 	private final Weapon _fists;
 	
-	public PlayerTemplate(StatsSet set)
+	public PlayerTemplate(StatSet set)
 	{
 		super(set);
 		

@@ -5,6 +5,7 @@ import java.nio.BufferUnderflowException;
 import net.sf.l2j.commons.math.MathUtil;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.enums.TeleportMode;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -80,14 +81,14 @@ public class MoveBackwardToLocation extends L2GameClientPacket
 		// Correcting targetZ from floor level to head level
 		_targetZ += player.getCollisionHeight();
 		
-		if (player.getTeleMode() > 0)
+		switch (player.getTeleportMode())
 		{
-			if (player.getTeleMode() == 1)
-				player.setTeleMode(0);
-			
-			player.sendPacket(ActionFailed.STATIC_PACKET);
-			player.teleportTo(_targetX, _targetY, _targetZ, 0);
-			return;
+			case ONE_TIME:
+				player.setTeleportMode(TeleportMode.NONE);
+			case FULL_TIME:
+				player.sendPacket(ActionFailed.STATIC_PACKET);
+				player.teleportTo(_targetX, _targetY, _targetZ, 0);
+				return;
 		}
 		
 		double dx = _targetX - _originX;

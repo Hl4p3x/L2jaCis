@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.network.serverpackets.CharSelectInfo;
 
 public final class CharacterRestore extends L2GameClientPacket
@@ -17,7 +16,7 @@ public final class CharacterRestore extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		if (!FloodProtectors.performAction(getClient(), Action.CHARACTER_SELECT))
+		if (!getClient().performAction(FloodProtector.CHARACTER_SELECT))
 			return;
 		
 		getClient().markRestoredChar(_slot);

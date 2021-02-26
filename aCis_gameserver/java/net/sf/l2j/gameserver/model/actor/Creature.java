@@ -10,8 +10,10 @@ import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
+import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.enums.ZoneId;
@@ -22,6 +24,7 @@ import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.enums.skills.Stats;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.WorldRegion;
@@ -35,12 +38,14 @@ import net.sf.l2j.gameserver.model.actor.container.creature.FusionSkill;
 import net.sf.l2j.gameserver.model.actor.move.CreatureMove;
 import net.sf.l2j.gameserver.model.actor.status.CreatureStatus;
 import net.sf.l2j.gameserver.model.actor.template.CreatureTemplate;
+import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.group.Party;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
 import net.sf.l2j.gameserver.model.itemcontainer.Inventory;
 import net.sf.l2j.gameserver.model.location.Location;
+import net.sf.l2j.gameserver.model.zone.type.WaterZone;
 import net.sf.l2j.gameserver.network.serverpackets.AbstractNpcInfo.NpcInfo;
 import net.sf.l2j.gameserver.network.serverpackets.ChangeMoveType;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
@@ -79,6 +84,7 @@ public abstract class Creature extends WorldObject
 	protected volatile CreatureAI _ai;
 	
 	private CreatureTemplate _template;
+	private NpcTemplate _polymorphTemplate;
 	
 	protected CreatureStatus<? extends Creature> _status;
 	protected CreatureMove<? extends Creature> _move;
@@ -315,11 +321,19 @@ public abstract class Creature extends WorldObject
 	{
 		if (randomOffset > 0)
 		{
-			x += Rnd.get(-randomOffset, randomOffset);
-			y += Rnd.get(-randomOffset, randomOffset);
+			// Get new coordinates.
+			final int nx = x + Rnd.get(-randomOffset, randomOffset);
+			final int ny = y + Rnd.get(-randomOffset, randomOffset);
+			
+			// Validate new coordinates.
+			final Location loc = GeoEngine.getInstance().getValidLocation(x, y, z, nx, ny, z, null);
+			x = loc.getX();
+			y = loc.getY();
 		}
 		
-		z += 5;
+		// Validate Z coordinate, if not flying or target coordinates are not inside water (creature would be swimming).
+		if (!isFlying() && ZoneManager.getInstance().getZone(x, y, z, WaterZone.class) == null)
+			z = GeoEngine.getInstance().getHeight(x, y, z);
 		
 		// Broadcast TeleportToLocation packet.
 		broadcastPacket(new TeleportToLocation(this, x, y, z, true));
@@ -361,11 +375,19 @@ public abstract class Creature extends WorldObject
 		
 		if (randomOffset > 0)
 		{
-			x += Rnd.get(-randomOffset, randomOffset);
-			y += Rnd.get(-randomOffset, randomOffset);
+			// Get new coordinates.
+			final int nx = x + Rnd.get(-randomOffset, randomOffset);
+			final int ny = y + Rnd.get(-randomOffset, randomOffset);
+			
+			// Validate new coordinates.
+			final Location loc = GeoEngine.getInstance().getValidLocation(x, y, z, nx, ny, z, null);
+			x = loc.getX();
+			y = loc.getY();
 		}
 		
-		z += 5;
+		// Validate Z coordinate, if not flying or target coordinates are not inside water (creature would be swimming).
+		if (!isFlying() && ZoneManager.getInstance().getZone(x, y, z, WaterZone.class) == null)
+			z = GeoEngine.getInstance().getHeight(x, y, z);
 		
 		// Broadcast TeleportToLocation packet.
 		broadcastPacket(new TeleportToLocation(this, x, y, z, false));
@@ -698,13 +720,7 @@ public abstract class Creature extends WorldObject
 	@Override
 	public boolean isAttackableBy(Creature attacker)
 	{
-		if (this.isDead())
-			return false;
-		
-		if (attacker == this)
-			return false;
-		
-		return true;
+		return !isDead() && attacker != this;
 	}
 	
 	@Override
@@ -1642,19 +1658,6 @@ public abstract class Creature extends WorldObject
 		return _allSkillsDisabled;
 	}
 	
-	/**
-	 * @param target Target to check.
-	 * @return a Random Damage in function of the weapon.
-	 */
-	public final int getRandomDamage(Creature target)
-	{
-		final Weapon weaponItem = getActiveWeaponItem();
-		if (weaponItem == null)
-			return 5 + (int) Math.sqrt(getStatus().getLevel());
-		
-		return weaponItem.getRandomDamage();
-	}
-	
 	// =========================================================
 	// Status - NEED TO REMOVE ONCE L2CHARTATUS IS COMPLETE
 	// Method - Public
@@ -1834,5 +1837,99 @@ public abstract class Creature extends WorldObject
 	public List<Player> getSurroundingGMs()
 	{
 		return getKnownType(Player.class, Player::isGM);
+	}
+	
+	/**
+	 * Test and cast curses once a {@link Creature} attacks this {@link Creature}.<br>
+	 * <br>
+	 * <font color=red>BEWARE :
+	 * <ul>
+	 * <li>no Playable checks are made</li>
+	 * <li>no raid related checks are made (due to some scripts/cases), so any {@link Creature} will trigger it.</li>
+	 * </ul>
+	 * </font>
+	 * @param npc : The {@link Npc} to test.
+	 * @param npcId : The npcId who calls Anti Strider debuff (only bosses, normally).
+	 * @return True if the curse must counter the leftover behavior.
+	 */
+	public boolean testCursesOnAttack(Npc npc, int npcId)
+	{
+		return false;
+	}
+	
+	/**
+	 * Similar to its mother class, but the Anti Strider Slow debuff is known to be casted by this {@link Creature}.
+	 * @see #testCursesOnAttack(Npc, int)
+	 * @param npc : The {@link Npc} to test.
+	 * @return True if the curse must counter the leftover behavior.
+	 */
+	public boolean testCursesOnAttack(Npc npc)
+	{
+		return false;
+	}
+	
+	/**
+	 * Enforced testCursesOnAttack with third parameter set to -1.<br>
+	 * <br>
+	 * We only test RAID_CURSE2, not RAID_ANTI_STRIDER_SLOW.
+	 * @see #testCursesOnAttack(Npc, int)
+	 * @param npc : The {@link Npc} to test.
+	 * @return True if the curse must counter the leftover behavior.
+	 */
+	public boolean testCursesOnAggro(Npc npc)
+	{
+		return false;
+	}
+	
+	/**
+	 * Test and cast curses if :
+	 * <ul>
+	 * <li>the {@link Creature} caster is 8 levels higher than the tested instance</li>
+	 * <li>the helped {@link Creature} is registered into the AggroList, and got positive hate</li>
+	 * <li>the tested {@link L2Skill} must be beneficial</li>
+	 * </ul>
+	 * <font color=red>BEWARE :
+	 * <ul>
+	 * <li>no Playable checks are made</li>
+	 * <li>no raid related checks are made (due to some scripts/cases), so any {@link Creature} will trigger it</li>
+	 * </ul>
+	 * </font>
+	 * @param skill : The {@link L2Skill} to test.
+	 * @param targets : The {@link Creature} targets to check.
+	 * @return True if the curse must counter the leftover behavior.
+	 */
+	public boolean testCursesOnSkillSee(L2Skill skill, Creature[] targets)
+	{
+		return false;
+	}
+	
+	public final NpcTemplate getPolymorphTemplate()
+	{
+		return _polymorphTemplate;
+	}
+	
+	public boolean polymorph(int id)
+	{
+		if (!(this instanceof Npc) && !(this instanceof Player))
+			return false;
+		
+		final NpcTemplate template = NpcData.getInstance().getTemplate(id);
+		if (template == null)
+			return false;
+		
+		_polymorphTemplate = template;
+		
+		decayMe();
+		spawnMe();
+		
+		return true;
+	}
+	
+	public void unpolymorph()
+	{
+		_polymorphTemplate = null;
+		
+		decayMe();
+		spawnMe();
 	}
 }

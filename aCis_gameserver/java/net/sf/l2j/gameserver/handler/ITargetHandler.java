@@ -3,6 +3,7 @@ package net.sf.l2j.gameserver.handler;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public interface ITargetHandler
@@ -30,4 +31,13 @@ public interface ITargetHandler
 	 * @return The real {@link Creature} target.
 	 */
 	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill);
+	
+	/**
+	 * @param caster : The {@link Playable} used as caster.
+	 * @param target : The {@link Creature} used as target.
+	 * @param skill : The {@link L2Skill} to cast.
+	 * @param isCtrlPressed : If True, we use specific CTRL rules.
+	 * @return True if casting is possible, false otherwise.
+	 */
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed);
 }

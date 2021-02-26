@@ -1,33 +1,83 @@
 package net.sf.l2j.gameserver.geoengine.pathfinding;
 
-import net.sf.l2j.gameserver.geoengine.geodata.GeoLocation;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
+import net.sf.l2j.gameserver.model.location.Location;
 
-public class Node
+public class Node extends Location implements Comparable<Node>
 {
-	// node coords and nswe flag
-	private GeoLocation _loc;
+	// Node geodata values.
+	private int _geoX;
+	private int _geoY;
+	private byte _nswe;
 	
-	// node parent (for reverse path construction)
+	// The cost G (movement cost done) and cost H (estimated cost to target).
+	private int _costG;
+	private int _costH;
+	private int _costF;
+	
+	// Node parent (reverse path construction).
 	private Node _parent;
-	// node child (for moving over nodes during iteration)
-	private Node _child;
 	
-	// node G cost (movement cost = parent movement cost + current movement cost)
-	private double _cost = -1000;
-	
-	public void setLoc(int x, int y, int z)
+	public Node()
 	{
-		_loc = new GeoLocation(x, y, z);
+		super(0, 0, 0);
 	}
 	
-	public GeoLocation getLoc()
+	@Override
+	public void clean()
 	{
-		return _loc;
+		super.clean();
+		
+		_geoX = 0;
+		_geoY = 0;
+		_nswe = GeoStructure.CELL_FLAG_NONE;
+		
+		_costG = 0;
+		_costH = 0;
+		_costF = 0;
+		
+		_parent = null;
 	}
 	
-	public void setParent(Node parent)
+	public final void setGeo(int gx, int gy, int gz, byte nswe)
 	{
+		super.set(GeoEngine.getWorldX(gx), GeoEngine.getWorldY(gy), gz);
+		
+		_geoX = gx;
+		_geoY = gy;
+		_nswe = nswe;
+	}
+	
+	public final void setCost(Node parent, int weight, int costH)
+	{
+		_costG = weight;
+		if (parent != null)
+			_costG += parent._costG;
+		_costH = costH;
+		_costF = _costG + _costH;
+		
 		_parent = parent;
+	}
+	
+	public int getGeoX()
+	{
+		return _geoX;
+	}
+	
+	public int getGeoY()
+	{
+		return _geoY;
+	}
+	
+	public byte getNSWE()
+	{
+		return _nswe;
+	}
+	
+	public int getCostF()
+	{
+		return _costF;
 	}
 	
 	public Node getParent()
@@ -35,34 +85,9 @@ public class Node
 		return _parent;
 	}
 	
-	public void setChild(Node child)
+	@Override
+	public int compareTo(Node o)
 	{
-		_child = child;
-	}
-	
-	public Node getChild()
-	{
-		return _child;
-	}
-	
-	public void setCost(double cost)
-	{
-		_cost = cost;
-	}
-	
-	public double getCost()
-	{
-		return _cost;
-	}
-	
-	public void free()
-	{
-		// reset node location
-		_loc = null;
-		
-		// reset node parent, child and cost
-		_parent = null;
-		_child = null;
-		_cost = -1000;
+		return _costF - o._costF;
 	}
 }

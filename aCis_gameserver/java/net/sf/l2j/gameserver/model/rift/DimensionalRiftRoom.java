@@ -5,8 +5,8 @@ import java.awt.Shape;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
@@ -38,7 +38,7 @@ public class DimensionalRiftRoom
 	
 	private boolean _partyInside;
 	
-	public DimensionalRiftRoom(byte type, StatsSet set)
+	public DimensionalRiftRoom(byte type, StatSet set)
 	{
 		final int xMin = set.getInteger("xMin");
 		final int xMax = set.getInteger("xMax");

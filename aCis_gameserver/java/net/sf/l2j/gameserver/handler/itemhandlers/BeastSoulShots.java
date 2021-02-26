@@ -46,7 +46,7 @@ public class BeastSoulShots implements IItemHandler
 			return;
 		
 		// If the player doesn't have enough beast soulshot remaining, remove any auto soulshot task.
-		if (!player.destroyItemWithoutTrace("Consume", item.getObjectId(), summon.getSoulShotsPerHit(), null, false))
+		if (!player.destroyItemWithoutTrace(item.getObjectId(), summon.getSoulShotsPerHit()))
 		{
 			if (!player.disableAutoShot(item.getItemId()))
 				player.sendPacket(SystemMessageId.NOT_ENOUGH_SOULSHOTS_FOR_PET);

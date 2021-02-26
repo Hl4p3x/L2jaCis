@@ -5,37 +5,36 @@ import net.sf.l2j.gameserver.model.clanhall.ClanHallFunction;
 
 public class ClanHallDecoration extends L2GameServerPacket
 {
-	private final ClanHall _clanHall;
-	private ClanHallFunction _function;
+	private final ClanHall _ch;
 	
-	public ClanHallDecoration(ClanHall ClanHall)
+	public ClanHallDecoration(ClanHall ch)
 	{
-		_clanHall = ClanHall;
+		_ch = ch;
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0xf7);
-		writeD(_clanHall.getId()); // clanhall id
+		writeD(_ch.getId());
 		
 		// FUNC_RESTORE_HP
-		_function = _clanHall.getFunction(ClanHall.FUNC_RESTORE_HP);
-		if (_function == null || _function.getLvl() == 0)
+		ClanHallFunction chf = _ch.getFunction(ClanHall.FUNC_RESTORE_HP);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if ((_clanHall.getGrade() == 0 && _function.getLvl() < 220) || (_clanHall.getGrade() == 1 && _function.getLvl() < 160) || (_clanHall.getGrade() == 2 && _function.getLvl() < 260) || (_clanHall.getGrade() == 3 && _function.getLvl() < 300))
+		else if ((_ch.getGrade() == 0 && chf.getLvl() < 220) || (_ch.getGrade() == 1 && chf.getLvl() < 160) || (_ch.getGrade() == 2 && chf.getLvl() < 260) || (_ch.getGrade() == 3 && chf.getLvl() < 300))
 			writeC(1);
 		else
 			writeC(2);
 		
 		// FUNC_RESTORE_MP
-		_function = _clanHall.getFunction(ClanHall.FUNC_RESTORE_MP);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_RESTORE_MP);
+		if (chf == null || chf.getLvl() == 0)
 		{
 			writeC(0);
 			writeC(0);
 		}
-		else if (((_clanHall.getGrade() == 0 || _clanHall.getGrade() == 1) && _function.getLvl() < 25) || (_clanHall.getGrade() == 2 && _function.getLvl() < 30) || (_clanHall.getGrade() == 3 && _function.getLvl() < 40))
+		else if (((_ch.getGrade() == 0 || _ch.getGrade() == 1) && chf.getLvl() < 25) || (_ch.getGrade() == 2 && chf.getLvl() < 30) || (_ch.getGrade() == 3 && chf.getLvl() < 40))
 		{
 			writeC(1);
 			writeC(1);
@@ -47,19 +46,19 @@ public class ClanHallDecoration extends L2GameServerPacket
 		}
 		
 		// FUNC_RESTORE_EXP
-		_function = _clanHall.getFunction(ClanHall.FUNC_RESTORE_EXP);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_RESTORE_EXP);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if ((_clanHall.getGrade() == 0 && _function.getLvl() < 25) || (_clanHall.getGrade() == 1 && _function.getLvl() < 30) || (_clanHall.getGrade() == 2 && _function.getLvl() < 40) || (_clanHall.getGrade() == 3 && _function.getLvl() < 50))
+		else if ((_ch.getGrade() == 0 && chf.getLvl() < 25) || (_ch.getGrade() == 1 && chf.getLvl() < 30) || (_ch.getGrade() == 2 && chf.getLvl() < 40) || (_ch.getGrade() == 3 && chf.getLvl() < 50))
 			writeC(1);
 		else
 			writeC(2);
 		
 		// FUNC_TELEPORT
-		_function = _clanHall.getFunction(ClanHall.FUNC_TELEPORT);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_TELEPORT);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if (_function.getLvl() < 2)
+		else if (chf.getLvl() < 2)
 			writeC(1);
 		else
 			writeC(2);
@@ -67,31 +66,31 @@ public class ClanHallDecoration extends L2GameServerPacket
 		writeC(0);
 		
 		// CURTAINS
-		_function = _clanHall.getFunction(ClanHall.FUNC_DECO_CURTAINS);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_DECO_CURTAINS);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if (_function.getLvl() <= 1)
+		else if (chf.getLvl() <= 1)
 			writeC(1);
 		else
 			writeC(2);
 		
 		// FUNC_ITEM_CREATE
-		_function = _clanHall.getFunction(ClanHall.FUNC_ITEM_CREATE);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_ITEM_CREATE);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if ((_clanHall.getGrade() == 0 && _function.getLvl() < 2) || _function.getLvl() < 3)
+		else if ((_ch.getGrade() == 0 && chf.getLvl() < 2) || chf.getLvl() < 3)
 			writeC(1);
 		else
 			writeC(2);
 		
 		// FUNC_SUPPORT
-		_function = _clanHall.getFunction(ClanHall.FUNC_SUPPORT);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_SUPPORT);
+		if (chf == null || chf.getLvl() == 0)
 		{
 			writeC(0);
 			writeC(0);
 		}
-		else if ((_clanHall.getGrade() == 0 && _function.getLvl() < 2) || (_clanHall.getGrade() == 1 && _function.getLvl() < 4) || (_clanHall.getGrade() == 2 && _function.getLvl() < 5) || (_clanHall.getGrade() == 3 && _function.getLvl() < 8))
+		else if ((_ch.getGrade() == 0 && chf.getLvl() < 2) || (_ch.getGrade() == 1 && chf.getLvl() < 4) || (_ch.getGrade() == 2 && chf.getLvl() < 5) || (_ch.getGrade() == 3 && chf.getLvl() < 8))
 		{
 			writeC(1);
 			writeC(1);
@@ -103,19 +102,19 @@ public class ClanHallDecoration extends L2GameServerPacket
 		}
 		
 		// Front Plateform
-		_function = _clanHall.getFunction(ClanHall.FUNC_DECO_FRONTPLATEFORM);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_DECO_FRONTPLATEFORM);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if (_function.getLvl() <= 1)
+		else if (chf.getLvl() <= 1)
 			writeC(1);
 		else
 			writeC(2);
 		
 		// FUNC_ITEM_CREATE
-		_function = _clanHall.getFunction(ClanHall.FUNC_ITEM_CREATE);
-		if (_function == null || _function.getLvl() == 0)
+		chf = _ch.getFunction(ClanHall.FUNC_ITEM_CREATE);
+		if (chf == null || chf.getLvl() == 0)
 			writeC(0);
-		else if ((_clanHall.getGrade() == 0 && _function.getLvl() < 2) || _function.getLvl() < 3)
+		else if ((_ch.getGrade() == 0 && chf.getLvl() < 2) || chf.getLvl() < 3)
 			writeC(1);
 		else
 			writeC(2);

@@ -14,10 +14,10 @@ import net.sf.l2j.gameserver.data.manager.FestivalOfDarknessManager;
 import net.sf.l2j.gameserver.data.manager.FishingChampionshipManager;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.HeroManager;
+import net.sf.l2j.gameserver.data.manager.PetitionManager;
 import net.sf.l2j.gameserver.data.manager.RaidBossManager;
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
-import net.sf.l2j.gameserver.data.sql.ServerMemoTable;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.olympiad.Olympiad;
@@ -84,8 +84,9 @@ public class Shutdown extends Thread
 				disconnectAllPlayers();
 				LOGGER.info("All players have been disconnected.");
 			}
-			catch (Throwable t)
+			catch (Exception e)
 			{
+				// Silent catch.
 			}
 			
 			// stop all threadpolls
@@ -95,8 +96,9 @@ public class Shutdown extends Thread
 			{
 				LoginServerThread.getInstance().interrupt();
 			}
-			catch (Throwable t)
+			catch (Exception e)
 			{
+				// Silent catch.
 			}
 			
 			// Seven Signs data is now saved along with Festival data.
@@ -139,6 +141,10 @@ public class Shutdown extends Thread
 			BufferManager.getInstance().saveSchemes();
 			LOGGER.info("BufferTable data has been saved.");
 			
+			// Petitions save.
+			PetitionManager.getInstance().store();
+			LOGGER.info("Petitions data has been saved.");
+			
 			// Couples save.
 			if (Config.ALLOW_WEDDING)
 			{
@@ -146,35 +152,25 @@ public class Shutdown extends Thread
 				LOGGER.info("CoupleManager data has been saved.");
 			}
 			
-			// Save server memos.
-			ServerMemoTable.getInstance().storeMe();
-			LOGGER.info("ServerMemo data has been saved.");
-			
 			// Save items on ground before closing
 			ItemsOnGroundTaskManager.getInstance().save();
 			
 			try
 			{
-				Thread.sleep(5000);
-			}
-			catch (InterruptedException e)
-			{
-			}
-			
-			try
-			{
 				GameServer.getInstance().getSelectorThread().shutdown();
 			}
-			catch (Throwable t)
+			catch (Exception e)
 			{
+				// Silent catch.
 			}
 			
 			try
 			{
 				ConnectionPool.shutdown();
 			}
-			catch (Throwable t)
+			catch (Exception e)
 			{
+				// Silent catch.
 			}
 			
 			Runtime.getRuntime().halt((SingletonHolder.INSTANCE._shutdownMode == GM_RESTART) ? 2 : 0);

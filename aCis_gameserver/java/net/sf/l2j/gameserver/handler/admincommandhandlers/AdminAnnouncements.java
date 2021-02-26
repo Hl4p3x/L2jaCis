@@ -1,29 +1,25 @@
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
+import net.sf.l2j.gameserver.data.xml.AdminData;
 import net.sf.l2j.gameserver.data.xml.AnnouncementData;
+import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 
-/**
- * This class handles following admin commands:
- * <ul>
- * <li>announce list|all|all_auto|add|add_auto|del : announcement management.</li>
- * <li>ann : announces to all players (basic usage).</li>
- * <li>say : critical announces to all players.</li>
- * </ul>
- */
 public class AdminAnnouncements implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
 	{
 		"admin_announce",
 		"admin_ann",
-		"admin_say"
+		"admin_say",
+		"admin_gmchat"
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
 		if (command.startsWith("admin_announce"))
 		{
@@ -33,16 +29,15 @@ public class AdminAnnouncements implements IAdminCommandHandler
 				switch (tokens[1])
 				{
 					case "list":
-						AnnouncementData.getInstance().listAnnouncements(activeChar);
+						AnnouncementData.getInstance().listAnnouncements(player);
 						break;
 					
 					case "all":
 					case "all_auto":
 						final boolean isAuto = tokens[1].equalsIgnoreCase("all_auto");
-						for (Player player : World.getInstance().getPlayers())
-							AnnouncementData.getInstance().showAnnouncements(player, isAuto);
+						World.getInstance().getPlayers().forEach(p -> AnnouncementData.getInstance().showAnnouncements(p, isAuto));
 						
-						AnnouncementData.getInstance().listAnnouncements(activeChar);
+						AnnouncementData.getInstance().listAnnouncements(player);
 						break;
 					
 					case "add":
@@ -50,9 +45,9 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						boolean crit = Boolean.parseBoolean(split[0]);
 						
 						if (!AnnouncementData.getInstance().addAnnouncement(split[1], crit, false, -1, -1, -1))
-							activeChar.sendMessage("Invalid //announce message content ; can't be null or empty.");
+							player.sendMessage("Invalid //announce message content ; can't be null or empty.");
 						
-						AnnouncementData.getInstance().listAnnouncements(activeChar);
+						AnnouncementData.getInstance().listAnnouncements(player);
 						break;
 					
 					case "add_auto":
@@ -65,30 +60,39 @@ public class AdminAnnouncements implements IAdminCommandHandler
 						final String msg = split[5];
 						
 						if (!AnnouncementData.getInstance().addAnnouncement(msg, crit, auto, idelay, delay, limit))
-							activeChar.sendMessage("Invalid //announce message content ; can't be null or empty.");
+							player.sendMessage("Invalid //announce message content ; can't be null or empty.");
 						
-						AnnouncementData.getInstance().listAnnouncements(activeChar);
+						AnnouncementData.getInstance().listAnnouncements(player);
 						break;
 					
 					case "del":
 						AnnouncementData.getInstance().delAnnouncement(Integer.parseInt(tokens[2]));
-						AnnouncementData.getInstance().listAnnouncements(activeChar);
+						AnnouncementData.getInstance().listAnnouncements(player);
 						break;
 					
 					default:
-						activeChar.sendMessage("Possible //announce parameters : <list|all|add|add_auto|del>");
+						player.sendMessage("Possible //announce parameters : <list|all|add|add_auto|del>");
 						break;
 				}
 			}
 			catch (Exception e)
 			{
-				activeChar.sendMessage("Possible //announce parameters : <list|all|add|add_auto|del>");
+				sendFile(player, "announce.htm");
 			}
 		}
 		else if (command.startsWith("admin_ann") || command.startsWith("admin_say"))
 			AnnouncementData.getInstance().handleAnnounce(command, 10, command.startsWith("admin_say"));
-		
-		return true;
+		else if (command.startsWith("admin_gmchat"))
+		{
+			try
+			{
+				AdminData.getInstance().broadcastToGMs(new CreatureSay(player, SayType.ALLIANCE, command.substring(13)));
+			}
+			catch (Exception e)
+			{
+				player.sendMessage("Invalid //gmchat message content ; can't be null or empty.");
+			}
+		}
 	}
 	
 	@Override

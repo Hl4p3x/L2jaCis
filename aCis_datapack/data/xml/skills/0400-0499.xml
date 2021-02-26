@@ -181,7 +181,6 @@
 		<set name="mpConsume" val="#mpConsume"/>
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="target" val="SELF"/>
-		<set name="condition" val="32"/>
 		<set name="reuseDelay" val="600000"/>
 		<set name="hitTime" val="2000"/>
 		<set name="skillType" val="BUFF"/>
@@ -267,7 +266,7 @@
 		<set name="mpConsume" val="#mpConsume"/>
 		<set name="power" val="#power"/>
 		<set name="target" val="ONE"/>
-		<set name="condition" val="16"/> <!-- Crit -->
+		<set name="baseLandRate" val="150"/>
 		<set name="reuseDelay" val="90000"/>
 		<set name="hitTime" val="1300"/>
 		<set name="coolTime" val="720"/>
@@ -288,7 +287,7 @@
 	<skill id="410" levels="3" name="Mortal Strike" enchantLevels1="30" enchantLevels2="30" >
 		<!-- NOTE: This skill increases "Blow Rate" and description in client says "Critical Rate" but is client typo -->
 		<table name="#mpConsume2"> 27 31 34 </table>
-		<table name="#blowRate"> 1.1 1.15 1.2 </table>
+		<table name="#blowRate"> 1.2 1.3 1.4 </table>
 		<table name="#stackOrder"> 1 2 3 </table>
 		<table name="#enchantMagicLvl"> 76 76 76 77 77 77 78 78 78 79 79 79 80 80 80 81 81 81 82 82 82 82 83 83 83 84 84 85 85 85 </table>
 		<table name="#ench1Chance"> 1.2 1.2 1.21 1.21 1.21 1.22 1.22 1.22 1.23 1.23 1.23 1.24 1.24 1.24 1.25 1.25 1.25 1.26 1.26 1.26 1.27 1.27 1.27 1.28 1.28 1.28 1.29 1.29 1.29 1.3 </table>
@@ -718,7 +717,7 @@
 			<add stat="pAtk" val="70">
 				<using kind="DAGGER"/>
 			</add>
-			<mul stat="blowRate" val="1.03" />
+			<mul stat="blowRate" val="1.2" />
 		</for>
 	</skill>
 	<skill id="433" levels="1" name="Arcane Roar">
@@ -1091,7 +1090,7 @@
 		<set name="castRange" val="900" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13025" />
+		<set name="effectNpcId" val="13019" />
 		<set name="offensive" val="True" />
 		<set name="effectId" val="5124" />
 		<set name="power" val="200" />
@@ -1119,7 +1118,7 @@
 		<set name="staticReuse" val="true" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13018" />
+		<set name="effectNpcId" val="13020" />
 		<set name="effectId" val="5125" />
 		<set name="power" val="200" />
 		<set name="itemConsumeId" val="8875" />
@@ -1146,7 +1145,7 @@
 		<set name="staticReuse" val="true" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13018" />
+		<set name="effectNpcId" val="13021" />
 		<set name="effectId" val="5126" />
 		<set name="power" val="200" />
 		<set name="itemConsumeId" val="8875" />
@@ -1173,7 +1172,7 @@
 		<set name="staticReuse" val="true" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13018" />
+		<set name="effectNpcId" val="13022" />
 		<set name="effectId" val="5127" />
 		<set name="power" val="200" />
 		<set name="itemConsumeId" val="8875" />
@@ -1200,7 +1199,7 @@
 		<set name="reuseDelay" val="1800000" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13018" />
+		<set name="effectNpcId" val="13023" />
 		<set name="effectId" val="5128" />
 		<set name="power" val="200" />
 		<set name="itemConsumeId" val="8875" />
@@ -1227,7 +1226,7 @@
 		<set name="staticReuse" val="true" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13018" />
+		<set name="effectNpcId" val="13024" />
 		<set name="effectId" val="5129" />
 		<set name="power" val="200" />
 		<set name="itemConsumeId" val="8875" />

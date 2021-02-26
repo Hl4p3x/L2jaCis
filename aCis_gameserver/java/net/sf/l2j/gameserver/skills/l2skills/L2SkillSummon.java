@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.enums.items.ShotType;
@@ -13,7 +13,7 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Servitor;
 import net.sf.l2j.gameserver.model.actor.instance.SiegeSummon;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
-import net.sf.l2j.gameserver.model.location.Location;
+import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -35,7 +35,7 @@ public class L2SkillSummon extends L2Skill
 	private final int _itemConsumeIdOT;
 	private final int _itemConsumeSteps;
 	
-	public L2SkillSummon(StatsSet set)
+	public L2SkillSummon(StatSet set)
 	{
 		super(set);
 		
@@ -149,11 +149,12 @@ public class L2SkillSummon extends L2Skill
 			summon.getStatus().setMaxHpMp();
 			summon.forceRunStance();
 			
-			final Location spawnLoc = activeChar.getPosition().clone();
-			spawnLoc.addStrictOffset(30);
-			spawnLoc.set(GeoEngine.getInstance().getValidLocation(activeChar.getPosition(), spawnLoc));
+			final SpawnLocation spawnLoc = activeChar.getPosition().clone();
+			spawnLoc.addStrictOffset(40);
+			spawnLoc.setHeadingTo(activeChar.getPosition());
+			spawnLoc.set(GeoEngine.getInstance().getValidLocation(activeChar, spawnLoc));
 			
-			summon.spawnMe(spawnLoc, activeChar.getHeading());
+			summon.spawnMe(spawnLoc);
 			summon.getAI().setFollowStatus(true);
 		}
 		

@@ -126,12 +126,6 @@
 		<loc desc="The Center of the Neutral Zone" type="NOBLE_HUNTING_ZONE_ADENA" priceId="57" priceCount="1000" x="-10612" y="75881" z="-3592" />
 		<loc desc="Coliseum" type="NOBLE_HUNTING_ZONE_ADENA" priceId="57" priceCount="1000" x="146440" y="46723" z="-3400" />
 	</telPosList>
-	<telPosList npcId="30162">
-		<loc desc="1st Floor Lobby" type="STANDARD" priceId="57" priceCount="0" x="85289" y="16225" z="-3640" />
-		<loc desc="2nd Floor Human Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85336" y="16137" z="-2780" />
-		<loc desc="3rd Floor Elven Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85336" y="16137" z="-2270" />
-		<loc desc="4th Floor Dark Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85336" y="16137" z="-1750" />
-	</telPosList>
 	<telPosList npcId="30177">
 		<loc desc="Town of Aden" type="STANDARD" priceId="57" priceCount="6900" x="146783" y="25808" z="-2000" castleId="5" />
 		<loc desc="The Town of Giran" type="STANDARD" priceId="57" priceCount="9400" x="83314" y="148012" z="-3400" castleId="3" />
@@ -306,32 +300,10 @@
 		<loc desc="Talking Island Village" type="NEWBIE_TOKEN" priceId="8542" priceCount="1" x="-84141" y="244623" z="-3729" />
 		<loc desc="Elven Village" type="NEWBIE_TOKEN" priceId="8542" priceCount="1" x="46890" y="51531" z="-2976" />
 	</telPosList>
-	<telPosList npcId="30716">
-		<loc desc="Underground Shopping Area" type="STANDARD" priceId="57" priceCount="0" x="84856" y="15912" z="-4270" />
-		<loc desc="1st Floor Lobby" type="STANDARD" priceId="57" priceCount="0" x="85336" y="16137" z="-3640" />
-		<loc desc="3rd Floor Elven Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85391" y="16228" z="-2270" />
-		<loc desc="4th Floor Dark Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85391" y="16228" z="-1750" />
-	</telPosList>
-	<telPosList npcId="30719">
-		<loc desc="Underground Shopping Area" type="STANDARD" priceId="57" priceCount="0" x="84814" y="15926" z="-4270" />
-		<loc desc="1st Floor Lobby" type="STANDARD" priceId="57" priceCount="0" x="85391" y="16228" z="-3640" />
-		<loc desc="2nd Floor Human Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85391" y="16228" z="-2780" />
-		<loc desc="4th Floor Dark Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85343" y="16267" z="-1750" />
-	</telPosList>
-	<telPosList npcId="30722">
-		<loc desc="Underground Shopping Area" type="STANDARD" priceId="57" priceCount="0" x="84872" y="15882" z="-4270" />
-		<loc desc="1st Floor Lobby" type="STANDARD" priceId="57" priceCount="0" x="85343" y="16267" z="-3640" />
-		<loc desc="2nd Floor Human Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85343" y="16267" z="-2780" />
-		<loc desc="3rd Floor Elven Wizard Guild" type="STANDARD" priceId="57" priceCount="0" x="85343" y="16267" z="-2270" />
-	</telPosList>
 	<telPosList npcId="30727">
-		<loc desc="Town of Oren" type="CHF_LEVEL_1" priceId="57" priceCount="3700" x="82971" y="53207" z="-1470" castleId="4" />
-		<loc desc="Hunters Village" type="CHF_LEVEL_1" priceId="57" priceCount="6800" x="117156" y="76878" z="-2670" />
-		<loc desc="Town of Aden" type="CHF_LEVEL_1" priceId="57" priceCount="6200" x="146768" y="25856" z="-2000" castleId="5" />
-		<loc desc="Underground Shopping Area" type="CHF_LEVEL_2" priceId="57" priceCount="0" x="84852" y="15863" z="-4270" />
-		<loc desc="2nd Floor Human Wizard Guild" type="CHF_LEVEL_2" priceId="57" priceCount="0" x="85289" y="16225" z="-2780" />
-		<loc desc="3rd Floor Elven Wizard Guild" type="CHF_LEVEL_2" priceId="57" priceCount="0" x="85289" y="16225" z="-2270" />
-		<loc desc="4th Floor Dark Wizard Guild" type="CHF_LEVEL_2" priceId="57" priceCount="0" x="85289" y="16225" z="-1750" />
+		<loc desc="Town of Oren" type="STANDARD" priceId="57" priceCount="3700" x="82971" y="53207" z="-1470" castleId="4" />
+		<loc desc="Hunters Village" type="STANDARD" priceId="57" priceCount="6800" x="117156" y="76878" z="-2670" />
+		<loc desc="Town of Aden" type="STANDARD" priceId="57" priceCount="6200" x="146768" y="25856" z="-2000" castleId="5" />
 	</telPosList>
 	<telPosList npcId="30836">
 		<loc desc="The Town of Giran" type="STANDARD" priceId="57" priceCount="4400" x="83475" y="147966" z="-3404" castleId="3" />

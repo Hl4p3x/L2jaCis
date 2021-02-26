@@ -104,8 +104,6 @@ public final class RequestRefineCancel extends L2GameClientPacket
 		player.sendPacket(iu);
 		
 		// send system message
-		SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.AUGMENTATION_HAS_BEEN_SUCCESSFULLY_REMOVED_FROM_YOUR_S1);
-		sm.addItemName(item);
-		player.sendPacket(sm);
+		player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.AUGMENTATION_HAS_BEEN_SUCCESSFULLY_REMOVED_FROM_YOUR_S1).addItemName(item));
 	}
 }

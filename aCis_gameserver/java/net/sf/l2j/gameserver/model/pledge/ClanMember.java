@@ -112,7 +112,7 @@ public class ClanMember
 		// Add Clan skills.
 		if (player != null)
 		{
-			_clan.addClanSkillsTo(player);
+			_clan.checkAndAddClanSkills(player);
 			
 			if (_clan.getLevel() >= Config.MINIMUM_CLAN_LEVEL && player.isClanLeader())
 				player.addSiegeSkills();

@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.item.kind;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.ArmorType;
 
@@ -11,7 +11,7 @@ public final class Armor extends Item
 {
 	private ArmorType _type;
 	
-	public Armor(StatsSet set)
+	public Armor(StatSet set)
 	{
 		super(set);
 		

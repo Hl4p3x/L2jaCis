@@ -84,7 +84,7 @@ public class EffectConfusion extends AbstractEffect
 		
 		// Add aggro to that target aswell. The aggro power is random.
 		final int aggro = (5 + Rnd.get(5)) * getEffector().getStatus().getLevel();
-		((Attackable) getEffected()).addDamageHate(target, 0, aggro);
+		((Attackable) getEffected()).getAggroList().addDamageHate(target, 0, aggro);
 		
 		return true;
 	}

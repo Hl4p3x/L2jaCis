@@ -39,7 +39,7 @@ public class Heal implements ISkillHandler
 			final boolean bsps = activeChar.isChargedShot(ShotType.BLESSED_SPIRITSHOT);
 			
 			double staticShotBonus = 0;
-			int mAtkMul = 1; // mAtk multiplier
+			double mAtkMul = 1.;
 			
 			if ((sps || bsps) && (activeChar instanceof Player && activeChar.getActingPlayer().isMageClass()) || activeChar instanceof Summon)
 			{
@@ -47,24 +47,24 @@ public class Heal implements ISkillHandler
 				
 				if (bsps)
 				{
-					mAtkMul = 4;
+					mAtkMul = 4.;
 					staticShotBonus *= 2.4;
 				}
 				else
-					mAtkMul = 2;
+					mAtkMul = 2.;
 			}
 			else if ((sps || bsps) && activeChar instanceof Npc)
 			{
 				staticShotBonus = 2.4 * skill.getMpConsume(); // always blessed spiritshots
-				mAtkMul = 4;
+				mAtkMul = 4.;
 			}
 			else
 			{
 				// shot dynamic bonus
 				if (bsps)
-					mAtkMul *= 4;
+					mAtkMul *= 4.;
 				else
-					mAtkMul += 1;
+					mAtkMul += 1.;
 			}
 			
 			power += staticShotBonus + Math.sqrt(mAtkMul * activeChar.getStatus().getMAtk(activeChar, null));
@@ -90,7 +90,8 @@ public class Heal implements ISkillHandler
 			{
 				if (target instanceof Player && ((Player) target).isCursedWeaponEquipped())
 					continue;
-				else if (activeChar instanceof Player && ((Player) activeChar).isCursedWeaponEquipped())
+				
+				if (activeChar instanceof Player && ((Player) activeChar).isCursedWeaponEquipped())
 					continue;
 			}
 			

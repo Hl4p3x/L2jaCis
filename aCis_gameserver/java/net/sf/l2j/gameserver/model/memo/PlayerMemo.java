@@ -4,96 +4,79 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+import net.sf.l2j.commons.data.MemoSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 
 /**
- * An implementation of {@link AbstractMemo} used for Player. There is a restore/save system.
+ * An implementation of {@link MemoSet} used for Player. There is a restore/save system.
  */
-@SuppressWarnings("serial")
-public class PlayerMemo extends AbstractMemo
+public class PlayerMemo extends MemoSet
 {
+	private static final long serialVersionUID = 1L;
+	
 	private static final CLogger LOGGER = new CLogger(PlayerMemo.class.getName());
 	
-	private static final String SELECT_QUERY = "SELECT * FROM character_memo WHERE charId = ?";
-	private static final String DELETE_QUERY = "DELETE FROM character_memo WHERE charId = ?";
-	private static final String INSERT_QUERY = "INSERT INTO character_memo (charId, var, val) VALUES (?, ?, ?)";
+	private static final String SELECT_MEMOS = "SELECT * FROM character_memo WHERE charId = ?";
+	private static final String DELETE_MEMO = "DELETE FROM character_memo WHERE charId = ? AND var = ?";
+	private static final String INSERT_OR_UPDATE_MEMO = "INSERT INTO character_memo (charId, var, val) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE val = VALUES(val)";
 	
 	private final int _objectId;
 	
 	public PlayerMemo(int objectId)
 	{
 		_objectId = objectId;
-		restoreMe();
-	}
-	
-	@Override
-	public boolean restoreMe()
-	{
-		// Restore previous variables.
-		try (Connection con = ConnectionPool.getConnection())
-		{
-			try (PreparedStatement ps = con.prepareStatement(SELECT_QUERY))
-			{
-				ps.setInt(1, _objectId);
-				
-				try (ResultSet rs = ps.executeQuery())
-				{
-					while (rs.next())
-						set(rs.getString("var"), rs.getString("val"));
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Couldn't restore variables for player id {}.", e, _objectId);
-			return false;
-		}
-		finally
-		{
-			compareAndSetChanges(true, false);
-		}
-		return true;
-	}
-	
-	@Override
-	public boolean storeMe()
-	{
-		// No changes, nothing to store.
-		if (!hasChanges())
-			return false;
 		
-		try (Connection con = ConnectionPool.getConnection())
+		// Restore memos.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(SELECT_MEMOS))
 		{
-			// Clear previous entries.
-			try (PreparedStatement ps = con.prepareStatement(DELETE_QUERY))
-			{
-				ps.setInt(1, _objectId);
-				ps.execute();
-			}
+			ps.setInt(1, _objectId);
 			
-			// Insert all variables.
-			try (PreparedStatement ps = con.prepareStatement(INSERT_QUERY))
+			try (ResultSet rs = ps.executeQuery())
 			{
-				ps.setInt(1, _objectId);
-				for (Entry<String, Object> entry : entrySet())
-				{
-					ps.setString(2, entry.getKey());
-					ps.setString(3, String.valueOf(entry.getValue()));
-					ps.addBatch();
-				}
-				ps.executeBatch();
+				while (rs.next())
+					put(rs.getString("var"), rs.getString("val"));
 			}
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Couldn't update variables for player id {}.", e, _objectId);
-			return false;
+			LOGGER.error("Couldn't restore memos for player id {}.", e, _objectId);
 		}
-		finally
+	}
+	
+	@Override
+	protected void onSet(String key, String value)
+	{
+		// Insert memo, on duplicate update it.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(INSERT_OR_UPDATE_MEMO))
 		{
-			compareAndSetChanges(true, false);
+			ps.setInt(1, _objectId);
+			ps.setString(2, key);
+			ps.setString(3, value);
+			ps.execute();
 		}
-		return true;
+		catch (Exception e)
+		{
+			LOGGER.error("Couldn't set {} memo for player id {}.", e, key, _objectId);
+		}
+	}
+	
+	@Override
+	protected void onUnset(String key)
+	{
+		// Clear memo.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(DELETE_MEMO))
+		{
+			ps.setInt(1, _objectId);
+			ps.setString(2, key);
+			ps.execute();
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Couldn't unset {} memo for player id {}.", e, key, _objectId);
+		}
 	}
 }

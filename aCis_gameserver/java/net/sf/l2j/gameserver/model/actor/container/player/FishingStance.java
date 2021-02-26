@@ -11,8 +11,10 @@ import net.sf.l2j.gameserver.data.xml.FishData;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.Fish;
+import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.instance.PenaltyMonster;
+import net.sf.l2j.gameserver.model.actor.instance.Monster;
+import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
@@ -287,7 +289,6 @@ public class FishingStance
 		{
 			_fishCurHp = _fish.getHp() * 2;
 			end(false);
-			return;
 		}
 		else if (_fishCurHp == 0)
 			end(true);
@@ -598,7 +599,7 @@ public class FishingStance
 	/**
 	 * Ends the fishing process.
 	 * <ul>
-	 * <li>Process the reward ({@link Fish} or 5% {@link PenaltyMonster}), if "win" is set as True.</li>
+	 * <li>Process the reward ({@link Fish} or 5% {@link Npc}), if "win" is set as True.</li>
 	 * <li>Cleanup all variables.</li>
 	 * <li>Give back the movement ability to the {@link Player}.</li>
 	 * <li>End all running tasks.</li>
@@ -611,14 +612,17 @@ public class FishingStance
 		{
 			if (Rnd.get(100) < 5)
 			{
-				int npcId = 18319 + Math.min(_fisher.getStatus().getLevel() / 11, 7); // 18319-18326
+				final int npcId = 18319 + Math.min(_fisher.getStatus().getLevel() / 11, 7); // 18319-18326
 				
-				PenaltyMonster npc = new PenaltyMonster(IdFactory.getInstance().getNextId(), NpcData.getInstance().getTemplate(npcId));
-				npc.getStatus().setMaxHpMp();
-				npc.spawnMe(_fisher.getPosition());
-				npc.setPlayerToKill(_fisher);
-				
-				_fisher.sendPacket(SystemMessageId.YOU_CAUGHT_SOMETHING_SMELLY_THROW_IT_BACK);
+				final NpcTemplate template = NpcData.getInstance().getTemplate(npcId);
+				if (template != null)
+				{
+					final Monster monster = new Monster(IdFactory.getInstance().getNextId(), template);
+					monster.getStatus().setMaxHpMp();
+					monster.spawnMe(_fisher.getPosition());
+					
+					_fisher.sendPacket(SystemMessageId.YOU_CAUGHT_SOMETHING_SMELLY_THROW_IT_BACK);
+				}
 			}
 			else
 			{

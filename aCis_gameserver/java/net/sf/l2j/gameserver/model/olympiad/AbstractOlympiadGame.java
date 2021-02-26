@@ -3,6 +3,7 @@ package net.sf.l2j.gameserver.model.olympiad;
 import java.util.List;
 
 import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.util.ArraysUtil;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
@@ -424,7 +425,7 @@ public abstract class AbstractOlympiadGame
 		// Add Clan skills.
 		if (player.getClan() != null)
 		{
-			player.getClan().addClanSkillsTo(player);
+			player.getClan().checkAndAddClanSkills(player);
 			
 			// heal again after adding clan skills
 			player.getStatus().setMaxCpHpMp();
@@ -468,7 +469,7 @@ public abstract class AbstractOlympiadGame
 	 */
 	public static final void rewardParticipant(Player player, IntIntHolder[] reward)
 	{
-		if (player == null || !player.isOnline() || reward == null)
+		if (player == null || !player.isOnline() || ArraysUtil.isEmpty(reward))
 			return;
 		
 		final InventoryUpdate iu = new InventoryUpdate();

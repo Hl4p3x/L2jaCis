@@ -2476,7 +2476,7 @@ public final class NpcStringId
 	@NpcString(id = 9752, message = "I lost? It can't be!")
 	public static NpcStringId ID_9752;
 	
-	@NpcString(id = 9753, message = "Are you the one who�s been bothering my minions, %s?")
+	@NpcString(id = 9753, message = "Are you the one who's been bothering my minions, %s?")
 	public static NpcStringId ID_9753;
 	
 	@NpcString(id = 9754, message = "Dammit! I can't believe you beat me!")
@@ -10420,6 +10420,21 @@ public final class NpcStringId
 	@NpcString(id = 1010641, message = "Grarr! %s team is attempting to steal the jackpot.")
 	public static NpcStringId ID_1010641;
 	
+	@NpcString(id = 1010642, message = "** Vacant Seat **")
+	public static NpcStringId ID_1010642;
+	
+	@NpcString(id = 1010643, message = "%s minute(s) are remaining.")
+	public static NpcStringId ID_1010643;
+	
+	@NpcString(id = 1010644, message = "How dare you ruin the performance of the Dark Choir... Unforgivable!")
+	public static NpcStringId ID_1010644;
+	
+	@NpcString(id = 1010645, message = "Get rid of the invaders who interrupt the performance of the Dark Choir!")
+	public static NpcStringId ID_1010645;
+	
+	@NpcString(id = 1010646, message = "Don't you hear the music of death? Reveal the horror of the Dark Choir!")
+	public static NpcStringId ID_1010646;
+	
 	@NpcString(id = 1010647, message = "The Immortal Plateau")
 	public static NpcStringId ID_1010647;
 	
@@ -11500,6 +11515,36 @@ public final class NpcStringId
 	@NpcString(id = 1114118, message = "<a action=\"bypass -h menu_select?ask=-2&reply=410\">Maestro</a><br>")
 	public static NpcStringId ID_1114118;
 	
+	@NpcString(id = 1121000, message = "Steward: Please wait a moment.")
+	public static NpcStringId ID_1121000;
+	
+	@NpcString(id = 1121001, message = "Steward: Please restore the Queen's former appearance!")
+	public static NpcStringId ID_1121001;
+	
+	@NpcString(id = 1121002, message = "Steward: Waste no time!  Please hurry!")
+	public static NpcStringId ID_1121002;
+	
+	@NpcString(id = 1121003, message = "Steward: Was it indeed too much to ask...")
+	public static NpcStringId ID_1121003;
+	
+	@NpcString(id = 1121004, message = "Freya: Heathens! Feel my chill!")
+	public static NpcStringId ID_1121004;
+	
+	@NpcString(id = 1121005, message = "Attention please! The gates will be closing shortly. All visitors to the Queen's Castle should leave immediately.")
+	public static NpcStringId ID_1121005;
+	
+	@NpcString(id = 1121006, message = "You cannot carry a weapon without authorization!")
+	public static NpcStringId ID_1121006;
+	
+	@NpcString(id = 1121007, message = "Are you trying to deceive me?  I'm disappointed.")
+	public static NpcStringId ID_1121007;
+	
+	@NpcString(id = 1121008, message = "30 minutes remain.")
+	public static NpcStringId ID_1121008;
+	
+	@NpcString(id = 1121009, message = "20 minutes remain.")
+	public static NpcStringId ID_1121009;
+	
 	@NpcString(id = 1200001, message = "Chilly Coda")
 	public static NpcStringId ID_1200001;
 	
@@ -11664,6 +11709,45 @@ public final class NpcStringId
 	
 	@NpcString(id = 1303104, message = "You cured me! Thanks a lot! Oink oink!")
 	public static NpcStringId ID_1303104;
+	
+	@NpcString(id = 1800001, message = "(Queen Ant)  # %s's Command Channel has looting rights.")
+	public static NpcStringId ID_1800001;
+	
+	@NpcString(id = 1800002, message = "(Core)  # %s's Command Channel has looting rights.")
+	public static NpcStringId ID_1800002;
+	
+	@NpcString(id = 1800003, message = "(Orfen)  # %s's Command Channel has looting rights.")
+	public static NpcStringId ID_1800003;
+	
+	@NpcString(id = 1800004, message = "(Zaken)  # %s's Command Channel has looting rights.")
+	public static NpcStringId ID_1800004;
+	
+	@NpcString(id = 1800005, message = "(Queen Ant) Looting rules are no longer active.")
+	public static NpcStringId ID_1800005;
+	
+	@NpcString(id = 1800006, message = "(Core) Looting rules are no longer active.")
+	public static NpcStringId ID_1800006;
+	
+	@NpcString(id = 1800007, message = "(Orfen) Looting rules are no longer active.")
+	public static NpcStringId ID_1800007;
+	
+	@NpcString(id = 1800008, message = "(Zaken) Looting rules are no longer active.")
+	public static NpcStringId ID_1800008;
+	
+	@NpcString(id = 1800009, message = "# %s's Command Channel has looting rights.")
+	public static NpcStringId ID_1800009;
+	
+	@NpcString(id = 1800010, message = "Looting rules are no longer active.")
+	public static NpcStringId ID_1800010;
+	
+	@NpcString(id = 1800011, message = "Our master now comes to claim our vengeance. Soon you will all be nothing more than dirt...")
+	public static NpcStringId ID_1800011;
+	
+	@NpcString(id = 1800012, message = "Death to those who challenge the Lords of Dawn!")
+	public static NpcStringId ID_1800012;
+	
+	@NpcString(id = 1800013, message = "Death to those who challenge the Lord!")
+	public static NpcStringId ID_1800013;
 	
 	@NpcString(id = 1800014, message = "Oink oink! Pigs can do it too! Antharas-Surpassing Super Powered Pig Stun! How do like them apples?")
 	public static NpcStringId ID_1800014;

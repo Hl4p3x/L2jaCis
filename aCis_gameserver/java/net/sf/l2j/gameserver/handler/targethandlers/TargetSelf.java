@@ -3,6 +3,7 @@ package net.sf.l2j.gameserver.handler.targethandlers;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetSelf implements ITargetHandler
@@ -26,5 +27,11 @@ public class TargetSelf implements ITargetHandler
 	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		return caster;
+	}
+	
+	@Override
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed)
+	{
+		return true;
 	}
 }

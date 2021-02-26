@@ -15,8 +15,9 @@ public class ExProperties extends Properties
 	private static final CLogger LOGGER = new CLogger(ExProperties.class.getName());
 	
 	private static final long serialVersionUID = 1L;
+	private static final IntIntHolder[] NO_HOLDER = {};
 	
-	public static final String defaultDelimiter = "[\\s,;]+";
+	public static final String DEFAULT_DELIMITERS = "[\\s,;]+";
 	
 	public void load(final String fileName) throws IOException
 	{
@@ -89,7 +90,7 @@ public class ExProperties extends Properties
 	
 	public String[] getProperty(final String name, final String[] defaultValue)
 	{
-		return getProperty(name, defaultValue, defaultDelimiter);
+		return getProperty(name, defaultValue, DEFAULT_DELIMITERS);
 	}
 	
 	public String[] getProperty(final String name, final String[] defaultValue, final String delimiter)
@@ -107,7 +108,7 @@ public class ExProperties extends Properties
 	
 	public boolean[] getProperty(final String name, final boolean[] defaultValue)
 	{
-		return getProperty(name, defaultValue, defaultDelimiter);
+		return getProperty(name, defaultValue, DEFAULT_DELIMITERS);
 	}
 	
 	public boolean[] getProperty(final String name, final boolean[] defaultValue, final String delimiter)
@@ -130,7 +131,7 @@ public class ExProperties extends Properties
 	
 	public int[] getProperty(final String name, final int[] defaultValue)
 	{
-		return getProperty(name, defaultValue, defaultDelimiter);
+		return getProperty(name, defaultValue, DEFAULT_DELIMITERS);
 	}
 	
 	public int[] getProperty(final String name, final int[] defaultValue, final String delimiter)
@@ -153,7 +154,7 @@ public class ExProperties extends Properties
 	
 	public long[] getProperty(final String name, final long[] defaultValue)
 	{
-		return getProperty(name, defaultValue, defaultDelimiter);
+		return getProperty(name, defaultValue, DEFAULT_DELIMITERS);
 	}
 	
 	public long[] getProperty(final String name, final long[] defaultValue, final String delimiter)
@@ -176,7 +177,7 @@ public class ExProperties extends Properties
 	
 	public double[] getProperty(final String name, final double[] defaultValue)
 	{
-		return getProperty(name, defaultValue, defaultDelimiter);
+		return getProperty(name, defaultValue, DEFAULT_DELIMITERS);
 	}
 	
 	public double[] getProperty(final String name, final double[] defaultValue, final String delimiter)
@@ -206,7 +207,7 @@ public class ExProperties extends Properties
 	{
 		final String[] propertySplit = getProperty(key, defaultValue).split(";");
 		if (propertySplit.length == 0)
-			return null;
+			return NO_HOLDER;
 		
 		int i = 0;
 		final IntIntHolder[] result = new IntIntHolder[propertySplit.length];
@@ -216,7 +217,7 @@ public class ExProperties extends Properties
 			if (valueSplit.length != 2)
 			{
 				LOGGER.warn("Error parsing entry '{}', it should be itemId-itemNumber.", key);
-				return null;
+				return NO_HOLDER;
 			}
 			
 			try
@@ -226,7 +227,7 @@ public class ExProperties extends Properties
 			catch (Exception e)
 			{
 				LOGGER.error("Error parsing entry '{}', one of the value isn't a number.", e, key);
-				return null;
+				return NO_HOLDER;
 			}
 			
 			i++;

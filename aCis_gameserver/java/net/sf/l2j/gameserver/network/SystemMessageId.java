@@ -2278,7 +2278,7 @@ public final class SystemMessageId
 	
 	/**
 	 * ID: 389<br>
-	 * Message: our petition application has been accepted. - Receipt No. is $s1.
+	 * Message: Your petition application has been accepted. - Receipt No. is $s1.
 	 */
 	public static final SystemMessageId PETITION_ACCEPTED_RECENT_NO_S1;
 	
@@ -2292,7 +2292,7 @@ public final class SystemMessageId
 	 * ID: 391<br>
 	 * Message: Receipt No. $s1, petition cancelled.
 	 */
-	public static final SystemMessageId RECENT_NO_S1_CANCELED;
+	public static final SystemMessageId RECEIPT_NO_S1_CANCELED;
 	
 	/**
 	 * ID: 392<br>
@@ -4094,7 +4094,7 @@ public final class SystemMessageId
 	 * ID: 730<br>
 	 * Message: - You have submitted your $s1th petition. - You may submit $s2 more petition(s) today.
 	 */
-	public static final SystemMessageId SUBMITTED_YOU_S1_TH_PETITION_S2_LEFT;
+	public static final SystemMessageId SUBMITTED_YOUR_S1_TH_PETITION_S2_LEFT;
 	
 	/**
 	 * ID: 731<br>
@@ -12182,7 +12182,7 @@ public final class SystemMessageId
 		NOT_UNDER_PETITION_CONSULTATION = new SystemMessageId(388);
 		PETITION_ACCEPTED_RECENT_NO_S1 = new SystemMessageId(389);
 		ONLY_ONE_ACTIVE_PETITION_AT_TIME = new SystemMessageId(390);
-		RECENT_NO_S1_CANCELED = new SystemMessageId(391);
+		RECEIPT_NO_S1_CANCELED = new SystemMessageId(391);
 		UNDER_PETITION_ADVICE = new SystemMessageId(392);
 		FAILED_CANCEL_PETITION_TRY_LATER = new SystemMessageId(393);
 		PETITION_WITH_S1_UNDER_WAY = new SystemMessageId(394);
@@ -12480,7 +12480,7 @@ public final class SystemMessageId
 		FROZEN_CONDITION_REMOVED = new SystemMessageId(727);
 		CANNOT_APPLY_DISSOLUTION_AGAIN = new SystemMessageId(728);
 		ITEM_NOT_DISCARDED = new SystemMessageId(729);
-		SUBMITTED_YOU_S1_TH_PETITION_S2_LEFT = new SystemMessageId(730);
+		SUBMITTED_YOUR_S1_TH_PETITION_S2_LEFT = new SystemMessageId(730);
 		PETITION_S1_RECEIVED_CODE_IS_S2 = new SystemMessageId(731);
 		S1_RECEIVED_CONSULTATION_REQUEST = new SystemMessageId(732);
 		WE_HAVE_RECEIVED_S1_PETITIONS_TODAY = new SystemMessageId(733);
@@ -13773,11 +13773,12 @@ public final class SystemMessageId
 		final Field[] fields = SystemMessageId.class.getDeclaredFields();
 		final ArrayList<SystemMessageId> smIds = new ArrayList<>(fields.length);
 		
-		int maxId = 0, mod;
+		int maxId = 0;
 		SystemMessageId smId;
+		
 		for (final Field field : fields)
 		{
-			mod = field.getModifiers();
+			final int mod = field.getModifiers();
 			if (Modifier.isStatic(mod) && Modifier.isPublic(mod) && Modifier.isFinal(mod) && field.getType().equals(SystemMessageId.class))
 			{
 				try
@@ -13785,7 +13786,9 @@ public final class SystemMessageId
 					smId = (SystemMessageId) field.get(null);
 					smId.setName(field.getName());
 					smId.setParamCount(parseMessageParameters(field.getName()));
+					
 					maxId = Math.max(maxId, smId.getId());
+					
 					smIds.add(smId);
 				}
 				catch (Exception e)

@@ -39,11 +39,16 @@ public final class RequestPledgeSetAcademyMaster extends L2GameClientPacket
 		}
 		
 		final ClanMember currentMember = clan.getClanMember(_currPlayerName);
-		final ClanMember targetMember = clan.getClanMember(_targetPlayerName);
-		if (currentMember == null || targetMember == null)
+		if (currentMember == null)
 			return;
 		
-		ClanMember apprenticeMember, sponsorMember;
+		final ClanMember targetMember = clan.getClanMember(_targetPlayerName);
+		if (targetMember == null)
+			return;
+		
+		ClanMember apprenticeMember;
+		ClanMember sponsorMember;
+		
 		if (currentMember.getPledgeType() == Clan.SUBUNIT_ACADEMY)
 		{
 			apprenticeMember = currentMember;

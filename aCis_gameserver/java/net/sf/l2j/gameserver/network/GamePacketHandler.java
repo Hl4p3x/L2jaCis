@@ -630,7 +630,6 @@ public final class GamePacketHandler implements IPacketHandler<GameClient>, ICli
 					case 0xc2:
 						msg = new RequestDeleteMacro();
 						break;
-					// Manor
 					case 0xc3:
 						msg = new RequestBuyProcure();
 						break;
@@ -646,6 +645,9 @@ public final class GamePacketHandler implements IPacketHandler<GameClient>, ICli
 					case 0xc7:
 						msg = new RequestSSQStatus();
 						break;
+					case 0xc8:
+						msg = new PetitionVote();
+						break;
 					case 0xCA:
 						msg = new GameGuardReply();
 						break;
@@ -657,7 +659,7 @@ public final class GamePacketHandler implements IPacketHandler<GameClient>, ICli
 						break;
 					case 0xce: // MSN dialogs so that you dont see them in the console.
 						break;
-					case 0xcf: // record video
+					case 0xcf:
 						msg = new RequestRecordInfo();
 						break;
 					

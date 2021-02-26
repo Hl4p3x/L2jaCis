@@ -1,7 +1,7 @@
 package net.sf.l2j.gameserver.model.item;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.util.ArraysUtil;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.actor.Player;
 
@@ -26,7 +26,7 @@ public final class Henna
 	private final int _WIT;
 	private final int[] _classes;
 	
-	public Henna(StatsSet set)
+	public Henna(StatSet set)
 	{
 		_symbolId = set.getInteger("symbolId");
 		_dyeId = set.getInteger("dyeId");

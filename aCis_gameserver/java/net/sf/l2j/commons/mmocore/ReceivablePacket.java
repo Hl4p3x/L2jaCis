@@ -13,9 +13,6 @@ public abstract class ReceivablePacket<T extends MMOClient<?>> extends AbstractP
 	
 	protected abstract boolean read();
 	
-	@Override
-	public abstract void run();
-	
 	protected final void readB(final byte[] dst)
 	{
 		_buf.get(dst);

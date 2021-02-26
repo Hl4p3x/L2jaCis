@@ -110,8 +110,9 @@ public final class Augmentation
 	
 	public static class AugmentationStatBoni
 	{
-		private final Stats _stats[];
-		private final float _values[];
+		private final Stats[] _stats;
+		private final float[] _values;
+		
 		private boolean _active;
 		
 		public AugmentationStatBoni(int augmentationId)

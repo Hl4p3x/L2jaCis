@@ -42,12 +42,12 @@ public class Announcement implements Runnable
 			switch (_limit)
 			{
 				case 0: // unlimited
-					_task = ThreadPool.scheduleAtFixedRate(this, _initialDelay * 1000, _delay * 1000); // self schedule at fixed rate
+					_task = ThreadPool.scheduleAtFixedRate(this, _initialDelay * 1000L, _delay * 1000L); // self schedule at fixed rate
 					_unlimited = true;
 					break;
 				
 				default:
-					_task = ThreadPool.schedule(this, _initialDelay * 1000); // self schedule (initial)
+					_task = ThreadPool.schedule(this, _initialDelay * 1000L); // self schedule (initial)
 					_tempLimit = _limit;
 					break;
 			}
@@ -62,7 +62,7 @@ public class Announcement implements Runnable
 			if (_tempLimit == 0)
 				return;
 			
-			_task = ThreadPool.schedule(this, _delay * 1000); // self schedule (worker)
+			_task = ThreadPool.schedule(this, _delay * 1000L); // self schedule (worker)
 			_tempLimit--;
 		}
 		World.announceToOnlinePlayers(_message, _critical);
@@ -116,12 +116,12 @@ public class Announcement implements Runnable
 			switch (_limit)
 			{
 				case 0: // unlimited
-					_task = ThreadPool.scheduleAtFixedRate(this, _initialDelay * 1000, _delay * 1000); // self schedule at fixed rate
+					_task = ThreadPool.scheduleAtFixedRate(this, _initialDelay * 1000L, _delay * 1000L); // self schedule at fixed rate
 					_unlimited = true;
 					break;
 				
 				default:
-					_task = ThreadPool.schedule(this, _initialDelay * 1000); // self schedule (initial)
+					_task = ThreadPool.schedule(this, _initialDelay * 1000L); // self schedule (initial)
 					_tempLimit = _limit;
 					break;
 			}

@@ -78,13 +78,13 @@ public final class RequestPrivateStoreBuy extends L2GameClientPacket
 			return;
 		}
 		
-		if (storePlayer.getOperateType() == OperateType.PACKAGE_SELL && storeList.getItems().size() > _items.size())
+		if (storePlayer.getOperateType() == OperateType.PACKAGE_SELL && storeList.size() > _items.size())
 			return;
 		
 		if (!storeList.privateStoreBuy(player, _items))
 			return;
 		
-		if (storeList.getItems().isEmpty())
+		if (storeList.isEmpty())
 		{
 			storePlayer.setOperateType(OperateType.NONE);
 			storePlayer.broadcastUserInfo();

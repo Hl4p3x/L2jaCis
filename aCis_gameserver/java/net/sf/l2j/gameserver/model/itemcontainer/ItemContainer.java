@@ -3,10 +3,10 @@ package net.sf.l2j.gameserver.model.itemcontainer;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
@@ -69,9 +69,31 @@ public abstract class ItemContainer
 	}
 	
 	/**
-	 * Check for multiple items in player's inventory.
-	 * @param itemIds a list of item Ids to check.
-	 * @return true if at least one items exists in player's inventory, false otherwise
+	 * @param itemId : The item ID to check.
+	 * @return True if the item id exists in this {@link ItemContainer}, false otherwise.
+	 */
+	public boolean hasItems(int itemId)
+	{
+		return getItemByItemId(itemId) != null;
+	}
+	
+	/**
+	 * @param itemIds : A list of item IDs to check.
+	 * @return True if all item ids exist in this {@link ItemContainer}, false otherwise.
+	 */
+	public boolean hasItems(int... itemIds)
+	{
+		for (int itemId : itemIds)
+		{
+			if (getItemByItemId(itemId) == null)
+				return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * @param itemIds : A list of item IDs to check.
+	 * @return True if at least one item id exists in this {@link ItemContainer}, false otherwise.
 	 */
 	public boolean hasAtLeastOneItem(int... itemIds)
 	{
@@ -84,65 +106,58 @@ public abstract class ItemContainer
 	}
 	
 	/**
-	 * @param itemId : the itemId to check.
-	 * @return a List holding the items list (empty list if not found)
+	 * @param itemId : The item ID to check.
+	 * @return A {@link List} of {@link ItemInstance}s by given item ID, or an empty {@link List} if none are found.
 	 */
 	public List<ItemInstance> getItemsByItemId(int itemId)
 	{
-		final List<ItemInstance> list = new ArrayList<>();
-		for (ItemInstance item : _items)
-		{
-			if (item.getItemId() == itemId)
-				list.add(item);
-		}
-		return list;
+		return _items.stream().filter(i -> i.getItemId() == itemId).collect(Collectors.toList());
 	}
 	
 	/**
-	 * @param itemId : the itemId to check.
-	 * @return the item by using its itemId, or null if not found in inventory.
+	 * @param itemId : The item ID to check.
+	 * @return An {@link ItemInstance} using its item ID, or null if not found in this {@link ItemContainer}.
 	 */
 	public ItemInstance getItemByItemId(int itemId)
 	{
-		for (ItemInstance item : _items)
-		{
-			if (item.getItemId() == itemId)
-				return item;
-		}
-		return null;
+		return _items.stream().filter(i -> i.getItemId() == itemId).findFirst().orElse(null);
 	}
 	
 	/**
-	 * @param objectId : the objectId to check.
-	 * @return the item by using its objectId, or null if not found in inventory
+	 * @param objectId : The object ID to check.
+	 * @return An {@link ItemInstance} using its object ID, or null if not found in this {@link ItemContainer}.
 	 */
 	public ItemInstance getItemByObjectId(int objectId)
 	{
-		for (ItemInstance item : _items)
-		{
-			if (item.getObjectId() == objectId)
-				return item;
-		}
-		return null;
+		return _items.stream().filter(i -> i.getObjectId() == objectId).findFirst().orElse(null);
 	}
 	
 	/**
-	 * @param itemId : the itemId to check.
-	 * @param enchantLevel : enchant level to match on, or -1 for ANY enchant level.
-	 * @return int corresponding to the number of items matching the above conditions.
+	 * @param itemId : The item ID to check.
+	 * @return The quantity of items hold by this {@link ItemContainer} (item enchant level does not matter, including equipped items).
 	 */
-	public int getInventoryItemCount(int itemId, int enchantLevel)
+	public int getItemCount(int itemId)
 	{
-		return getInventoryItemCount(itemId, enchantLevel, true);
+		return getItemCount(itemId, -1, true);
 	}
 	
 	/**
-	 * @param itemId : the itemId to check.
-	 * @param enchantLevel : enchant level to match on, or -1 for ANY enchant level.
-	 * @param includeEquipped : include equipped items.
-	 * @return the count of items matching the above conditions.
+	 * @param itemId : The item ID to check.
+	 * @param enchantLevel : The enchant level to match on (-1 for ANY enchant level).
+	 * @return The quantity of items hold by this {@link ItemContainer} (including equipped items).
 	 */
-	public int getInventoryItemCount(int itemId, int enchantLevel, boolean includeEquipped)
+	public int getItemCount(int itemId, int enchantLevel)
+	{
+		return getItemCount(itemId, enchantLevel, true);
+	}
+	
+	/**
+	 * @param itemId : The item ID to check.
+	 * @param enchantLevel : The enchant level to match on (-1 for ANY enchant level).
+	 * @param includeEquipped : Include equipped items.
+	 * @return The quantity of items hold by this {@link ItemContainer}.
+	 */
+	public int getItemCount(int itemId, int enchantLevel, boolean includeEquipped)
 	{
 		int count = 0;
 		

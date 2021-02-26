@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.soulcrystal;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 /**
  * This class stores Soul Crystal leveling infos related to items, notably:
@@ -18,7 +18,7 @@ public final class SoulCrystal
 	private final int _stagedItemId;
 	private final int _brokenItemId;
 	
-	public SoulCrystal(StatsSet set)
+	public SoulCrystal(StatSet set)
 	{
 		_level = set.getInteger("level");
 		_initialItemId = set.getInteger("initial");

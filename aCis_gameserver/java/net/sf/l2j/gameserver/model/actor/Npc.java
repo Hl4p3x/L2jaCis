@@ -47,6 +47,7 @@ import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.AbstractNpcInfo.NpcInfo;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
+import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.ExShowVariationCancelWindow;
 import net.sf.l2j.gameserver.network.serverpackets.ExShowVariationMakeWindow;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
@@ -174,12 +175,10 @@ public class Npc extends Creature
 		if (hasRandomAnimation())
 			onRandomAnimation(Rnd.get(8));
 		
-		List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.QUEST_START);
-		if (scripts != null && !scripts.isEmpty())
-			player.setLastQuestNpcObject(getObjectId());
+		player.getQuestList().setLastQuestNpcObjectId(getObjectId());
 		
-		scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
-		if (scripts != null && scripts.size() == 1)
+		List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
+		if (scripts.size() == 1)
 			scripts.get(0).notifyFirstTalk(this, player);
 		else
 			showChatWindow(player);
@@ -188,14 +187,10 @@ public class Npc extends Creature
 	@Override
 	public final void notifyQuestEventSkillFinished(L2Skill skill, WorldObject target)
 	{
-		final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_SPELL_FINISHED);
-		if (scripts != null)
-		{
-			final Player player = (target == null) ? null : target.getActingPlayer();
-			
-			for (final Quest quest : scripts)
-				quest.notifySpellFinished(this, player, skill);
-		}
+		final Player player = (target == null) ? null : target.getActingPlayer();
+		
+		for (Quest quest : getTemplate().getEventQuests(ScriptEventType.ON_SPELL_FINISHED))
+			quest.notifySpellFinished(this, player, skill);
 	}
 	
 	@Override
@@ -316,6 +311,20 @@ public class Npc extends Creature
 	}
 	
 	@Override
+	public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, L2Skill skill)
+	{
+		// Test the ON_ATTACK ScriptEventType.
+		if (attacker != null && !isDead())
+		{
+			for (Quest quest : getTemplate().getEventQuests(ScriptEventType.ON_ATTACK))
+				quest.notifyAttack(this, attacker, (int) damage, skill);
+		}
+		
+		// Reduce the current HP of the Attackable and launch the doDie Task if necessary
+		super.reduceCurrentHp(damage, attacker, awake, isDOT, skill);
+	}
+	
+	@Override
 	public boolean doDie(Creature killer)
 	{
 		if (!super.doDie(killer))
@@ -342,10 +351,8 @@ public class Npc extends Creature
 		_currentSsCount = getTemplate().getSsCount();
 		_currentSpsCount = getTemplate().getSpsCount();
 		
-		final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_SPAWN);
-		if (scripts != null)
-			for (final Quest quest : scripts)
-				quest.notifySpawn(this);
+		for (Quest quest : getTemplate().getEventQuests(ScriptEventType.ON_SPAWN))
+			quest.notifySpawn(this);
 	}
 	
 	@Override
@@ -356,11 +363,9 @@ public class Npc extends Creature
 		
 		setDecayed(true);
 		
-		final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_DECAY);
-		if (scripts != null)
-			for (final Quest quest : scripts)
-				quest.notifyDecay(this);
-			
+		for (Quest quest : getTemplate().getEventQuests(ScriptEventType.ON_DECAY))
+			quest.notifyDecay(this);
+		
 		// Remove the Npc from the world when the decay task is launched.
 		super.onDecay();
 		
@@ -942,32 +947,24 @@ public class Npc extends Creature
 	{
 		final List<Quest> quests = new ArrayList<>();
 		
-		List<Quest> scripts = npc.getTemplate().getEventQuests(ScriptEventType.ON_TALK);
-		if (scripts != null)
+		for (Quest quest : npc.getTemplate().getEventQuests(ScriptEventType.ON_TALK))
 		{
-			for (final Quest quest : scripts)
-			{
-				if (quest == null || !quest.isRealQuest() || quests.contains(quest))
-					continue;
-				
-				final QuestState qs = player.getQuestState(quest.getName());
-				if (qs == null || qs.isCreated())
-					continue;
-				
-				quests.add(quest);
-			}
+			if (quest == null || !quest.isRealQuest() || quests.contains(quest))
+				continue;
+			
+			final QuestState qs = player.getQuestList().getQuestState(quest.getName());
+			if (qs == null || qs.isCreated())
+				continue;
+			
+			quests.add(quest);
 		}
 		
-		scripts = npc.getTemplate().getEventQuests(ScriptEventType.QUEST_START);
-		if (scripts != null)
+		for (Quest quest : npc.getTemplate().getEventQuests(ScriptEventType.QUEST_START))
 		{
-			for (final Quest quest : scripts)
-			{
-				if (quest == null || !quest.isRealQuest() || quests.contains(quest))
-					continue;
-				
-				quests.add(quest);
-			}
+			if (quest == null || !quest.isRealQuest() || quests.contains(quest))
+				continue;
+			
+			quests.add(quest);
 		}
 		
 		if (quests.isEmpty())
@@ -984,7 +981,7 @@ public class Npc extends Creature
 	 * @param npc : The Npc instance.
 	 * @param quest : The Quest to check.
 	 */
-	public static void showQuestWindowSingle(Player player, Npc npc, Quest quest)
+	private static void showQuestWindowSingle(Player player, Npc npc, Quest quest)
 	{
 		if (quest == null)
 		{
@@ -996,32 +993,37 @@ public class Npc extends Creature
 			return;
 		}
 		
-		if (quest.isRealQuest() && (player.getWeightPenalty() > 2 || player.getStatus().isOverburden()))
+		if (quest.isRealQuest())
 		{
-			player.sendPacket(SystemMessageId.INVENTORY_LESS_THAN_80_PERCENT);
-			return;
-		}
-		
-		QuestState qs = player.getQuestState(quest.getName());
-		if (qs == null)
-		{
-			if (quest.isRealQuest() && player.getAllQuests(false).size() >= 25)
+			// Check player being overweight.
+			if (player.getWeightPenalty() > 2 || player.getStatus().isOverburden())
 			{
-				final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
-				html.setHtml(Quest.getTooMuchQuestsMsg());
-				player.sendPacket(html);
-				
-				player.sendPacket(ActionFailed.STATIC_PACKET);
+				player.sendPacket(SystemMessageId.INVENTORY_LESS_THAN_80_PERCENT);
 				return;
 			}
 			
-			final List<Quest> scripts = npc.getTemplate().getEventQuests(ScriptEventType.QUEST_START);
-			if (scripts != null && scripts.contains(quest))
-				qs = quest.newQuestState(player);
+			// Check player has the quest started.
+			if (player.getQuestList().getQuestState(quest.getName()) == null)
+			{
+				// Check available quest slot.
+				if (player.getQuestList().getAllQuests(false).size() >= 25)
+				{
+					final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+					html.setHtml(Quest.getTooMuchQuestsMsg());
+					player.sendPacket(html);
+					
+					player.sendPacket(ActionFailed.STATIC_PACKET);
+					return;
+				}
+				
+				// Create new state.
+				if (npc.getTemplate().getEventQuests(ScriptEventType.QUEST_START).contains(quest))
+					quest.newQuestState(player);
+			}
 		}
 		
-		if (qs != null)
-			quest.notifyTalk(npc, qs.getPlayer());
+		player.getQuestList().setLastQuestNpcObjectId(npc.getObjectId());
+		quest.notifyTalk(npc, player);
 	}
 	
 	/**
@@ -1030,7 +1032,7 @@ public class Npc extends Creature
 	 * @param npc : The Npc instance.
 	 * @param quests : The list containing quests of the Npc.
 	 */
-	public static void showQuestWindowChoose(Player player, Npc npc, List<Quest> quests)
+	private static void showQuestWindowChoose(Player player, Npc npc, List<Quest> quests)
 	{
 		final StringBuilder sb = new StringBuilder("<html><body>");
 		
@@ -1038,7 +1040,7 @@ public class Npc extends Creature
 		{
 			StringUtil.append(sb, "<a action=\"bypass -h npc_%objectId%_Quest ", q.getName(), "\">[", q.getDescr());
 			
-			final QuestState qs = player.getQuestState(q.getName());
+			final QuestState qs = player.getQuestList().getQuestState(q.getName());
 			if (qs != null && qs.isStarted())
 				sb.append(" (In Progress)]</a><br>");
 			else if (qs != null && qs.isCompleted())
@@ -1085,7 +1087,7 @@ public class Npc extends Creature
 	
 	/**
 	 * Broadcast a {@link String} to the knownlist of this {@link Npc}.
-	 * @param message : The String message to send.
+	 * @param message : The {@link String} message to send.
 	 */
 	public void broadcastNpcSay(String message)
 	{
@@ -1094,21 +1096,80 @@ public class Npc extends Creature
 	
 	/**
 	 * Broadcast a {@link NpcStringId} to the knownlist of this {@link Npc}.
-	 * @param npcStringId : The {@link NpcStringId}.
+	 * @param npcStringId : The {@link NpcStringId} to send.
 	 */
 	public void broadcastNpcSay(NpcStringId npcStringId)
 	{
-		broadcastPacket(new NpcSay(this, SayType.ALL, npcStringId.getMessage()));
+		broadcastNpcSay(npcStringId.getMessage());
 	}
 	
 	/**
 	 * Broadcast a {@link NpcStringId} to the knownlist of this {@link Npc}.
-	 * @param npcStringId : The {@link NpcStringId}.
-	 * @param params : Additional parameters {@link NpcStringId}.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 * @param params : Additional parameters for {@link NpcStringId} construction.
 	 */
 	public void broadcastNpcSay(NpcStringId npcStringId, Object... params)
 	{
-		broadcastPacket(new NpcSay(this, SayType.ALL, npcStringId.getMessage(params)));
+		broadcastNpcSay(npcStringId.getMessage(params));
+	}
+	
+	/**
+	 * Broadcast a {@link String} to the knownlist of this {@link Npc}.
+	 * @param message : The {@link String} message to send.
+	 */
+	public void broadcastNpcShout(String message)
+	{
+		broadcastPacket(new NpcSay(this, SayType.SHOUT, message));
+	}
+	
+	/**
+	 * Broadcast a {@link NpcStringId} to the knownlist of this {@link Npc}.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 */
+	public void broadcastNpcShout(NpcStringId npcStringId)
+	{
+		broadcastNpcShout(npcStringId.getMessage());
+	}
+	
+	/**
+	 * Broadcast a {@link NpcStringId} to the knownlist of this {@link Npc}.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 * @param params : Additional parameters for {@link NpcStringId} construction.
+	 */
+	public void broadcastNpcShout(NpcStringId npcStringId, Object... params)
+	{
+		broadcastNpcShout(npcStringId.getMessage(params));
+	}
+	
+	/**
+	 * Broadcast a {@link String} on screen to the knownlist of this {@link Npc}.
+	 * @param time : The time to show the message on screen.
+	 * @param message : The {@link String} to send.
+	 */
+	public void broadcastOnScreen(int time, String message)
+	{
+		broadcastPacket(new ExShowScreenMessage(message, time));
+	}
+	
+	/**
+	 * Broadcast a {@link NpcStringId} on screen to the knownlist of this {@link Npc}.
+	 * @param time : The time to show the message on screen.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 */
+	public void broadcastOnScreen(int time, NpcStringId npcStringId)
+	{
+		broadcastOnScreen(time, npcStringId.getMessage());
+	}
+	
+	/**
+	 * Broadcast a {@link NpcStringId} on screen to the knownlist of this {@link Npc}.
+	 * @param time : The time to show the message on screen.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 * @param params : Additional parameters for {@link NpcStringId} construction.
+	 */
+	public void broadcastOnScreen(int time, NpcStringId npcStringId, Object... params)
+	{
+		broadcastOnScreen(time, npcStringId.getMessage(params));
 	}
 	
 	/**
@@ -1407,6 +1468,17 @@ public class Npc extends Creature
 		
 		// Try to move to the position.
 		getAI().tryToMoveTo(loc, null);
+	}
+	
+	/**
+	 * Force this {@link Attackable} to attack a given {@link Creature}.
+	 * @param creature : The {@link Creature} to attack.
+	 * @param hate : The amount of hate to set.
+	 */
+	public void forceAttack(Creature creature, int hate)
+	{
+		forceRunStance();
+		getAI().tryToAttack(creature);
 	}
 	
 	@Override

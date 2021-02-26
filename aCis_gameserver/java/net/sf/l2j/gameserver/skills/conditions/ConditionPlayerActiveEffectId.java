@@ -26,9 +26,6 @@ public class ConditionPlayerActiveEffectId extends Condition
 	public boolean testImpl(Creature effector, Creature effected, L2Skill skill, Item item)
 	{
 		final AbstractEffect effect = effector.getFirstEffect(_effectId);
-		if (effect != null && (_effectLvl == -1 || _effectLvl <= effect.getSkill().getLevel()))
-			return true;
-		
-		return false;
+		return effect != null && (_effectLvl == -1 || _effectLvl <= effect.getSkill().getLevel());
 	}
 }

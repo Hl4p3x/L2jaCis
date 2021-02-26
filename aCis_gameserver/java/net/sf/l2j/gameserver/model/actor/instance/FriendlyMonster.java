@@ -27,12 +27,10 @@ public class FriendlyMonster extends Attackable
 		if (hasRandomAnimation())
 			onRandomAnimation(Rnd.get(8));
 		
-		List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.QUEST_START);
-		if (scripts != null && !scripts.isEmpty())
-			player.setLastQuestNpcObject(getObjectId());
+		player.getQuestList().setLastQuestNpcObjectId(getObjectId());
 		
-		scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
-		if (scripts != null && scripts.size() == 1)
+		final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
+		if (scripts.size() == 1)
 			scripts.get(0).notifyFirstTalk(this, player);
 		else
 			showChatWindow(player);

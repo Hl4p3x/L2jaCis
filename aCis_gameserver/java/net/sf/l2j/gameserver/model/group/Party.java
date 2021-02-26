@@ -26,10 +26,12 @@ import net.sf.l2j.gameserver.model.actor.instance.Servitor;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.rift.DimensionalRift;
+import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.ExCloseMPCC;
 import net.sf.l2j.gameserver.network.serverpackets.ExOpenMPCC;
+import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.PartyMemberPosition;
 import net.sf.l2j.gameserver.network.serverpackets.PartySmallWindowAdd;
@@ -134,6 +136,18 @@ public class Party extends AbstractGroup
 			if (!member.getBlockList().isInBlockList(broadcaster))
 				member.sendPacket(msg);
 		}
+	}
+	
+	@Override
+	public void broadcastOnScreen(int time, NpcStringId npcStringId)
+	{
+		broadcastPacket(new ExShowScreenMessage(npcStringId.getMessage(), time));
+	}
+	
+	@Override
+	public void broadcastOnScreen(int time, NpcStringId npcStringId, Object... params)
+	{
+		broadcastPacket(new ExShowScreenMessage(npcStringId.getMessage(params), time));
 	}
 	
 	@Override

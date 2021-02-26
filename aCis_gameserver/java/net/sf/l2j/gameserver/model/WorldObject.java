@@ -8,17 +8,12 @@ import java.util.function.Predicate;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.math.MathUtil;
 
-import net.sf.l2j.gameserver.data.xml.ItemData;
-import net.sf.l2j.gameserver.data.xml.NpcData;
-import net.sf.l2j.gameserver.enums.PolyType;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.model.zone.type.subtype.ZoneType;
@@ -33,10 +28,6 @@ public abstract class WorldObject
 	
 	private String _name;
 	private int _objectId;
-	
-	private NpcTemplate _polyTemplate;
-	private PolyType _polyType = PolyType.DEFAULT;
-	private int _polyId;
 	
 	private final SpawnLocation _position = new SpawnLocation(0, 0, 0, 0);
 	private WorldRegion _region;
@@ -140,7 +131,7 @@ public abstract class WorldObject
 	 */
 	public final void spawnMe(int x, int y, int z)
 	{
-		_position.set(MathUtil.limit(x, World.WORLD_X_MIN + 100, World.WORLD_X_MAX - 100), MathUtil.limit(y, World.WORLD_Y_MIN + 100, World.WORLD_Y_MAX - 100), z);
+		_position.set(MathUtil.limit(x, World.WORLD_X_MIN, World.WORLD_X_MAX), MathUtil.limit(y, World.WORLD_Y_MIN, World.WORLD_Y_MAX), z);
 		
 		spawnMe();
 	}
@@ -154,7 +145,7 @@ public abstract class WorldObject
 	 */
 	public final void spawnMe(int x, int y, int z, int heading)
 	{
-		_position.set(MathUtil.limit(x, World.WORLD_X_MIN + 100, World.WORLD_X_MAX - 100), MathUtil.limit(y, World.WORLD_Y_MIN + 100, World.WORLD_Y_MAX - 100), z, heading);
+		_position.set(MathUtil.limit(x, World.WORLD_X_MIN, World.WORLD_X_MAX), MathUtil.limit(y, World.WORLD_Y_MIN, World.WORLD_Y_MAX), z, heading);
 		
 		spawnMe();
 	}
@@ -188,61 +179,6 @@ public abstract class WorldObject
 	public final int getObjectId()
 	{
 		return _objectId;
-	}
-	
-	public final NpcTemplate getPolyTemplate()
-	{
-		return _polyTemplate;
-	}
-	
-	public final PolyType getPolyType()
-	{
-		return _polyType;
-	}
-	
-	public final int getPolyId()
-	{
-		return _polyId;
-	}
-	
-	public boolean polymorph(PolyType type, int id)
-	{
-		if (!(this instanceof Npc) && !(this instanceof Player))
-			return false;
-		
-		if (type == PolyType.NPC)
-		{
-			final NpcTemplate template = NpcData.getInstance().getTemplate(id);
-			if (template == null)
-				return false;
-			
-			_polyTemplate = template;
-		}
-		else if (type == PolyType.ITEM)
-		{
-			if (ItemData.getInstance().getTemplate(id) == null)
-				return false;
-		}
-		else if (type == PolyType.DEFAULT)
-			return false;
-		
-		_polyType = type;
-		_polyId = id;
-		
-		decayMe();
-		spawnMe();
-		
-		return true;
-	}
-	
-	public void unpolymorph()
-	{
-		_polyTemplate = null;
-		_polyType = PolyType.DEFAULT;
-		_polyId = 0;
-		
-		decayMe();
-		spawnMe();
 	}
 	
 	public Player getActingPlayer()
@@ -347,7 +283,7 @@ public abstract class WorldObject
 	 */
 	public final void setXYZInvisible(int x, int y, int z)
 	{
-		_position.set(MathUtil.limit(x, World.WORLD_X_MIN + 100, World.WORLD_X_MAX - 100), MathUtil.limit(y, World.WORLD_Y_MIN + 100, World.WORLD_Y_MAX - 100), z);
+		_position.set(MathUtil.limit(x, World.WORLD_X_MIN, World.WORLD_X_MAX), MathUtil.limit(y, World.WORLD_Y_MIN, World.WORLD_Y_MAX), z);
 		
 		setIsVisible(false);
 	}

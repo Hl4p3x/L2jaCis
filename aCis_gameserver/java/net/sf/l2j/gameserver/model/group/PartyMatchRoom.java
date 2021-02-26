@@ -7,10 +7,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.sf.l2j.gameserver.data.manager.PartyMatchRoomManager;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.ExClosePartyRoom;
 import net.sf.l2j.gameserver.network.serverpackets.ExManagePartyRoomMember;
+import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
@@ -75,6 +77,18 @@ public class PartyMatchRoom extends AbstractGroup
 			if (!member.getBlockList().isInBlockList(broadcaster))
 				member.sendPacket(msg);
 		}
+	}
+	
+	@Override
+	public void broadcastOnScreen(int time, NpcStringId npcStringId)
+	{
+		broadcastPacket(new ExShowScreenMessage(npcStringId.getMessage(), time));
+	}
+	
+	@Override
+	public void broadcastOnScreen(int time, NpcStringId npcStringId, Object... params)
+	{
+		broadcastPacket(new ExShowScreenMessage(npcStringId.getMessage(params), time));
 	}
 	
 	@Override

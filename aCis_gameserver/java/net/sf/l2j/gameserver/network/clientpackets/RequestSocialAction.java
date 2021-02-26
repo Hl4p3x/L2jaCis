@@ -1,9 +1,8 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SocialAction;
 
@@ -20,7 +19,7 @@ public class RequestSocialAction extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		if (!FloodProtectors.performAction(getClient(), Action.SOCIAL))
+		if (!getClient().performAction(FloodProtector.SOCIAL))
 			return;
 		
 		final Player player = getClient().getPlayer();

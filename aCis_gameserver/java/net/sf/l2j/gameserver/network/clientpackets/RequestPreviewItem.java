@@ -89,7 +89,7 @@ public final class RequestPreviewItem extends L2GameClientPacket
 		{
 			int itemId = _items[i];
 			
-			final Product product = buyList.getProductByItemId(itemId);
+			final Product product = buyList.get(itemId);
 			if (product == null)
 				return;
 			

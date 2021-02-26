@@ -16,7 +16,7 @@ public class TradeItemUpdate extends L2GameServerPacket
 	public TradeItemUpdate(TradeList trade, Player player)
 	{
 		_items = player.getInventory().getItems();
-		_currentTrade = trade.getItems();
+		_currentTrade = trade;
 	}
 	
 	private int getItemCount(int objectId)

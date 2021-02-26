@@ -15,6 +15,7 @@ import net.sf.l2j.commons.config.ExProperties;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.math.MathUtil;
 
+import net.sf.l2j.gameserver.enums.GeoType;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 
 /**
@@ -29,7 +30,7 @@ public final class Config
 	public static final String EVENTS_FILE = "./config/events.properties";
 	public static final String GEOENGINE_FILE = "./config/geoengine.properties";
 	public static final String HEXID_FILE = "./config/hexid.txt";
-	public static final String LOGIN_CONFIGURATION_FILE = "./config/loginserver.properties";
+	public static final String LOGINSERVER_FILE = "./config/loginserver.properties";
 	public static final String NPCS_FILE = "./config/npcs.properties";
 	public static final String PLAYERS_FILE = "./config/players.properties";
 	public static final String SERVER_FILE = "./config/server.properties";
@@ -206,6 +207,7 @@ public final class Config
 	
 	/** Geodata */
 	public static String GEODATA_PATH;
+	public static GeoType GEODATA_TYPE;
 	
 	/** Path checking */
 	public static int PART_OF_CHARACTER_HEIGHT;
@@ -213,10 +215,11 @@ public final class Config
 	
 	/** Path finding */
 	public static String PATHFIND_BUFFERS;
-	public static int BASE_WEIGHT;
-	public static int DIAGONAL_WEIGHT;
+	public static int MOVE_WEIGHT;
+	public static int MOVE_WEIGHT_DIAG;
+	public static int OBSTACLE_WEIGHT;
 	public static int HEURISTIC_WEIGHT;
-	public static int OBSTACLE_MULTIPLIER;
+	public static int HEURISTIC_WEIGHT_DIAG;
 	public static int MAX_ITERATIONS;
 	public static boolean DEBUG_GEO_NODE;
 	
@@ -811,15 +814,17 @@ public final class Config
 		final ExProperties geoengine = initProperties(GEOENGINE_FILE);
 		
 		GEODATA_PATH = geoengine.getProperty("GeoDataPath", "./data/geodata/");
+		GEODATA_TYPE = Enum.valueOf(GeoType.class, geoengine.getProperty("GeoDataType", "L2OFF"));
 		
 		PART_OF_CHARACTER_HEIGHT = geoengine.getProperty("PartOfCharacterHeight", 75);
 		MAX_OBSTACLE_HEIGHT = geoengine.getProperty("MaxObstacleHeight", 32);
 		
-		PATHFIND_BUFFERS = geoengine.getProperty("PathFindBuffers", "100x6;128x6;192x6;256x4;320x4;384x4;500x2");
-		BASE_WEIGHT = geoengine.getProperty("BaseWeight", 10);
-		DIAGONAL_WEIGHT = geoengine.getProperty("DiagonalWeight", 14);
-		OBSTACLE_MULTIPLIER = geoengine.getProperty("ObstacleMultiplier", 10);
-		HEURISTIC_WEIGHT = geoengine.getProperty("HeuristicWeight", 20);
+		PATHFIND_BUFFERS = geoengine.getProperty("PathFindBuffers", "500x10;1000x10;3000x5;5000x3;10000x3");
+		MOVE_WEIGHT = geoengine.getProperty("MoveWeight", 10);
+		MOVE_WEIGHT_DIAG = geoengine.getProperty("MoveWeightDiag", 14);
+		OBSTACLE_WEIGHT = geoengine.getProperty("ObstacleWeight", 30);
+		HEURISTIC_WEIGHT = geoengine.getProperty("HeuristicWeight", 12);
+		HEURISTIC_WEIGHT_DIAG = geoengine.getProperty("HeuristicWeightDiag", 18);
 		MAX_ITERATIONS = geoengine.getProperty("MaxIterations", 3500);
 		DEBUG_GEO_NODE = geoengine.getProperty("DebugGeoNode", false);
 	}
@@ -1237,7 +1242,7 @@ public final class Config
 	 */
 	private static final void loadLogin()
 	{
-		final ExProperties server = initProperties(LOGIN_CONFIGURATION_FILE);
+		final ExProperties server = initProperties(LOGINSERVER_FILE);
 		
 		HOSTNAME = server.getProperty("Hostname", "localhost");
 		LOGINSERVER_HOSTNAME = server.getProperty("LoginserverHostname", "*");
@@ -1314,14 +1319,6 @@ public final class Config
 		
 		// login settings
 		loadLogin();
-	}
-	
-	public static final void loadGeodataConverter()
-	{
-		LOGGER.info("Loading geodata converter configuration files.");
-		
-		// geoengine settings
-		loadGeoengine();
 	}
 	
 	public static final class ClassMasterSettings

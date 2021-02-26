@@ -1,6 +1,5 @@
 package net.sf.l2j.gameserver.skills.effects;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
@@ -9,16 +8,16 @@ import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
-import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
+import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.EffectPoint;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillLaunched;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.Formulas;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -27,7 +26,6 @@ import net.sf.l2j.gameserver.skills.l2skills.L2SkillSignetCasttime;
 public class EffectSignetMDam extends AbstractEffect
 {
 	private EffectPoint _actor;
-	private boolean _isCtrlPressed;
 	
 	public EffectSignetMDam(EffectTemplate template, L2Skill skill, Creature effected, Creature effector)
 	{
@@ -43,10 +41,10 @@ public class EffectSignetMDam extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		if (getSkill() instanceof L2SkillSignetCasttime)
+		if (!(_skill instanceof L2SkillSignetCasttime))
 			return false;
 		
-		final NpcTemplate template = NpcData.getInstance().getTemplate(((L2SkillSignetCasttime) getSkill())._effectNpcId);
+		final NpcTemplate template = NpcData.getInstance().getTemplate(((L2SkillSignetCasttime) getSkill()).effectNpcId);
 		if (template == null)
 			return false;
 		
@@ -55,13 +53,12 @@ public class EffectSignetMDam extends AbstractEffect
 		
 		Location worldPosition = null;
 		if (getEffector() instanceof Player && getSkill().getTargetType() == SkillTargetType.GROUND)
-			worldPosition = ((Player) getEffector()).getCurrentSkillWorldPosition();
+			worldPosition = ((Player) getEffector()).getCast().getSignetLocation();
 		
 		effectPoint.setInvul(true);
 		effectPoint.spawnMe((worldPosition != null) ? worldPosition : getEffector().getPosition());
 		
 		_actor = effectPoint;
-		_isCtrlPressed = ((Player) getEffector()).getAI().getCurrentIntention().isCtrlPressed();
 		return true;
 		
 	}
@@ -83,59 +80,34 @@ public class EffectSignetMDam extends AbstractEffect
 		
 		caster.getStatus().reduceMp(mpConsume);
 		
-		final List<Creature> targets = new ArrayList<>();
-		for (Creature cha : _actor.getKnownTypeInRadius(Creature.class, getSkill().getSkillRadius()))
-		{
-			if (cha instanceof Attackable || cha instanceof Playable)
-			{
-				if (caster == cha.getActingPlayer())
-					continue;
-				
-				if (cha.isDead())
-					continue;
-				
-				if (cha instanceof Attackable)
-					targets.add(cha);
-				else if (cha instanceof Playable)
-				{
-					if (cha.isInsideZone(ZoneId.PEACE))
-						continue;
-					
-					if (caster.canCastOffensiveSkillOnPlayable((Playable) cha, _skill, _isCtrlPressed))
-					{
-						targets.add(cha);
-						caster.updatePvPStatus(cha);
-					}
-				}
-				else
-					targets.add(cha);
-			}
-		}
+		final List<Creature> list = _actor.getKnownTypeInRadius(Creature.class, _skill.getSkillRadius(), creature -> !creature.isDead() && !(creature instanceof Door) && !creature.isInsideZone(ZoneId.PEACE));
+		if (list.isEmpty())
+			return true;
 		
-		if (!targets.isEmpty())
+		final Creature[] targets = list.toArray(new Creature[list.size()]);
+		for (Creature target : targets)
 		{
-			caster.broadcastPacket(new MagicSkillLaunched(caster, getSkill(), targets.toArray(new Creature[targets.size()])));
-			for (Creature target : targets)
+			final boolean mcrit = Formulas.calcMCrit(caster, target, getSkill());
+			final byte shld = Formulas.calcShldUse(caster, target, getSkill());
+			final boolean sps = caster.isChargedShot(ShotType.SPIRITSHOT);
+			final boolean bsps = caster.isChargedShot(ShotType.BLESSED_SPIRITSHOT);
+			final int mdam = (int) Formulas.calcMagicDam(caster, target, getSkill(), shld, sps, bsps, mcrit);
+			
+			if (target instanceof Summon)
+				target.getStatus().broadcastStatusUpdate();
+			
+			if (mdam > 0)
 			{
-				final boolean mcrit = Formulas.calcMCrit(caster, target, getSkill());
-				final byte shld = Formulas.calcShldUse(caster, target, getSkill());
-				final boolean sps = caster.isChargedShot(ShotType.SPIRITSHOT);
-				final boolean bsps = caster.isChargedShot(ShotType.BLESSED_SPIRITSHOT);
-				final int mdam = (int) Formulas.calcMagicDam(caster, target, getSkill(), shld, sps, bsps, mcrit);
+				// Manage cast break of the target (calculating rate, sending message...)
+				Formulas.calcCastBreak(target, mdam);
 				
-				if (target instanceof Summon)
-					target.getStatus().broadcastStatusUpdate();
-				
-				if (mdam > 0)
-				{
-					// Manage cast break of the target (calculating rate, sending message...)
-					Formulas.calcCastBreak(target, mdam);
-					
-					caster.sendDamageMessage(target, mdam, mcrit, false, false);
-					target.reduceCurrentHp(mdam, caster, getSkill());
-				}
+				caster.sendDamageMessage(target, mdam, mcrit, false, false);
+				target.reduceCurrentHp(mdam, caster, getSkill());
 			}
+			
+			_actor.broadcastPacket(new MagicSkillUse(_actor, target, _skill.getId(), _skill.getLevel(), 0, 0));
 		}
+		_actor.broadcastPacket(new MagicSkillLaunched(_actor, _skill, targets));
 		return true;
 	}
 	

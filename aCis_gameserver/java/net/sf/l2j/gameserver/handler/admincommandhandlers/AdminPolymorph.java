@@ -2,78 +2,45 @@ package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
 import java.util.StringTokenizer;
 
-import net.sf.l2j.gameserver.enums.PolyType;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
-import net.sf.l2j.gameserver.model.WorldObject;
+import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 
-/**
- * This class handles polymorph commands.
- */
 public class AdminPolymorph implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
 	{
-		"admin_polymorph",
-		"admin_unpolymorph",
-		"admin_polymorph_menu",
-		"admin_unpolymorph_menu"
+		"admin_polymorph"
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
-		if (activeChar.isMounted())
-			return false;
+		final Creature targetCreature = getTargetCreature(player, true);
 		
-		WorldObject target = activeChar.getTarget();
-		if (target == null)
-			target = activeChar;
+		// Force dismount.
+		final Player targetPlayer = targetCreature.getActingPlayer();
+		if (targetPlayer != null && targetPlayer.isMounted())
+			targetPlayer.dismount();
 		
-		if (command.startsWith("admin_polymorph"))
+		if (targetCreature.getPolymorphTemplate() != null)
+			targetCreature.unpolymorph();
+		else
 		{
 			try
 			{
 				final StringTokenizer st = new StringTokenizer(command);
 				st.nextToken();
 				
-				PolyType info = PolyType.NPC;
-				if (st.countTokens() > 1)
-					info = Enum.valueOf(PolyType.class, st.nextToken().toUpperCase());
-				
-				final int npcId = Integer.parseInt(st.nextToken());
-				
-				if (!target.polymorph(info, npcId))
-				{
-					activeChar.sendPacket(SystemMessageId.APPLICANT_INFORMATION_INCORRECT);
-					return true;
-				}
-				
-				activeChar.sendMessage("You polymorphed " + target.getName() + " into a " + info + " using id: " + npcId + ".");
+				if (!targetCreature.polymorph(Integer.parseInt(st.nextToken())))
+					player.sendPacket(SystemMessageId.APPLICANT_INFORMATION_INCORRECT);
 			}
 			catch (Exception e)
 			{
-				activeChar.sendMessage("Usage: //polymorph <type> <id>");
+				player.sendMessage("Usage: //polymorph npcId");
 			}
 		}
-		else if (command.startsWith("admin_unpolymorph"))
-		{
-			if (target.getPolyType() == PolyType.DEFAULT)
-			{
-				activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-				return true;
-			}
-			
-			target.unpolymorph();
-			
-			activeChar.sendMessage("You successfully unpolymorphed " + target.getName() + ".");
-		}
-		
-		if (command.contains("menu"))
-			AdminHelpPage.showHelpPage(activeChar, "effects_menu.htm");
-		
-		return true;
 	}
 	
 	@Override

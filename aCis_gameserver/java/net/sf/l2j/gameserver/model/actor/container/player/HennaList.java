@@ -66,8 +66,8 @@ public class HennaList
 	}
 	
 	/**
-	 * @param henna : The Henna to test.
-	 * @return the index of an existing {@link Henna}, or -1 if not found.
+	 * @param henna : The {@link Henna} to test.
+	 * @return The index of an existing {@link Henna}, or -1 if not found.
 	 */
 	private int indexOf(Henna henna)
 	{
@@ -84,7 +84,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return the first empty slot on this {@link HennaList}.
+	 * @return The first empty slot on this {@link HennaList}.
 	 */
 	private int getEmptySlotIndex()
 	{
@@ -97,7 +97,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return the {@link List} of available {@link Henna}s.
+	 * @return The {@link List} of available {@link Henna}s.
 	 */
 	public List<Henna> getHennas()
 	{
@@ -105,12 +105,12 @@ public class HennaList
 	}
 	
 	/**
-	 * @param HennaType : The HennaType we use as reference.
-	 * @return the stat value based on an {@link HennaType}, which is between +5 and -15.
+	 * @param type : The {@link HennaType} we use as reference.
+	 * @return The stat value based on an {@link HennaType}, which is between +5 and -15.
 	 */
-	public int getStat(HennaType HennaType)
+	public int getStat(HennaType type)
 	{
-		return _stats[HennaType.ordinal()];
+		return _stats[type.ordinal()];
 	}
 	
 	/**
@@ -162,7 +162,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return true if all slots of this {@link HennaList} are empty, false otherwise.
+	 * @return True if all slots of this {@link HennaList} are empty, false otherwise.
 	 */
 	public boolean isEmpty()
 	{
@@ -175,7 +175,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return the current amount of equipped {@link Henna}s on this {@link HennaList}.
+	 * @return The current amount of equipped {@link Henna}s on this {@link HennaList}.
 	 */
 	public int size()
 	{
@@ -190,7 +190,7 @@ public class HennaList
 	
 	/**
 	 * @param symbolId : The symbol id used as reference.
-	 * @return the {@link Henna} associated to a symbol id, or null if not found.
+	 * @return The {@link Henna} associated to a symbol id, or null if not found.
 	 */
 	public Henna getBySymbolId(int symbolId)
 	{
@@ -203,7 +203,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return true if the {@link HennaList} is entirely filled, based on maximum amount of {@link Henna}s this {@link Player} can equip.
+	 * @return True if the {@link HennaList} is entirely filled, based on maximum amount of {@link Henna}s this {@link Player} can equip.
 	 */
 	public boolean isFull()
 	{
@@ -211,7 +211,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return the number of empty slots of this {@link HennaList}, based on maximum amount of {@link Henna}s this {@link Player} can equip.
+	 * @return The number of empty slots of this {@link HennaList}, based on maximum amount of {@link Henna}s this {@link Player} can equip.
 	 */
 	public int getEmptySlotsAmount()
 	{
@@ -222,7 +222,7 @@ public class HennaList
 	}
 	
 	/**
-	 * @return the maximum amount of {@link Henna}s this {@link Player} can equip.
+	 * @return The maximum amount of {@link Henna}s this {@link Player} can equip.
 	 */
 	public int getMaxSize()
 	{
@@ -237,8 +237,8 @@ public class HennaList
 	}
 	
 	/**
-	 * @param henna : The Henna to add.
-	 * @return true if the {@link Henna} could be added, false otherwise.
+	 * @param henna : The {@link Henna} to add.
+	 * @return True if the {@link Henna} could be added, false otherwise.
 	 */
 	public boolean add(Henna henna)
 	{
@@ -267,8 +267,8 @@ public class HennaList
 	}
 	
 	/**
-	 * @param henna : The Henna to remove.
-	 * @return true if the {@link Henna} could be removed, false otherwise.
+	 * @param henna : The {@link Henna} to remove.
+	 * @return True if the {@link Henna} could be removed, false otherwise.
 	 */
 	public boolean remove(Henna henna)
 	{
@@ -297,8 +297,8 @@ public class HennaList
 	}
 	
 	/**
-	 * @param henna : The Henna used as reference.
-	 * @return true if the tested {@link Henna} can be used by the {@link Player}, false otherwise.
+	 * @param henna : The {@link Henna} used as reference.
+	 * @return True if the tested {@link Henna} can be used by the {@link Player}, false otherwise.
 	 */
 	public boolean canBeUsedBy(Henna henna)
 	{

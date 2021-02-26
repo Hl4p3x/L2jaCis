@@ -4,8 +4,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.PlayerLevel;
 
@@ -37,7 +37,7 @@ public class PlayerLevelData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "playerLevel", levelNode ->
 		{
-			final StatsSet set = parseAttributes(levelNode);
+			final StatSet set = parseAttributes(levelNode);
 			final int level = set.getInteger("level");
 			
 			_levels.put(level, new PlayerLevel(set));

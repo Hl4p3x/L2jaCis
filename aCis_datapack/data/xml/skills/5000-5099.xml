@@ -668,6 +668,7 @@
         <set name="mpConsume" val="#mpConsume"/>
         <set name="power" val="#power"/>
         <set name="target" val="ONE"/>
+		<set name="baseLandRate" val="200"/>
         <set name="reuseDelay" val="6000"/>
         <set name="hitTime" val="1000"/>
         <set name="skillType" val="BLOW"/>
@@ -1229,25 +1230,29 @@
 	</skill>
 	<skill id="5081" levels="4" name="Silence">
 		<table name="#mpConsume"> 75 75 75 20 </table>
+		<table name="#magicLvl"> 80 82 84 86 </table>
+		<table name="#power"> 3000 3200 3400 3600 </table>
 		<set name="mpConsume" val="#mpConsume" />
-		<set name="magicLvl" val="80" />
-		<set name="power" val="40" />
+		<set name="magicLvl" val="#magicLvl" />
+		<set name="power" val="#power" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="150" />
 		<set name="hitTime" val="1500" />
 		<set name="coolTime" val="800" />
-		<set name="skillType" val="DEBUFF" />
+		<set name="skillType" val="BLOW" />
 		<set name="operateType" val="ACTIVE" />
 		<set name="isDebuff" val="true" />
 		<set name="castRange" val="40" />
 		<set name="effectRange" val="200" />
 		<for>
-			<effect name="PhysicalMute" time="30" val="0" stackOrder="0" stackType="silence_physical" />
+			<effect name="PhysicalMute" time="15" val="0" stackOrder="0" stackType="silence_physical" />
 		</for>
 	</skill>
 	<skill id="5082" levels="4" name="NPC Spinning, Slashing Trick">
 		<table name="#mpConsume"> 60 60 60 5 </table>
-		<set name="magicLvl" val="80" />
+		<table name="#magicLvl"> 80 82 84 86 </table>
 		<set name="mpConsume" val="#mpConsume" />
+		<set name="magicLvl" val="#magicLvl" />
 		<set name="power" val="2112" />
 		<set name="target" val="ONE" />
 		<set name="skillRadius" val="150" />
@@ -1278,11 +1283,12 @@
 		</for>
 	</skill>
 	<skill id="5084" levels="4" name="NPC Blinding Blow">
+		<table name="#power"> 3000 3200 3400 3600 </table>
 		<set name="magicLvl" val="80" />
 		<set name="mpConsume" val="83" />
-		<set name="condition" val="16" /> <!-- Crit -->
-		<set name="power" val="6335" />
+		<set name="power" val="#power" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="150" />
 		<set name="nextActionAttack" val="true" />
 		<set name="hitTime" val="1080" />
 		<set name="coolTime" val="720" />

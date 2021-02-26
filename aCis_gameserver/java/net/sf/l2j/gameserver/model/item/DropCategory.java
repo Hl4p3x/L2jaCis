@@ -7,9 +7,6 @@ import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.Config;
 
-/**
- * @author Fulminus
- */
 public class DropCategory
 {
 	private final List<DropData> _drops;

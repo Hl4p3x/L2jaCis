@@ -180,7 +180,7 @@
 		<set name="effectRange" val="1200" />
 		<set name="aggroPoints" val="100" />
 	</skill>
-	<skill id="4210" levels="12" name="Life Chant">
+	<skill id="4210" levels="12" name="BOSS Life Chant">
 		<table name="#hot"> 127 217 345 508 697 860 942 965 974 968 951 940 </table>
 		<table name="#magicLvl"> 14 24 34 44 54 64 74 79 84 89 94 99 </table>
 		<table name="#stackOrder"> 11 12 13 14 15 16 17 17 18 18 19 19 </table>

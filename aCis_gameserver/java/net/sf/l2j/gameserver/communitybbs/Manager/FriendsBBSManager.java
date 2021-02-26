@@ -1,4 +1,4 @@
-package net.sf.l2j.gameserver.communitybbs.Manager;
+package net.sf.l2j.gameserver.communitybbs.manager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

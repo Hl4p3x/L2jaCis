@@ -1,5 +1,6 @@
 package net.sf.l2j.gameserver.skills;
 
+import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.math.MathUtil;
 import net.sf.l2j.commons.random.Rnd;
@@ -122,30 +123,30 @@ public final class Formulas
 	}
 	
 	/**
-	 * @param cha The character to make checks on.
-	 * @return the period between 2 regenerations task (3s for Creature, 5 min for L2DoorInstance).
+	 * @param creature : The {@link Creature} to test.
+	 * @return The period between 2 regenerations task.
 	 */
-	public static int getRegeneratePeriod(Creature cha)
+	public static int getRegeneratePeriod(Creature creature)
 	{
-		if (cha instanceof Door)
+		if (creature instanceof Door)
 			return HP_REGENERATE_PERIOD * 100; // 5 mins
 			
 		return HP_REGENERATE_PERIOD; // 3s
 	}
 	
 	/**
-	 * @param cha The character to make checks on.
-	 * @return the HP regen rate (base + modifiers).
+	 * @param creature : The {@link Creature} to test.
+	 * @return The HP regen rate (base + modifiers).
 	 */
-	public static final double calcHpRegen(Creature cha)
+	public static final double calcHpRegen(Creature creature)
 	{
-		double init = cha.getTemplate().getBaseHpReg();
-		double hpRegenMultiplier = (cha.isRaidRelated()) ? Config.RAID_HP_REGEN_MULTIPLIER : Config.HP_REGEN_MULTIPLIER;
+		double init = creature.getTemplate().getBaseHpReg();
+		double hpRegenMultiplier = (creature.isRaidRelated()) ? Config.RAID_HP_REGEN_MULTIPLIER : Config.HP_REGEN_MULTIPLIER;
 		double hpRegenBonus = 0;
 		
-		if (cha instanceof Player)
+		if (creature instanceof Player)
 		{
-			Player player = (Player) cha;
+			Player player = (Player) creature;
 			
 			// Calculate correct baseHpReg value for certain level of PC
 			init += (player.getStatus().getLevel() > 10) ? ((player.getStatus().getLevel() - 1) / 10.0) : 0.5;
@@ -178,34 +179,34 @@ public final class Formulas
 			
 			// Calculate Movement bonus
 			if (player.isSitting())
-				hpRegenMultiplier *= 1.5; // Sitting
+				hpRegenMultiplier *= 1.5;
 			else if (!player.isMoving())
-				hpRegenMultiplier *= 1.1; // Staying
+				hpRegenMultiplier *= 1.1;
 			else if (player.isRunning())
-				hpRegenMultiplier *= 0.7; // Running
+				hpRegenMultiplier *= 0.7;
 		}
 		// Add CON bonus
-		init *= cha.getStatus().getLevelMod() * CON_BONUS[cha.getStatus().getCON()];
+		init *= creature.getStatus().getLevelMod() * CON_BONUS[creature.getStatus().getCON()];
 		
 		if (init < 1)
 			init = 1;
 		
-		return cha.getStatus().calcStat(Stats.REGENERATE_HP_RATE, init, null, null) * hpRegenMultiplier + hpRegenBonus;
+		return creature.getStatus().calcStat(Stats.REGENERATE_HP_RATE, init, null, null) * hpRegenMultiplier + hpRegenBonus;
 	}
 	
 	/**
-	 * @param cha The character to make checks on.
-	 * @return the MP regen rate (base + modifiers).
+	 * @param creature : The {@link Creature} to test.
+	 * @return The MP regen rate (base + modifiers).
 	 */
-	public static final double calcMpRegen(Creature cha)
+	public static final double calcMpRegen(Creature creature)
 	{
-		double init = cha.getTemplate().getBaseMpReg();
-		double mpRegenMultiplier = (cha.isRaidRelated()) ? Config.RAID_MP_REGEN_MULTIPLIER : Config.MP_REGEN_MULTIPLIER;
+		double init = creature.getTemplate().getBaseMpReg();
+		double mpRegenMultiplier = (creature.isRaidRelated()) ? Config.RAID_MP_REGEN_MULTIPLIER : Config.MP_REGEN_MULTIPLIER;
 		double mpRegenBonus = 0;
 		
-		if (cha instanceof Player)
+		if (creature instanceof Player)
 		{
-			Player player = (Player) cha;
+			Player player = (Player) creature;
 			
 			// Calculate correct baseMpReg value for certain level of PC
 			init += 0.3 * ((player.getStatus().getLevel() - 1) / 10.0);
@@ -235,39 +236,39 @@ public final class Formulas
 			
 			// Calculate Movement bonus
 			if (player.isSitting())
-				mpRegenMultiplier *= 1.5; // Sitting
+				mpRegenMultiplier *= 1.5;
 			else if (!player.isMoving())
-				mpRegenMultiplier *= 1.1; // Staying
+				mpRegenMultiplier *= 1.1;
 			else if (player.isRunning())
-				mpRegenMultiplier *= 0.7; // Running
+				mpRegenMultiplier *= 0.7;
 		}
 		// Add MEN bonus
-		init *= cha.getStatus().getLevelMod() * MEN_BONUS[cha.getStatus().getMEN()];
+		init *= creature.getStatus().getLevelMod() * MEN_BONUS[creature.getStatus().getMEN()];
 		
 		if (init < 1)
 			init = 1;
 		
-		return cha.getStatus().calcStat(Stats.REGENERATE_MP_RATE, init, null, null) * mpRegenMultiplier + mpRegenBonus;
+		return creature.getStatus().calcStat(Stats.REGENERATE_MP_RATE, init, null, null) * mpRegenMultiplier + mpRegenBonus;
 	}
 	
 	/**
-	 * @param player The player to make checks on.
-	 * @return the CP regen rate (base + modifiers).
+	 * @param player : The {@link Player} to test.
+	 * @return The CP regen rate (base + modifiers).
 	 */
 	public static final double calcCpRegen(Player player)
 	{
 		// Calculate correct baseHpReg value for certain level of PC
 		double init = player.getTemplate().getBaseHpReg() + ((player.getStatus().getLevel() > 10) ? ((player.getStatus().getLevel() - 1) / 10.0) : 0.5);
-		double cpRegenMultiplier = Config.CP_REGEN_MULTIPLIER;
 		
 		// Calculate Movement bonus
+		double cpRegenMultiplier = Config.CP_REGEN_MULTIPLIER;
 		if (player.isSitting())
-			cpRegenMultiplier *= 1.5; // Sitting
+			cpRegenMultiplier *= 1.5;
 		else if (!player.isMoving())
-			cpRegenMultiplier *= 1.1; // Staying
+			cpRegenMultiplier *= 1.1;
 		else if (player.isRunning())
-			cpRegenMultiplier *= 0.7; // Running
-			
+			cpRegenMultiplier *= 0.7;
+		
 		// Apply CON bonus
 		init *= player.getStatus().getLevelMod() * CON_BONUS[player.getStatus().getCON()];
 		
@@ -278,8 +279,8 @@ public final class Formulas
 	}
 	
 	/**
-	 * @param player the player to test on.
-	 * @return true if the player is near one of his clan HQ (+50% regen boost).
+	 * @param player : The {@link Player} to test.
+	 * @return True if the {@link Player} is near his {@link Clan} HQ, or false otherwise.
 	 */
 	public static final boolean calcSiegeRegenModifer(Player player)
 	{
@@ -294,16 +295,154 @@ public final class Formulas
 		if (siege == null || !siege.checkSide(clan, SiegeSide.ATTACKER))
 			return false;
 		
-		return MathUtil.checkIfInRange(200, player, clan.getFlag(), true);
+		final Npc flag = clan.getFlag();
+		return flag != null && player.isIn3DRadius(flag, 200);
 	}
 	
 	/**
-	 * @param attacker The attacker, from where the blow comes from.
-	 * @param target The victim of the blow.
-	 * @param skill The skill used.
-	 * @param shld True if victim was wearign a shield.
-	 * @param ss True if ss were activated.
-	 * @return blow damage based on cAtk
+	 * Calculate the blow success rate, based on {@link Creature} attacker, {@link Creature} target and {@link L2Skill}.
+	 * @param attacker : The {@link Creature} attacker.
+	 * @param target : The {@link Creature} target.
+	 * @param skill : The {@link L2Skill} to use.
+	 * @return True if successful, false otherwise.
+	 */
+	public static final boolean calcBlowRate(Creature attacker, Creature target, L2Skill skill)
+	{
+		double baseRate = skill.getBaseLandRate();
+		if (baseRate == 0.0)
+			return false;
+		
+		final boolean isAttackerInFrontofTarget = attacker.isInFrontOf(target);
+		final boolean isBackstab = skill.getId() == 30;
+		
+		if (isAttackerInFrontofTarget && isBackstab)
+		{
+			if (Config.DEVELOPER)
+			{
+				StringUtil.printSection("Blow Rate");
+				LOGGER.info("Final blow rate overriden by backstab under front target: 30 / 1000");
+			}
+			return 30 > Rnd.get(1000);
+		}
+		
+		final double dexMul = DEX_BONUS[attacker.getStatus().getDEX()];
+		final double blowMul = attacker.getStatus().calcStat(Stats.BLOW_RATE, 1, target, null);
+		final double posMul = (attacker.isBehind(target)) ? 1.15 : ((isAttackerInFrontofTarget) ? 1. : 1.1);
+		
+		final double blowRate = baseRate * 2 * dexMul * blowMul * posMul;
+		
+		if (Config.DEVELOPER)
+		{
+			StringUtil.printSection("Blow Rate");
+			LOGGER.info("Basic values: baseRate: {}", baseRate);
+			LOGGER.info("Multipliers: dex: {}, blow: {}, pos: {}", dexMul, blowMul, posMul);
+			LOGGER.info("Final blow rate: {} / 1000", blowRate);
+		}
+		
+		return Math.min(blowRate, (isBackstab) ? 1000 : 800) > Rnd.get(1000);
+	}
+	
+	/**
+	 * Calculate the lethal success rate, based on {@link Creature} attacker, {@link Creature} target and few {@link L2Skill} parameters.
+	 * @param attacker : The {@link Creature} attacker.
+	 * @param target : The {@link Creature} target.
+	 * @param baseRate : The base lethal chance of the {@link L2Skill}.
+	 * @param magiclvl : The associated magic {@link L2Skill} level.
+	 * @return True if successful, false otherwise.
+	 */
+	private static final boolean calcLethalRate(Creature attacker, Creature target, double baseRate, int magiclvl)
+	{
+		final double lethalMul = attacker.getStatus().calcStat(Stats.LETHAL_RATE, 1, target, null);
+		
+		final int attackerLevel = attacker.getStatus().getLevel();
+		final int targetLevel = target.getStatus().getLevel();
+		
+		double editedRate;
+		if (magiclvl > 0)
+		{
+			final int delta = ((magiclvl + attackerLevel) / 2) - 1 - targetLevel;
+			if (delta >= -3)
+				editedRate = baseRate * attackerLevel / targetLevel;
+			else if (delta < -3 && delta >= -9)
+				editedRate = baseRate / delta * -3;
+			else
+				editedRate = baseRate / 15;
+		}
+		else
+			editedRate = baseRate * attackerLevel / targetLevel;
+		
+		final double lethalRate = editedRate * 10 * lethalMul;
+		
+		if (Config.DEVELOPER)
+		{
+			StringUtil.printSection("Lethal Rate");
+			LOGGER.info("Basic values: baseRate: {}, editedRate: {}", baseRate, editedRate);
+			LOGGER.info("Multipliers: lethal: {}", lethalMul);
+			LOGGER.info("Final lethal rate: {} / 1000", lethalRate);
+		}
+		
+		return lethalRate > Rnd.get(1000);
+	}
+	
+	public static final void calcLethalHit(Creature attacker, Creature target, L2Skill skill)
+	{
+		// If the attacker can't attack, return.
+		if (attacker instanceof Player && !((Player) attacker).getAccessLevel().canGiveDamage())
+			return;
+		
+		// If the target is invulnerable, related to RaidBoss or a Door, return.
+		if (target.isInvul() || target.isRaidRelated() || target instanceof Door)
+			return;
+		
+		// If one of following IDs is found, return (Tyrannosaurus x 3, Headquarters).
+		if (target instanceof Npc)
+		{
+			switch (((Npc) target).getNpcId())
+			{
+				case 22215:
+				case 22216:
+				case 22217:
+				case 35062:
+					return;
+			}
+		}
+		
+		// Second lethal effect (hp to 1 for npc, cp/hp to 1 for player).
+		if (skill.getLethalChance2() > 0 && calcLethalRate(attacker, target, skill.getLethalChance2(), skill.getMagicLevel()))
+		{
+			if (target instanceof Npc)
+				target.reduceCurrentHp(target.getStatus().getHp() - 1, attacker, skill);
+			else if (target instanceof Player)
+			{
+				final Player targetPlayer = (Player) target;
+				targetPlayer.getStatus().setHp(1, false);
+				targetPlayer.getStatus().setCp(1);
+				targetPlayer.sendPacket(SystemMessageId.LETHAL_STRIKE);
+			}
+			attacker.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.LETHAL_STRIKE_SUCCESSFUL));
+		}
+		// First lethal effect (hp/2 for npc, cp to 1 for player).
+		else if (skill.getLethalChance1() > 0 && calcLethalRate(attacker, target, skill.getLethalChance1(), skill.getMagicLevel()))
+		{
+			if (target instanceof Npc)
+				target.reduceCurrentHp(target.getStatus().getHp() / 2, attacker, skill);
+			else if (target instanceof Player)
+			{
+				final Player targetPlayer = (Player) target;
+				targetPlayer.getStatus().setCp(1);
+				targetPlayer.sendPacket(SystemMessageId.LETHAL_STRIKE);
+			}
+			attacker.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.LETHAL_STRIKE_SUCCESSFUL));
+		}
+	}
+	
+	/**
+	 * @param attacker The {@link Creature} launching the blow.
+	 * @param target : The {@link Creature} victim of the blow.
+	 * @param skill : The {@link L2Skill} to test.
+	 * @param shld : True if the {@link Creature} target is wearing a shield, false otherwise.
+	 * @param ss : True if ss are activated, false otherwise.
+	 * @return The calculated blow damage.
 	 */
 	public static double calcBlowDamage(Creature attacker, Creature target, L2Skill skill, byte shld, boolean ss)
 	{
@@ -314,42 +453,45 @@ public final class Formulas
 				defence += target.getStatus().getShldDef();
 				break;
 			
-			case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-				return 1;
+			case SHIELD_DEFENSE_PERFECT_BLOCK:
+				return 1.;
 		}
 		
 		final boolean isPvP = attacker instanceof Playable && target instanceof Playable;
 		
-		double power = skill.getPower();
-		double damage = 0;
-		damage += calcValakasAttribute(attacker, target, skill);
+		double attackPower = attacker.getStatus().getPAtk(target);
+		double skillPower = skill.getPower();
+		final double addCritPower = attacker.getStatus().calcStat(Stats.CRITICAL_DAMAGE_ADD, 0, target, skill) * 6;
 		
 		if (ss)
 		{
-			damage *= 2.;
+			attackPower *= 2.;
 			
 			if (skill.getSSBoost() > 0)
-				power *= skill.getSSBoost();
+				skillPower *= skill.getSSBoost();
 		}
 		
-		damage += power;
-		damage *= attacker.getStatus().calcStat(Stats.CRITICAL_DAMAGE, 1, target, skill);
-		damage *= ((attacker.getStatus().calcStat(Stats.CRITICAL_DAMAGE_POS, 1, target, skill) - 1) / 2 + 1);
-		damage += attacker.getStatus().calcStat(Stats.CRITICAL_DAMAGE_ADD, 0, target, skill) * 6.5;
-		damage *= target.getStatus().calcStat(Stats.CRIT_VULN, 1, target, skill);
+		final double critDamMul = attacker.getStatus().calcStat(Stats.CRITICAL_DAMAGE, 1, target, skill);
+		final double rndMul = Rnd.get(95, 105) / 100.;
+		final double critDamPosMul = ((attacker.getStatus().calcStat(Stats.CRITICAL_DAMAGE_POS, 1, target, skill) - 1) / 2 + 1); // Divided by 2 for blow types.
+		final double posMul = (attacker.isBehind(target)) ? 1.1 : ((attacker.isInFrontOf(target)) ? 1. : 1.025); // Divided by 2 for blow types.
+		final double pvpMul = (isPvP) ? attacker.getStatus().calcStat(Stats.PVP_PHYS_SKILL_DMG, 1, null, null) : 1.;
 		
-		// get the vulnerability for the instance due to skills (buffs, passives, toggles, etc)
-		damage = target.getStatus().calcStat(Stats.DAGGER_WPN_VULN, damage, target, null);
-		damage *= 70. / defence;
+		final double critVuln = target.getStatus().calcStat(Stats.CRIT_VULN, 1, target, skill);
+		final double daggerVuln = target.getStatus().calcStat(Stats.DAGGER_WPN_VULN, 1, target, null);
 		
-		// Random weapon damage
-		damage *= attacker.getRandomDamageMultiplier();
+		final double damage = ((attackPower + skillPower) * critDamMul * rndMul * critDamPosMul * posMul * pvpMul * critVuln * daggerVuln + addCritPower) * ((isPvP) ? 70. : 77.) / defence;
 		
-		// Dmg bonusses in PvP fight
-		if (isPvP)
-			damage *= attacker.getStatus().calcStat(Stats.PVP_PHYS_SKILL_DMG, 1, null, null);
-		
-		return damage < 1 ? 1. : damage;
+		if (Config.DEVELOPER)
+		{
+			StringUtil.printSection("Blow damage");
+			LOGGER.info("ss:{}, shield:{}, isPvp:{}, defence:{}", ss, shld, isPvP, defence);
+			LOGGER.info("Basic powers: attack: {}, skill: {}, addCrit: {}", attackPower, skillPower, addCritPower);
+			LOGGER.info("Multipliers: critDam: {}, rnd: {}, critPos: {}, pos: {}, pvp: {}", critDamMul, rndMul, critDamPosMul, posMul, pvpMul);
+			LOGGER.info("Vulnerabilities: criticalVuln: {}, daggerVuln: {}", critVuln, daggerVuln);
+			LOGGER.info("Final blow damage: {}", damage);
+		}
+		return Math.max(1, damage);
 	}
 	
 	/**
@@ -378,7 +520,7 @@ public final class Formulas
 				defence += target.getStatus().getShldDef();
 				break;
 			
-			case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
+			case SHIELD_DEFENSE_PERFECT_BLOCK:
 				return 1.;
 		}
 		
@@ -401,51 +543,6 @@ public final class Formulas
 			damage += skillpower;
 		}
 		
-		// defence modifier depending of the attacker weapon
-		Weapon weapon = attacker.getActiveWeaponItem();
-		Stats stat = null;
-		if (weapon != null)
-		{
-			switch (weapon.getItemType())
-			{
-				case BOW:
-					stat = Stats.BOW_WPN_VULN;
-					break;
-				
-				case BLUNT:
-					stat = Stats.BLUNT_WPN_VULN;
-					break;
-				
-				case BIGSWORD:
-					stat = Stats.BIGSWORD_WPN_VULN;
-					break;
-				
-				case BIGBLUNT:
-					stat = Stats.BIGBLUNT_WPN_VULN;
-					break;
-				
-				case DAGGER:
-					stat = Stats.DAGGER_WPN_VULN;
-					break;
-				
-				case DUAL:
-					stat = Stats.DUAL_WPN_VULN;
-					break;
-				
-				case DUALFIST:
-					stat = Stats.DUALFIST_WPN_VULN;
-					break;
-				
-				case POLE:
-					stat = Stats.POLE_WPN_VULN;
-					break;
-				
-				case SWORD:
-					stat = Stats.SWORD_WPN_VULN;
-					break;
-			}
-		}
-		
 		if (crit)
 		{
 			// Finally retail like formula
@@ -456,8 +553,14 @@ public final class Formulas
 		else
 			damage = 70 * damage / defence;
 		
-		if (stat != null)
-			damage = target.getStatus().calcStat(stat, damage, target, null);
+		// defence modifier depending of the attacker weapon
+		final Weapon weapon = attacker.getActiveWeaponItem();
+		if (weapon != null)
+		{
+			final Stats stat = weapon.getItemType().getVulnStat();
+			if (stat != null)
+				damage = target.getStatus().calcStat(stat, damage, target, null);
+		}
 		
 		// Weapon random damage ; invalid for CHARGEDAM skills.
 		if (skill == null || skill.getEffectType() != SkillType.CHARGEDAM)
@@ -506,7 +609,7 @@ public final class Formulas
 				mDef += target.getStatus().getShldDef();
 				break;
 			
-			case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
+			case SHIELD_DEFENSE_PERFECT_BLOCK:
 				return 1.;
 		}
 		
@@ -574,8 +677,8 @@ public final class Formulas
 				mDef += target.getStatus().getShldDef();
 				break;
 			
-			case SHIELD_DEFENSE_PERFECT_BLOCK: // perfect block
-				return 1;
+			case SHIELD_DEFENSE_PERFECT_BLOCK:
+				return 1.;
 		}
 		
 		double damage = 91 / mDef * skill.getPower();
@@ -631,110 +734,6 @@ public final class Formulas
 		return rate > Rnd.get(1000);
 	}
 	
-	/**
-	 * Calcul value of blow success
-	 * @param attacker The character delaing the blow.
-	 * @param target The victim.
-	 * @param chance The base chance of landing a blow.
-	 * @return true if successful, false otherwise
-	 */
-	public static final boolean calcBlow(Creature attacker, Creature target, int chance)
-	{
-		return attacker.getStatus().calcStat(Stats.BLOW_RATE, chance * (1.0 + (attacker.getStatus().getDEX() - 20) / 100), target, null) > Rnd.get(100);
-	}
-	
-	/**
-	 * Calcul value of lethal chance
-	 * @param attacker The character delaing the blow.
-	 * @param target The victim.
-	 * @param baseLethal The base lethal chance of the skill.
-	 * @param magiclvl
-	 * @return
-	 */
-	public static final double calcLethal(Creature attacker, Creature target, int baseLethal, int magiclvl)
-	{
-		double chance = 0;
-		if (magiclvl > 0)
-		{
-			int delta = ((magiclvl + attacker.getStatus().getLevel()) / 2) - 1 - target.getStatus().getLevel();
-			
-			if (delta >= -3)
-				chance = (baseLethal * ((double) attacker.getStatus().getLevel() / target.getStatus().getLevel()));
-			else if (delta < -3 && delta >= -9)
-				chance = (-3) * (baseLethal / (delta));
-			else
-				chance = baseLethal / 15;
-		}
-		else
-			chance = (baseLethal * ((double) attacker.getStatus().getLevel() / target.getStatus().getLevel()));
-		
-		chance = 10 * attacker.getStatus().calcStat(Stats.LETHAL_RATE, chance, target, null);
-		
-		if (Config.DEVELOPER)
-			LOGGER.info("Current calcLethal: {} / 1000.", chance);
-		
-		return chance;
-	}
-	
-	public static final void calcLethalHit(Creature attacker, Creature target, L2Skill skill)
-	{
-		if (target.isRaidRelated() || target instanceof Door)
-			return;
-		
-		// If one of following IDs is found, return false (Tyrannosaurus x 3, Headquarters)
-		if (target instanceof Npc)
-		{
-			switch (((Npc) target).getNpcId())
-			{
-				case 22215:
-				case 22216:
-				case 22217:
-				case 35062:
-					return;
-			}
-		}
-		
-		// Second lethal effect (hp to 1 for npc, cp/hp to 1 for player).
-		if (skill.getLethalChance2() > 0 && Rnd.get(1000) < calcLethal(attacker, target, skill.getLethalChance2(), skill.getMagicLevel()))
-		{
-			if (target instanceof Npc)
-				target.reduceCurrentHp(target.getStatus().getHp() - 1, attacker, skill);
-			else if (target instanceof Player) // If is a active player set his HP and CP to 1
-			{
-				final Player player = (Player) target;
-				if (!player.isInvul())
-				{
-					if (!(attacker instanceof Player && (((Player) attacker).isGM() && !((Player) attacker).getAccessLevel().canGiveDamage())))
-					{
-						player.getStatus().setHp(1, false);
-						player.getStatus().setCp(1);
-						player.sendPacket(SystemMessageId.LETHAL_STRIKE);
-					}
-				}
-			}
-			attacker.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.LETHAL_STRIKE_SUCCESSFUL));
-		}
-		// First lethal effect (hp/2 for npc, cp to 1 for player).
-		else if (skill.getLethalChance1() > 0 && Rnd.get(1000) < calcLethal(attacker, target, skill.getLethalChance1(), skill.getMagicLevel()))
-		{
-			if (target instanceof Npc)
-				target.reduceCurrentHp(target.getStatus().getHp() / 2, attacker, skill);
-			else if (target instanceof Player)
-			{
-				final Player player = (Player) target;
-				if (!player.isInvul())
-				{
-					if (!(attacker instanceof Player && (((Player) attacker).isGM() && !((Player) attacker).getAccessLevel().canGiveDamage())))
-					{
-						player.getStatus().setCp(1);
-						player.sendPacket(SystemMessageId.LETHAL_STRIKE);
-					}
-				}
-			}
-			attacker.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.LETHAL_STRIKE_SUCCESSFUL));
-		}
-	}
-	
 	public static final boolean calcMCrit(Creature actor, Creature target, L2Skill skill)
 	{
 		final int mRate = actor.getStatus().getMCriticalHit(target, skill);
@@ -770,16 +769,13 @@ public final class Formulas
 		// Calculate all modifiers for ATTACK_CANCEL ; chance to break is higher with higher dmg, and is affected by target MEN.
 		double rate = target.getStatus().calcStat(Stats.ATTACK_CANCEL, 15 + Math.sqrt(13 * dmg) - (MEN_BONUS[target.getStatus().getMEN()] * 100 - 100), null, null);
 		
-		// Adjust the rate to be between 1 and 99
-		if (rate > 99)
-			rate = 99;
-		else if (rate < 1)
-			rate = 1;
-		
 		if (Config.DEVELOPER)
-			LOGGER.info("calcCastBreak rate: {}%.", (int) rate);
+		{
+			StringUtil.printSection("Cast break rate");
+			LOGGER.info("Final cast break rate: {}%.", rate);
+		}
 		
-		if (Rnd.get(100) < rate)
+		if (MathUtil.limit((int) rate, 1, 99) > Rnd.get(100))
 			target.getCast().interrupt();
 	}
 	
@@ -809,38 +805,37 @@ public final class Formulas
 	
 	/**
 	 * Calculate the hit/miss chance.
-	 * @param attacker : The attacker to make checks on.
-	 * @param target : The target to make checks on.
-	 * @return true if hit is missed, false if it evaded.
+	 * @param attacker : The {@link Creature} attacker to test.
+	 * @param target : The {@link Creature} target to test.
+	 * @return True if the hit missed or false if it evaded.
 	 */
 	public static boolean calcHitMiss(Creature attacker, Creature target)
 	{
-		int chance = (80 + (2 * (attacker.getStatus().getAccuracy() - target.getStatus().getEvasionRate(attacker)))) * 10;
-		
-		double modifier = 100;
+		int diff = attacker.getStatus().getAccuracy() - target.getStatus().getEvasionRate(attacker);
 		
 		// Get high or low Z bonus.
-		if (attacker.getZ() - target.getZ() > 50)
-			modifier += 3;
-		else if (attacker.getZ() - target.getZ() < -50)
-			modifier -= 3;
+		final int diffZ = attacker.getZ() - target.getZ();
+		if (diffZ > 50)
+			diff += 3;
+		else if (diffZ < -50)
+			diff -= 3;
 		
-		// Get weather bonus. TODO: rain support (-3%).
+		// Get weather bonus.
 		if (GameTimeTaskManager.getInstance().isNight())
-			modifier -= 10;
+			diff -= 10;
 		
 		// Get position bonus.
 		if (attacker.isBehind(target))
-			modifier += 10;
+			diff += 10;
 		else if (!attacker.isInFrontOf(target))
-			modifier += 5;
+			diff += 5;
 		
-		chance *= modifier / 100;
+		int chance = (90 + (2 * (diff))) * 10;
 		
 		if (Config.DEVELOPER)
-			LOGGER.info("calcHitMiss rate: {}%, modifier : x{}.", chance / 10, +modifier / 100);
+			LOGGER.info("calcHitMiss diff: {}, rate: {}%.", diff, chance / 10);
 		
-		return Math.max(Math.min(chance, 980), 200) < Rnd.get(1000);
+		return MathUtil.limit(chance, 300, 980) < Rnd.get(1000);
 	}
 	
 	/**
@@ -858,8 +853,8 @@ public final class Formulas
 		if (skill != null && skill.ignoreShield())
 			return 0;
 		
-		Item item = target.getSecondaryWeaponItem();
-		if (item == null || !(item instanceof Armor))
+		final Item item = target.getSecondaryWeaponItem();
+		if (!(item instanceof Armor))
 			return 0;
 		
 		double shldRate = target.getStatus().calcStat(Stats.SHIELD_RATE, 0, attacker, null) * DEX_BONUS[target.getStatus().getDEX()];
@@ -872,9 +867,9 @@ public final class Formulas
 		
 		byte shldSuccess = SHIELD_DEFENSE_FAILED;
 		
-		// if attacker use bow and target wear shield, shield block rate is multiplied by 1.3 (30%)
+		// If attacker use bow and target wear shield, the shield block rate is multiplied by 3.
 		if (attacker.getAttackType() == WeaponType.BOW)
-			shldRate *= 1.3;
+			shldRate *= 3;
 		
 		if (shldRate > 0 && 100 - Config.PERFECT_SHIELD_BLOCK_RATE < Rnd.get(100))
 			shldSuccess = SHIELD_DEFENSE_PERFECT_BLOCK;
@@ -1060,7 +1055,7 @@ public final class Formulas
 	
 	public static boolean calcSkillSuccess(Creature attacker, Creature target, L2Skill skill, byte shld, boolean bss)
 	{
-		if (shld == SHIELD_DEFENSE_PERFECT_BLOCK) // perfect block
+		if (shld == SHIELD_DEFENSE_PERFECT_BLOCK)
 			return false;
 		
 		final SkillType type = skill.getEffectType();
@@ -1090,7 +1085,7 @@ public final class Formulas
 		if (calcSkillReflect(target, skill) != SKILL_REFLECT_FAILED)
 			return false;
 		
-		if (shld == SHIELD_DEFENSE_PERFECT_BLOCK) // perfect block
+		if (shld == SHIELD_DEFENSE_PERFECT_BLOCK)
 			return false;
 		
 		final SkillType type = skill.getEffectType();

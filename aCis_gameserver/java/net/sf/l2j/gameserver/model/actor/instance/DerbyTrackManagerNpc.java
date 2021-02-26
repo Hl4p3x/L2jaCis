@@ -21,7 +21,7 @@ import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class DerbyTrackManagerNpc extends Folk
 {
-	protected static final int TICKET_PRICES[] =
+	protected static final int[] TICKET_PRICES =
 	{
 		100,
 		500,
@@ -61,7 +61,9 @@ public class DerbyTrackManagerNpc extends Folk
 				val = 0;
 			
 			int npcId = getTemplate().getNpcId();
-			String search, replace;
+			
+			String search;
+			String replace;
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			
@@ -296,7 +298,6 @@ public class DerbyTrackManagerNpc extends Folk
 				player.addAdena("MonsterTrack", (int) (bet * ((lane == info.getFirst() + 1) ? info.getOddRate() : 0.01)), this, true);
 			
 			super.onBypassFeedback(player, "Chat 0");
-			return;
 		}
 		else if (command.equals("ViewHistory"))
 		{

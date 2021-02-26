@@ -165,7 +165,7 @@ public class Auction
 		else
 			taskDelay = _endDate - currentTime;
 		
-		_task = ThreadPool.schedule(() -> endAuction(), taskDelay);
+		_task = ThreadPool.schedule(this::endAuction, taskDelay);
 	}
 	
 	/**

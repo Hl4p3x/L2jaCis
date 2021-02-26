@@ -5,12 +5,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.math.MathUtil;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.SkillTable;
-import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.items.ArmorType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
 import net.sf.l2j.gameserver.enums.skills.ElementType;
@@ -19,7 +18,6 @@ import net.sf.l2j.gameserver.enums.skills.SkillOpType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.enums.skills.Stats;
-import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.handler.TargetHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -56,10 +54,6 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	public static final int SKILL_CRYSTALLIZE = 248;
 	public static final int SKILL_DIVINE_INSPIRATION = 1405;
 	public static final int SKILL_NPC_RACE = 4416;
-	
-	// conditional values
-	public static final int COND_BEHIND = 0x0008;
-	public static final int COND_CRIT = 0x0010;
 	
 	private final int _id;
 	private final int _level;
@@ -125,8 +119,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	
 	private final Stats _stat;
 	
-	private final int _condition;
-	private final int _conditionValue;
+	private final int _baseLandRate;
 	
 	private final boolean _overhit;
 	private final boolean _killByDOT;
@@ -188,7 +181,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	
 	private ExtractableSkill _extractableItems = null;
 	
-	protected L2Skill(StatsSet set)
+	protected L2Skill(StatSet set)
 	{
 		_id = set.getInteger("skill_id");
 		_level = set.getInteger("level", 1);
@@ -305,8 +298,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		
 		_element = set.getEnum("element", ElementType.class, ElementType.NONE);
 		
-		_condition = set.getInteger("condition", 0);
-		_conditionValue = set.getInteger("conditionValue", 0);
+		_baseLandRate = set.getInteger("baseLandRate", 0);
 		
 		_overhit = set.getBool("overHit", false);
 		_killByDOT = set.getBool("killByDOT", false);
@@ -408,11 +400,6 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		return _isPotion;
 	}
 	
-	public final int getConditionValue()
-	{
-		return _conditionValue;
-	}
-	
 	public final SkillType getSkillType()
 	{
 		return _skillType;
@@ -431,9 +418,9 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		return _targetType;
 	}
 	
-	public final int getCondition()
+	public final int getBaseLandRate()
 	{
-		return _condition;
+		return _baseLandRate;
 	}
 	
 	public final boolean isOverhit()
@@ -976,9 +963,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 	
 	public final boolean is7Signs()
 	{
-		if (_id > 4360 && _id < 4367)
-			return true;
-		return false;
+		return _id > 4360 && _id < 4367;
 	}
 	
 	public final boolean isStayAfterDeath()
@@ -1087,7 +1072,7 @@ public abstract class L2Skill implements IChanceSkillTrigger
 			mask |= weapon.getItemType().mask();
 		
 		final Item shield = activeChar.getSecondaryWeaponItem();
-		if (shield != null && shield instanceof Armor)
+		if (shield instanceof Armor)
 			mask |= ((ArmorType) shield.getItemType()).mask();
 		
 		if ((mask & weaponsAllowed) != 0)
@@ -1127,77 +1112,22 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		return true;
 	}
 	
-	/**
-	 * Check if target should be added to the target list.
-	 * <ul>
-	 * <li>Target is dead.</li>
-	 * <li>Target same as caster.</li>
-	 * <li>Target inside peace zone.</li>
-	 * <li>Target in the same party than caster.</li>
-	 * <li>Caster can see target.</li>
-	 * </ul>
-	 * Additional checks.
-	 * <ul>
-	 * <li>Mustn't be in Observer mode.</li>
-	 * <li>If not in PvP zones (arena, siege): target in not the same clan and alliance with caster, and usual PvP skill check.</li>
-	 * <li>In case caster and target are L2Attackable : verify if caster isn't confused.</li>
-	 * </ul>
-	 * Caution: distance is not checked.
-	 * @param caster The skill caster.
-	 * @param target The victim
-	 * @param skill The skill to use.
-	 * @param isCtrlPressed Has the skill been cast with the control key pressed?
-	 * @param sourceInArena True means the caster is in a pvp or siege zone, and so the additional check will be skipped.
-	 * @return
-	 */
-	public static final boolean checkForAreaOffensiveSkills(Creature caster, Creature target, L2Skill skill, boolean isCtrlPressed, boolean sourceInArena)
-	{
-		if (target == null || target.isDead() || target == caster)
-			return false;
-		
-		final Player player = caster.getActingPlayer();
-		final Player targetPlayer = target.getActingPlayer();
-		if (player != null && targetPlayer != null)
-		{
-			if (targetPlayer == player)
-				return false;
-			
-			if (targetPlayer.isInObserverMode())
-				return false;
-			
-			if (targetPlayer.isInsideZone(ZoneId.PEACE))
-				return false;
-			
-			if (!player.canCastOffensiveSkillOnPlayable(targetPlayer, skill, isCtrlPressed))
-				return false;
-		}
-		else if (target instanceof Attackable)
-		{
-			if (caster instanceof Attackable && !caster.isConfused())
-				return false;
-			
-			if (!target.isAttackableBy(caster))
-				return false;
-		}
-		return GeoEngine.getInstance().canSeeTarget(caster, target);
-	}
-	
-	public static final boolean addSummon(Creature caster, Player owner, int radius, boolean isDead)
+	public final boolean addSummon(Creature caster, Player owner, boolean isDead)
 	{
 		final Summon summon = owner.getSummon();
 		
 		if (summon == null)
 			return false;
 		
-		return addCharacter(caster, summon, radius, isDead);
+		return addCharacter(caster, summon, isDead);
 	}
 	
-	public static final boolean addCharacter(Creature caster, Creature target, int radius, boolean isDead)
+	public final boolean addCharacter(Creature caster, Creature target, boolean isDead)
 	{
 		if (isDead != target.isDead())
 			return false;
 		
-		if (radius > 0 && !MathUtil.checkIfInRange(radius, caster, target, true))
+		if (_skillRadius > 0 && !MathUtil.checkIfInRange(_skillRadius, caster, target, true))
 			return false;
 		
 		return true;
@@ -1477,57 +1407,16 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		return false;
 	}
 	
-	public boolean isSingleTarget()
-	{
-		switch (_targetType)
-		{
-			case CORPSE_MOB:
-			case CORPSE_PET:
-			case CORPSE_PLAYER:
-			case ENEMY_SUMMON:
-			case HOLY:
-			case ONE:
-			case OWNER_PET:
-			case PARTY_MEMBER:
-			case PARTY_OTHER:
-			case PET:
-			case SELF:
-			case SUMMON:
-			case UNDEAD:
-			case UNLOCKABLE:
-				return true;
-		}
-		return false;
-	}
-	
 	public boolean canTargetCorpse()
 	{
 		switch (_targetType)
 		{
-			
 			case AREA_CORPSE_MOB:
-			case AURA_CORPSE_MOB:
 			case CORPSE:
 			case CORPSE_MOB:
 			case CORPSE_PET:
 			case CORPSE_PLAYER:
 			case CORPSE_ALLY:
-				return true;
-		}
-		return false;
-	}
-	
-	public boolean isSignetOffensiveSkill()
-	{
-		switch (_id)
-		{
-			case 455: // Noise
-			case 1419: // Volcano
-			case 1420: // CY
-			case 1421: // RW
-			case 1422: // DoD
-			case 1423: // Gehena
-			case 1424: // ASF
 				return true;
 		}
 		return false;
@@ -1551,6 +1440,16 @@ public abstract class L2Skill implements IChanceSkillTrigger
 		
 		caster.sendMessage(getTargetType() + " skill target type isn't currently handled.");
 		return null;
+	}
+	
+	public final boolean meetCastConditions(Playable caster, Creature target, boolean isCtrlPressed)
+	{
+		final ITargetHandler handler = TargetHandler.getInstance().getHandler(getTargetType());
+		if (handler != null)
+			return handler.meetCastConditions(caster, target, this, isCtrlPressed);
+		
+		caster.sendMessage(getTargetType() + " skill target type isn't currently handled.");
+		return false;
 	}
 	
 	@Override

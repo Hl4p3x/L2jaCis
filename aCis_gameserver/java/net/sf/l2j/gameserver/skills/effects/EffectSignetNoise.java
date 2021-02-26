@@ -1,18 +1,22 @@
 package net.sf.l2j.gameserver.skills.effects;
 
+import java.util.List;
+
+import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Playable;
-import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.EffectPoint;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillLaunched;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.L2Skill;
+import net.sf.l2j.gameserver.skills.l2skills.L2SkillSignet;
 
 public class EffectSignetNoise extends AbstractEffect
 {
 	private EffectPoint _actor;
-	private boolean _isCtrlPressed;
 	
 	public EffectSignetNoise(EffectTemplate template, L2Skill skill, Creature effected, Creature effector)
 	{
@@ -28,8 +32,10 @@ public class EffectSignetNoise extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
+		if (!(_skill instanceof L2SkillSignet))
+			return false;
+		
 		_actor = (EffectPoint) getEffected();
-		_isCtrlPressed = ((Player) getEffector()).getAI().getCurrentIntention().isCtrlPressed();
 		return true;
 	}
 	
@@ -39,27 +45,22 @@ public class EffectSignetNoise extends AbstractEffect
 		if (getCount() == getTemplate().getCounter() - 1)
 			return true; // do nothing first time
 			
-		Player caster = (Player) getEffector();
-		for (Playable cha : _actor.getKnownTypeInRadius(Playable.class, getSkill().getSkillRadius()))
+		final List<Creature> list = _actor.getKnownTypeInRadius(Creature.class, _skill.getSkillRadius(), creature -> !creature.isDead() && !(creature instanceof Door) && !creature.isInsideZone(ZoneId.PEACE));
+		if (list.isEmpty())
+			return true;
+		
+		final L2Skill signetSkill = SkillTable.getInstance().getInfo(((L2SkillSignet) _skill).effectId, _skill.getLevel());
+		final Creature[] targets = list.toArray(new Creature[list.size()]);
+		for (Creature creature : targets)
 		{
-			if (caster == cha.getActingPlayer())
-				continue;
-			
-			if (cha.isDead())
-				continue;
-			
-			if (cha.isInsideZone(ZoneId.PEACE))
-				continue;
-			
-			if (caster.canCastOffensiveSkillOnPlayable(cha, _skill, _isCtrlPressed))
+			for (AbstractEffect effect : creature.getAllEffects())
 			{
-				for (AbstractEffect effect : cha.getAllEffects())
-				{
-					if (effect.getSkill().isDance())
-						effect.exit();
-				}
+				if (effect.getSkill().isDance())
+					effect.exit();
 			}
+			_actor.broadcastPacket(new MagicSkillUse(_actor, creature, signetSkill.getId(), signetSkill.getLevel(), 0, 0));
 		}
+		_actor.broadcastPacket(new MagicSkillLaunched(_actor, signetSkill, targets));
 		return true;
 	}
 	

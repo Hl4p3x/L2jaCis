@@ -1,10 +1,6 @@
 package net.sf.l2j.gameserver.geoengine.geodata;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import net.sf.l2j.gameserver.enums.GeoType;
 
 public class BlockComplex extends ABlock
 {
@@ -22,9 +18,8 @@ public class BlockComplex extends ABlock
 	/**
 	 * Creates ComplexBlock.
 	 * @param bb : Input byte buffer.
-	 * @param format : GeoFormat specifying format of loaded data.
 	 */
-	public BlockComplex(ByteBuffer bb, GeoType format)
+	public BlockComplex(ByteBuffer bb)
 	{
 		// Initialize buffer.
 		_buffer = new byte[GeoStructure.BLOCK_CELLS * 3];
@@ -32,30 +27,16 @@ public class BlockComplex extends ABlock
 		// Load data.
 		for (int i = 0; i < GeoStructure.BLOCK_CELLS; i++)
 		{
-			if (format != GeoType.L2D)
-			{
-				// Get data.
-				short data = bb.getShort();
-				
-				// Get nswe.
-				_buffer[i * 3] = (byte) (data & 0x000F);
-				
-				// Get height.
-				data = (short) ((short) (data & 0xFFF0) >> 1);
-				_buffer[i * 3 + 1] = (byte) (data & 0x00FF);
-				_buffer[i * 3 + 2] = (byte) (data >> 8);
-			}
-			else
-			{
-				// Get nswe.
-				final byte nswe = bb.get();
-				_buffer[i * 3] = nswe;
-				
-				// Get height.
-				final short height = bb.getShort();
-				_buffer[i * 3 + 1] = (byte) (height & 0x00FF);
-				_buffer[i * 3 + 2] = (byte) (height >> 8);
-			}
+			// Get data.
+			short data = bb.getShort();
+			
+			// Get nswe.
+			_buffer[i * 3] = (byte) (data & 0x000F);
+			
+			// Get height.
+			data = (short) ((short) (data & 0xFFF0) >> 1);
+			_buffer[i * 3 + 1] = (byte) (data & 0x00FF);
+			_buffer[i * 3 + 2] = (byte) (data >> 8);
 		}
 	}
 	
@@ -129,22 +110,5 @@ public class BlockComplex extends ABlock
 	{
 		// Get nswe.
 		return _buffer[index];
-	}
-	
-	@Override
-	public final void setNswe(int index, byte nswe)
-	{
-		// Set nswe.
-		_buffer[index] = nswe;
-	}
-	
-	@Override
-	public final void saveBlock(BufferedOutputStream stream) throws IOException
-	{
-		// Write block type.
-		stream.write(GeoStructure.TYPE_COMPLEX_L2D);
-		
-		// Write block data.
-		stream.write(_buffer, 0, GeoStructure.BLOCK_CELLS * 3);
 	}
 }

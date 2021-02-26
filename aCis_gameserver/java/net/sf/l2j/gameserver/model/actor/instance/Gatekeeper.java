@@ -32,7 +32,7 @@ public final class Gatekeeper extends Folk
 	public void onBypassFeedback(Player player, String command)
 	{
 		// Generic PK check. Send back the HTM if found and cancel current action.
-		if (!Config.KARMA_PLAYER_CAN_USE_GK && player.getKarma() > 0 && showPkDenyChatWindow(player, "teleporter"))
+		if (!Config.KARMA_PLAYER_CAN_USE_GK && player.getKarma() > 0 && showPkDenyChatWindow(player, "gatekeeper"))
 			return;
 		
 		super.onBypassFeedback(player, command);
@@ -42,7 +42,7 @@ public final class Gatekeeper extends Folk
 	public void showChatWindow(Player player, int val)
 	{
 		// Generic PK check. Send back the HTM if found and cancel current action.
-		if (!Config.KARMA_PLAYER_CAN_USE_GK && player.getKarma() > 0 && showPkDenyChatWindow(player, "teleporter"))
+		if (!Config.KARMA_PLAYER_CAN_USE_GK && player.getKarma() > 0 && showPkDenyChatWindow(player, "gatekeeper"))
 			return;
 		
 		showChatWindow(player, getHtmlPath(getNpcId(), val));

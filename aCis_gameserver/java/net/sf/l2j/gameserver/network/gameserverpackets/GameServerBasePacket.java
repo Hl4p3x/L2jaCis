@@ -2,6 +2,7 @@ package net.sf.l2j.gameserver.network.gameserverpackets;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public abstract class GameServerBasePacket
 {
@@ -50,7 +51,7 @@ public abstract class GameServerBasePacket
 		{
 			if (text != null)
 			{
-				_bao.write(text.getBytes("UTF-16LE"));
+				_bao.write(text.getBytes(StandardCharsets.UTF_16LE));
 			}
 		}
 		catch (Exception e)

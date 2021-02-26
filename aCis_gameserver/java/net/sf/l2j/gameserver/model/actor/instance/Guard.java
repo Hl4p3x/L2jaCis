@@ -11,12 +11,9 @@ import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.scripting.Quest;
 
 /**
- * This class manages all Guards in the world.<br>
- * It inherits all methods from L2Attackable and adds some more such as:
- * <ul>
- * <li>tracking PK</li>
- * <li>aggressive Monster.</li>
- * </ul>
+ * This class extends {@link Attackable} and manages all {@link Guard}s.<br>
+ * <br>
+ * A {@link Guard} is used to protect Players from Player Killers (PKs).
  */
 public final class Guard extends Attackable
 {
@@ -65,12 +62,10 @@ public final class Guard extends Attackable
 		if (hasRandomAnimation())
 			onRandomAnimation(Rnd.get(8));
 		
-		List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.QUEST_START);
-		if (scripts != null && !scripts.isEmpty())
-			player.setLastQuestNpcObject(getObjectId());
+		player.getQuestList().setLastQuestNpcObjectId(getObjectId());
 		
-		scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
-		if (scripts != null && scripts.size() == 1)
+		List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
+		if (scripts.size() == 1)
 			scripts.get(0).notifyFirstTalk(this, player);
 		else
 			showChatWindow(player);

@@ -149,7 +149,7 @@ public class BufferManager implements IXmlReader
 	 */
 	public void setScheme(int playerId, String schemeName, ArrayList<Integer> list)
 	{
-		final Map<String, ArrayList<Integer>> schemes = _schemesTable.computeIfAbsent(playerId, (k) -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
+		final Map<String, ArrayList<Integer>> schemes = _schemesTable.computeIfAbsent(playerId, s -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
 		if (schemes.size() >= Config.BUFFER_MAX_SCHEMES)
 			return;
 		

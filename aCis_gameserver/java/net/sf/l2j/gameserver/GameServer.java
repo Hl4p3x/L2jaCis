@@ -15,7 +15,7 @@ import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.util.SysUtil;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.communitybbs.Manager.ForumsBBSManager;
+import net.sf.l2j.gameserver.communitybbs.CommunityBoard;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.cache.CrestCache;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
@@ -36,7 +36,6 @@ import net.sf.l2j.gameserver.data.manager.FourSepulchersManager;
 import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.HeroManager;
 import net.sf.l2j.gameserver.data.manager.LotteryManager;
-import net.sf.l2j.gameserver.data.manager.MovieMakerManager;
 import net.sf.l2j.gameserver.data.manager.PartyMatchRoomManager;
 import net.sf.l2j.gameserver.data.manager.PetitionManager;
 import net.sf.l2j.gameserver.data.manager.RaidBossManager;
@@ -174,7 +173,6 @@ public class GameServer
 		StringUtil.printSection("Admins");
 		AdminData.getInstance();
 		BookmarkTable.getInstance();
-		MovieMakerManager.getInstance();
 		PetitionManager.getInstance();
 		
 		StringUtil.printSection("Characters");
@@ -185,10 +183,7 @@ public class GameServer
 		RaidPointManager.getInstance();
 		
 		StringUtil.printSection("Community server");
-		if (Config.ENABLE_COMMUNITY_BOARD) // Forums has to be loaded before clan data
-			ForumsBBSManager.getInstance().initRoot();
-		else
-			LOGGER.info("Community server is disabled.");
+		CommunityBoard.getInstance();
 		
 		StringUtil.printSection("Clans");
 		ClanTable.getInstance();
@@ -280,7 +275,6 @@ public class GameServer
 		
 		StringUtil.printSection("System");
 		Runtime.getRuntime().addShutdownHook(Shutdown.getInstance());
-		ForumsBBSManager.getInstance();
 		
 		if (Config.DEADLOCK_DETECTOR)
 		{
@@ -292,8 +286,6 @@ public class GameServer
 		}
 		else
 			LOGGER.info("Deadlock detector is disabled.");
-		
-		System.gc();
 		
 		LOGGER.info("Gameserver has started, used memory: {} / {} Mo.", SysUtil.getUsedMemory(), SysUtil.getMaxMemory());
 		LOGGER.info("Maximum allowed players: {}.", Config.MAXIMUM_ONLINE_USERS);

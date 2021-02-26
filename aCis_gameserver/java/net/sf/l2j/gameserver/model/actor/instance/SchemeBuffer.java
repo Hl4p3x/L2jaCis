@@ -142,7 +142,7 @@ public class SchemeBuffer extends Folk
 					}
 				}
 				
-				BufferManager.getInstance().setScheme(player.getObjectId(), schemeName.trim(), new ArrayList<Integer>());
+				BufferManager.getInstance().setScheme(player.getObjectId(), schemeName.trim(), new ArrayList<>());
 				showGiveBuffsWindow(player);
 			}
 			catch (Exception e)

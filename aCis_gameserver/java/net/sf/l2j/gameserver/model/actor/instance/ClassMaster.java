@@ -220,7 +220,7 @@ public final class ClassMaster extends Folk
 		// check if player have all required items for class transfer
 		for (IntIntHolder item : neededItems)
 		{
-			if (player.getInventory().getInventoryItemCount(item.getId(), -1) < item.getValue())
+			if (player.getInventory().getItemCount(item.getId()) < item.getValue())
 			{
 				player.sendPacket(SystemMessageId.NOT_ENOUGH_ITEMS);
 				return false;

@@ -15,6 +15,7 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.CursedWeaponManager;
 import net.sf.l2j.gameserver.data.xml.HerbDropData;
 import net.sf.l2j.gameserver.enums.BossInfoType;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
@@ -34,8 +35,8 @@ import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.DropCategory;
 import net.sf.l2j.gameserver.model.item.DropData;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.network.SystemMessageId;
-import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -323,12 +324,12 @@ public class Monster extends Attackable
 				{
 					if (_ccTask == null)
 					{
-						_ccTask = ThreadPool.scheduleAtFixedRate(() -> checkCcLastAttack(), 1000, 1000);
+						_ccTask = ThreadPool.scheduleAtFixedRate(this::checkCcLastAttack, 1000, 1000);
 						_lastCcAttack = System.currentTimeMillis();
 						_firstCcAttacker = cc;
 						
 						// Broadcast message.
-						broadcastPacket(new ExShowScreenMessage(BossInfoType.getBossInfo(getNpcId()).getCcRightsMsg().replaceAll("%s", cc.getLeader().getName()), 10000));
+						broadcastOnScreen(10000, BossInfoType.getBossInfo(getNpcId()).getCcRightsMsg(), cc.getLeader().getName());
 					}
 					else if (_firstCcAttacker.equals(cc))
 						_lastCcAttack = System.currentTimeMillis();
@@ -496,30 +497,19 @@ public class Monster extends Attackable
 	/**
 	 * Teleport this {@link Monster} to its master.
 	 */
-	public void teleToMaster()
+	public void teleportToMaster()
 	{
 		if (_master == null)
 			return;
 		
-		// Init the position of the Minion and add it in the world as a visible object
-		final int offset = (int) (100 + getCollisionRadius() + _master.getCollisionRadius());
-		final int minRadius = (int) (_master.getCollisionRadius() + 30);
+		final int minOffset = (int) (_master.getCollisionRadius() + 30);
+		final int maxOffset = (int) (100 + getCollisionRadius() + _master.getCollisionRadius());
 		
-		int newX = Rnd.get(minRadius * 2, offset * 2); // x
-		int newY = Rnd.get(newX, offset * 2); // distance
-		newY = (int) Math.sqrt(newY * newY - newX * newX); // y
+		final Location spawnLoc = _master.getPosition().clone();
+		spawnLoc.addRandomOffsetBetweenTwoValues(minOffset, maxOffset);
+		spawnLoc.set(GeoEngine.getInstance().getValidLocation(_master, spawnLoc));
 		
-		if (newX > offset + minRadius)
-			newX = _master.getX() + newX - offset;
-		else
-			newX = _master.getX() - newX + minRadius;
-		
-		if (newY > offset + minRadius)
-			newY = _master.getY() + newY - offset;
-		else
-			newY = _master.getY() - newY + minRadius;
-		
-		teleportTo(newX, newY, _master.getZ(), 0);
+		teleportTo(spawnLoc, 0);
 	}
 	
 	/**
@@ -852,7 +842,7 @@ public class Monster extends Attackable
 						if (holder == null)
 							continue;
 						
-						getSpoilState().getSweepItems().add(holder);
+						getSpoilState().add(holder);
 					}
 				}
 			}
@@ -979,7 +969,7 @@ public class Monster extends Attackable
 		}
 		
 		// Broadcast message.
-		broadcastPacket(new ExShowScreenMessage(BossInfoType.getBossInfo(getNpcId()).getCcNoRightsMsg(), 10000));
+		broadcastOnScreen(10000, BossInfoType.getBossInfo(getNpcId()).getCcNoRightsMsg());
 	}
 	
 	@Override

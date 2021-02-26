@@ -6,8 +6,8 @@ import java.util.List;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.Summon;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetAlly implements ITargetHandler
@@ -32,35 +32,29 @@ public class TargetAlly implements ITargetHandler
 		final List<Creature> list = new ArrayList<>();
 		list.add(player);
 		
-		if (L2Skill.addSummon(caster, player, skill.getSkillRadius(), false))
+		if (skill.addSummon(caster, player, false))
 			list.add(player.getSummon());
 		
 		if (player.getClan() != null)
 		{
-			for (Player obj : caster.getKnownTypeInRadius(Player.class, skill.getSkillRadius()))
+			for (Playable playable : caster.getKnownTypeInRadius(Playable.class, skill.getSkillRadius()))
 			{
-				if (obj.isDead())
+				if (playable.isDead())
+					continue;
+				
+				final Player targetPlayer = playable.getActingPlayer();
+				if (targetPlayer == null || targetPlayer.getClan() == null)
 					continue;
 				
 				// Only buff allies
-				if ((obj.getAllyId() == 0 || obj.getAllyId() != player.getAllyId()) && (obj.getClan() == null || obj.getClanId() != player.getClanId()))
+				if (player.getClanId() != targetPlayer.getClanId() && player.getAllyId() > 0 && player.getAllyId() != targetPlayer.getAllyId())
 					continue;
 				
 				// Do not buff opposing duel side
-				if (player.isInDuel())
-				{
-					if (player.getDuelId() != obj.getDuelId())
-						continue;
-					
-					if (player.isInParty() && obj.isInParty() && player.getParty().getLeaderObjectId() != obj.getParty().getLeaderObjectId())
-						continue;
-				}
+				if (player.isInDuel() && (player.getDuelId() != targetPlayer.getDuelId() || player.getTeam() != targetPlayer.getTeam()))
+					continue;
 				
-				final Summon summon = obj.getSummon();
-				if (summon != null && !summon.isDead())
-					list.add(summon);
-				
-				list.add(obj);
+				list.add(playable);
 			}
 		}
 		
@@ -70,9 +64,12 @@ public class TargetAlly implements ITargetHandler
 	@Override
 	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
-		if (caster.getActingPlayer() == null)
-			return null;
-		
 		return caster;
+	}
+	
+	@Override
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed)
+	{
+		return true;
 	}
 }

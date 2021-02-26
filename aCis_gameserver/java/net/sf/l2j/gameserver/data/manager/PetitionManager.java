@@ -1,280 +1,334 @@
 package net.sf.l2j.gameserver.data.manager;
 
-import java.text.SimpleDateFormat;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import net.sf.l2j.commons.lang.StringUtil;
+import net.sf.l2j.commons.logging.CLogger;
+import net.sf.l2j.commons.pool.ConnectionPool;
 
 import net.sf.l2j.gameserver.data.xml.AdminData;
-import net.sf.l2j.gameserver.enums.PetitionState;
 import net.sf.l2j.gameserver.enums.SayType;
+import net.sf.l2j.gameserver.enums.petitions.PetitionState;
+import net.sf.l2j.gameserver.enums.petitions.PetitionType;
 import net.sf.l2j.gameserver.model.Petition;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
-import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
-import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 /**
- * Store all existing {@link Petition}s, being pending or completed.
+ * Store all existing {@link Petition}s.<br>
+ * <br>
+ * An "active" {@link Petition} stands for its {@link PetitionState} being either PENDING or ACCEPTED.
  */
 public final class PetitionManager
 {
-	private final Map<Integer, Petition> _pendingPetitions = new ConcurrentHashMap<>();
-	private final Map<Integer, Petition> _completedPetitions = new ConcurrentHashMap<>();
+	protected static final CLogger LOGGER = new CLogger(PetitionManager.class.getName());
+	
+	private static final String SELECT_PETITIONS = "SELECT * FROM petition ORDER BY oid ASC";
+	private static final String TRUNCATE_PETITIONS = "TRUNCATE TABLE petition";
+	private static final String INSERT_PETITION = "INSERT INTO petition (oid, type, petitioner_oid, submit_date, content, is_unread, state, rate, feedback, responders) VALUES (?,?,?,?,?,?,?,?,?,?)";
+	
+	private static final String SELECT_PETITION_MESSAGES = "SELECT * FROM petition_message ORDER BY id ASC, petition_oid ASC";
+	private static final String TRUNCATE_PETITION_MESSAGES = "TRUNCATE TABLE petition_message";
+	private static final String INSERT_PETITION_MESSAGE = "INSERT INTO petition_message (id, petition_oid, player_oid, type, player_name, content) VALUES (?,?,?,?,?,?)";
+	
+	private final Map<Integer, Petition> _petitions = new ConcurrentSkipListMap<>();
 	
 	protected PetitionManager()
 	{
+		try (Connection con = ConnectionPool.getConnection())
+		{
+			try (PreparedStatement ps = con.prepareStatement(SELECT_PETITIONS);
+				ResultSet rs = ps.executeQuery())
+			{
+				while (rs.next())
+					_petitions.put(rs.getInt("oid"), new Petition(rs));
+			}
+			
+			try (PreparedStatement ps = con.prepareStatement(SELECT_PETITION_MESSAGES);
+				ResultSet rs = ps.executeQuery())
+			{
+				while (rs.next())
+				{
+					final Petition petition = _petitions.get(rs.getInt("petition_oid"));
+					if (petition == null)
+						continue;
+					
+					petition.addMessage(new CreatureSay(rs));
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Couldn't load petitions.", e);
+		}
+		LOGGER.info("Loaded {} petitions.", _petitions.size());
 	}
 	
-	public Map<Integer, Petition> getCompletedPetitions()
+	public Map<Integer, Petition> getPetitions()
 	{
-		return _completedPetitions;
+		return _petitions;
 	}
 	
-	public Map<Integer, Petition> getPendingPetitions()
+	public List<Petition> getPetitions(Predicate<Petition> predicate)
 	{
-		return _pendingPetitions;
+		return _petitions.values().stream().filter(predicate).collect(Collectors.toList());
 	}
 	
-	public int getPlayerTotalPetitionCount(Player player)
+	/**
+	 * @return The total {@link Petition} count under either {@link PetitionState#PENDING} or {@link PetitionState#ACCEPTED}.
+	 */
+	public int getActivePetitionsCount()
+	{
+		if (_petitions.isEmpty())
+			return 0;
+		
+		return (int) _petitions.values().stream().filter(p -> p.getState() == PetitionState.PENDING || p.getState() == PetitionState.ACCEPTED).count();
+	}
+	
+	/**
+	 * @param player : The {@link Player} to test.
+	 * @return The {@link Petition} count associated to the {@link Player} set as parameter. His self canceled {@link Petition}s aren't counted.
+	 */
+	public int getPetitionsCount(Player player)
 	{
 		if (player == null)
 			return 0;
 		
-		int petitionCount = 0;
-		
-		for (Petition petition : _pendingPetitions.values())
-		{
-			if (petition.getPetitioner() != null && petition.getPetitioner().getObjectId() == player.getObjectId())
-				petitionCount++;
-		}
-		
-		for (Petition petition : _completedPetitions.values())
-		{
-			if (petition.getPetitioner() != null && petition.getPetitioner().getObjectId() == player.getObjectId())
-				petitionCount++;
-		}
-		
-		return petitionCount;
+		return (int) _petitions.values().stream().filter(p -> p.getPetitionerObjectId() == player.getObjectId() && p.getState() != PetitionState.CANCELLED).count();
 	}
 	
-	public boolean isPetitionInProcess()
+	/**
+	 * @return True if any {@link Petition} is under {@link PetitionState#ACCEPTED}, or false otherwise.
+	 */
+	public boolean isAnyPetitionInProcess()
 	{
-		for (Petition petition : _pendingPetitions.values())
-		{
-			if (petition.getState() == PetitionState.IN_PROCESS)
-				return true;
-		}
-		return false;
+		return _petitions.values().stream().anyMatch(p -> p.getState() == PetitionState.ACCEPTED);
 	}
 	
+	/**
+	 * @param id : The {@link Petition} id to test.
+	 * @return True if the {@link Petition} holding the id set as parameter is under {@link PetitionState#ACCEPTED}, or false otherwise.
+	 */
 	public boolean isPetitionInProcess(int id)
 	{
-		final Petition petition = _pendingPetitions.get(id);
-		return petition != null && petition.getState() == PetitionState.IN_PROCESS;
+		final Petition petition = _petitions.get(id);
+		return petition != null && petition.getState() == PetitionState.ACCEPTED;
 	}
 	
-	public boolean isPlayerInConsultation(Player player)
+	/**
+	 * @param player : The {@link Player} to test.
+	 * @return The {@link Petition} associated to the {@link Player} set as parameter under {@link PetitionState#ACCEPTED}, or null if not found.
+	 */
+	public Petition getPetitionInProcess(Player player)
+	{
+		if (player == null)
+			return null;
+		
+		for (Petition petition : getPetitions(p -> p.getState() == PetitionState.ACCEPTED))
+		{
+			if (petition.getPetitionerObjectId() == player.getObjectId() || petition.getResponders().contains(player.getObjectId()))
+				return petition;
+		}
+		return null;
+	}
+	
+	/**
+	 * @param player : The {@link Player} to test.
+	 * @return The {@link Petition} associated to the {@link Player} set as parameter under {@link PetitionState#CLOSED} and with _isUnderFeedback flag, or null if not found.
+	 */
+	public Petition getFeedbackPetition(Player player)
+	{
+		if (player == null)
+			return null;
+		
+		return _petitions.values().stream().filter(p -> p.getState() == PetitionState.CLOSED && p.isUnderFeedback() && p.getPetitionerObjectId() == player.getObjectId()).findAny().orElse(null);
+	}
+	
+	/**
+	 * @param player : The {@link Player} to test.
+	 * @return True if a {@link Petition} is associated to the {@link Player} set as parameter under either {@link PetitionState#PENDING} or {@link PetitionState#ACCEPTED}, or false otherwise.
+	 */
+	public boolean isActivePetition(Player player)
 	{
 		if (player == null)
 			return false;
 		
-		for (Petition petition : _pendingPetitions.values())
-		{
-			if (petition.getState() != PetitionState.IN_PROCESS)
-				continue;
-			
-			if ((petition.getPetitioner() != null && petition.getPetitioner().getObjectId() == player.getObjectId()) || (petition.getResponder() != null && petition.getResponder().getObjectId() == player.getObjectId()))
-				return true;
-		}
-		return false;
+		return _petitions.values().stream().anyMatch(p -> p.getPetitionerObjectId() == player.getObjectId() && (p.getState() == PetitionState.PENDING || p.getState() == PetitionState.ACCEPTED));
 	}
 	
-	public boolean isPlayerPetitionPending(Player player)
-	{
-		if (player == null)
-			return false;
-		
-		for (Petition petition : _pendingPetitions.values())
-		{
-			if (petition.getPetitioner() != null && petition.getPetitioner().getObjectId() == player.getObjectId())
-				return true;
-		}
-		return false;
-	}
-	
-	public boolean rejectPetition(Player player, int id)
-	{
-		final Petition petition = _pendingPetitions.get(id);
-		if (petition == null || petition.getResponder() != null)
-			return false;
-		
-		petition.setResponder(player);
-		return petition.endPetitionConsultation(PetitionState.RESPONDER_REJECT);
-	}
-	
-	public boolean sendActivePetitionMessage(Player player, String messageText)
-	{
-		CreatureSay cs;
-		
-		for (Petition petition : _pendingPetitions.values())
-		{
-			if (petition.getPetitioner() != null && petition.getPetitioner().getObjectId() == player.getObjectId())
-			{
-				cs = new CreatureSay(player, SayType.PETITION_PLAYER, messageText);
-				petition.addLogMessage(cs);
-				
-				petition.sendResponderPacket(cs);
-				petition.sendPetitionerPacket(cs);
-				return true;
-			}
-			
-			if (petition.getResponder() != null && petition.getResponder().getObjectId() == player.getObjectId())
-			{
-				cs = new CreatureSay(player, SayType.PETITION_GM, messageText);
-				petition.addLogMessage(cs);
-				
-				petition.sendResponderPacket(cs);
-				petition.sendPetitionerPacket(cs);
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	public void sendPendingPetitionList(Player player)
-	{
-		final SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy");
-		final StringBuilder sb = new StringBuilder("<html><body><center><font color=\"LEVEL\">Current Petitions</font><br><table width=\"300\">");
-		
-		if (_pendingPetitions.size() == 0)
-			sb.append("<tr><td colspan=\"4\">There are no currently pending petitions.</td></tr>");
-		else
-			sb.append("<tr><td></td><td><font color=\"999999\">Petitioner</font></td><td><font color=\"999999\">Petition Type</font></td><td><font color=\"999999\">Submitted</font></td></tr>");
-		
-		for (Petition petition : _pendingPetitions.values())
-		{
-			sb.append("<tr><td>");
-			
-			if (petition.getState() != PetitionState.IN_PROCESS)
-				StringUtil.append(sb, "<button value=\"View\" action=\"bypass -h admin_view_petition ", petition.getId(), "\" width=\"40\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\">");
-			else
-				sb.append("<font color=\"999999\">In Process</font>");
-			
-			StringUtil.append(sb, "</td><td>", petition.getPetitioner().getName(), "</td><td>", petition.getTypeAsString(), "</td><td>", sdf.format(petition.getSubmitTime()), "</td></tr>");
-		}
-		
-		sb.append("</table><br><button value=\"Refresh\" action=\"bypass -h admin_view_petitions\" width=\"50\" " + "height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br><button value=\"Back\" action=\"bypass -h admin_admin\" " + "width=\"40\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"></center></body></html>");
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setHtml(sb.toString());
-		player.sendPacket(html);
-	}
-	
-	public int submitPetition(Player player, String content, int type)
+	/**
+	 * Generate a {@link Petition} and store it, then warn GMs.
+	 * @param type : The {@link PetitionType} to use.
+	 * @param player : The {@link Player} who petitioned.
+	 * @param content : The initial {@link String} message to send.
+	 * @return the objectId of the newly created {@link Petition}.
+	 */
+	public int submitPetition(PetitionType type, Player player, String content)
 	{
 		// Create a new petition instance and add it to the list of pending petitions.
-		final Petition petition = new Petition(player, content, type);
+		final Petition petition = new Petition(type, player.getObjectId(), content);
 		
-		_pendingPetitions.put(petition.getId(), petition);
+		_petitions.put(petition.getId(), petition);
 		
 		// Notify all GMs that a new petition has been submitted.
-		AdminData.getInstance().broadcastToGMs(new CreatureSay(player.getObjectId(), SayType.HERO_VOICE, "Petition System", (player.getName() + " has submitted a new petition.")));
+		AdminData.getInstance().broadcastToGMs(new CreatureSay(player.getObjectId(), SayType.HERO_VOICE, "Petition System", player.getName() + " has submitted a new petition."));
 		
 		return petition.getId();
 	}
 	
-	public void viewPetition(Player player, int id)
+	/**
+	 * Abort the active {@link Petition} of the {@link Player} set as parameter.
+	 * @param player : The {@link Player} to test.
+	 */
+	public void abortActivePetition(Player player)
 	{
-		if (!player.isGM())
-			return;
-		
-		final Petition petition = _pendingPetitions.get(id);
-		if (petition == null)
-			return;
-		
-		final StringBuilder sb = new StringBuilder("<html><body>");
-		sb.append("<center><br><font color=\"LEVEL\">Petition #" + petition.getId() + "</font><br1>");
-		sb.append("<img src=\"L2UI.SquareGray\" width=\"200\" height=\"1\"></center><br>");
-		sb.append("Submit Time: " + new SimpleDateFormat("dd-MM-yyyy HH:mm").format(petition.getSubmitTime()) + "<br1>");
-		sb.append("Petitioner: " + petition.getPetitioner().getName() + "<br1>");
-		sb.append("Petition Type: " + petition.getTypeAsString() + "<br>" + petition.getContent() + "<br>");
-		sb.append("<center><button value=\"Accept\" action=\"bypass -h admin_accept_petition " + petition.getId() + "\"" + "width=\"50\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br1>");
-		sb.append("<button value=\"Reject\" action=\"bypass -h admin_reject_petition " + petition.getId() + "\" " + "width=\"50\" height=\"15\" back=\"sek.cbui94\" fore=\"sek.cbui92\"><br>");
-		sb.append("<button value=\"Back\" action=\"bypass -h admin_view_petitions\" width=\"40\" height=\"15\" back=\"sek.cbui94\" " + "fore=\"sek.cbui92\"></center>");
-		sb.append("</body></html>");
-		
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setHtml(sb.toString());
-		player.sendPacket(html);
+		final Petition activePetition = getPetitionInProcess(player);
+		if (activePetition != null)
+			activePetition.abortConsultation(player);
 	}
 	
-	public boolean acceptPetition(Player player, int id)
+	/**
+	 * Attempt to join a {@link Petition}. Abort the precedent active {@link Petition} if existing (setting it back to PENDING).
+	 * @param player : The {@link Player} to test.
+	 * @param id : The {@link Petition} id to test.
+	 * @param isEnforcing : If True, send messages related to //force_peti, otherwise send the classic messages.
+	 * @return True if the {@link Player} set as parameter successfully joined, or false otherwise.
+	 */
+	public boolean joinPetition(Player player, int id, boolean isEnforcing)
 	{
-		final Petition petition = _pendingPetitions.get(id);
-		if (petition == null || petition.getResponder() != null)
+		// An active Petition exists, replace it as PENDING.
+		abortActivePetition(player);
+		
+		final Petition petition = _petitions.get(id);
+		return petition != null && petition.join(player, isEnforcing);
+	}
+	
+	/**
+	 * Reject the {@link Petition} id.
+	 * @param player : The {@link Player} to test.
+	 * @param id : The {@link Petition} id to test.
+	 * @return True if the {@link Petition} was successfully rejected, or false otherwise.
+	 */
+	public boolean rejectPetition(Player player, int id)
+	{
+		final Petition petition = _petitions.get(id);
+		if (petition == null || petition.getState() == PetitionState.REJECTED)
 			return false;
 		
-		petition.setResponder(player);
-		petition.setState(PetitionState.IN_PROCESS);
-		
-		// Petition application accepted. (Send to Petitioner)
-		petition.sendPetitionerPacket(SystemMessage.getSystemMessage(SystemMessageId.PETITION_APP_ACCEPTED));
-		
-		// Petition application accepted. Reciept No. is <ID>
-		petition.sendResponderPacket(SystemMessage.getSystemMessage(SystemMessageId.PETITION_ACCEPTED_RECENT_NO_S1).addNumber(petition.getId()));
-		
-		// Petition consultation with <Player> underway.
-		petition.sendResponderPacket(SystemMessage.getSystemMessage(SystemMessageId.PETITION_WITH_S1_UNDER_WAY).addCharName(petition.getPetitioner()));
+		petition.addResponder(player);
+		petition.endConsultation(PetitionState.REJECTED);
 		return true;
 	}
 	
-	public boolean cancelActivePetition(Player player)
+	public boolean cancelPendingPetition(Player player)
 	{
-		for (Petition currPetition : _pendingPetitions.values())
-		{
-			if (currPetition.getPetitioner() != null && currPetition.getPetitioner().getObjectId() == player.getObjectId())
-				return (currPetition.endPetitionConsultation(PetitionState.PETITIONER_CANCEL));
-			
-			if (currPetition.getResponder() != null && currPetition.getResponder().getObjectId() == player.getObjectId())
-				return (currPetition.endPetitionConsultation(PetitionState.RESPONDER_CANCEL));
-		}
+		final Petition petition = _petitions.values().stream().filter(p -> p.getState() == PetitionState.PENDING && p.getPetitionerObjectId() == player.getObjectId()).findAny().orElse(null);
+		if (petition == null)
+			return false;
 		
-		return false;
+		petition.endConsultation(PetitionState.CANCELLED);
+		return true;
 	}
 	
-	public void checkPetitionMessages(Player player)
+	/**
+	 * Check active {@link Petition} for the {@link Player} set as parameter, and send it.<br>
+	 * <br>
+	 * Used during EnterWorld call to retrieve automatically the {@link Petition}.
+	 * @param player : The {@link Player} to test.
+	 */
+	public void checkActivePetition(Player player)
 	{
 		if (player == null)
 			return;
 		
-		for (Petition currPetition : _pendingPetitions.values())
+		for (Petition petition : getPetitions(p -> p.getState() == PetitionState.PENDING || p.getState() == PetitionState.ACCEPTED))
 		{
-			if (currPetition.getPetitioner() != null && currPetition.getPetitioner().getObjectId() == player.getObjectId())
+			if (petition.getPetitionerObjectId() == player.getObjectId() || petition.getResponders().contains(player.getObjectId()))
 			{
-				for (CreatureSay logMessage : currPetition.getLogMessages())
-					player.sendPacket(logMessage);
-				
+				petition.showCompleteLog(player);
 				return;
 			}
 		}
 	}
 	
-	public boolean endActivePetition(Player player)
+	public void showCompleteLog(Player player, int id)
 	{
-		if (!player.isGM())
-			return false;
+		final Petition petition = _petitions.get(id);
+		if (petition == null)
+			return;
 		
-		for (Petition currPetition : _pendingPetitions.values())
+		petition.showCompleteLog(player);
+	}
+	
+	public void store()
+	{
+		try (Connection con = ConnectionPool.getConnection())
 		{
-			if (currPetition.getResponder() != null && currPetition.getResponder().getObjectId() == player.getObjectId())
-				return (currPetition.endPetitionConsultation(PetitionState.COMPLETED));
+			// Delete all entries from database.
+			try (PreparedStatement ps = con.prepareStatement(TRUNCATE_PETITIONS))
+			{
+				ps.execute();
+			}
+			
+			// Save petitions.
+			try (PreparedStatement ps = con.prepareStatement(INSERT_PETITION))
+			{
+				for (Petition petition : _petitions.values())
+				{
+					final boolean mustBeReset = petition.getState() == PetitionState.ACCEPTED && petition.getMessages().isEmpty();
+					
+					ps.setInt(1, petition.getId());
+					ps.setString(2, petition.getType().toString());
+					ps.setInt(3, petition.getPetitionerObjectId());
+					ps.setLong(4, petition.getSubmitDate());
+					ps.setString(5, petition.getContent());
+					ps.setInt(6, petition.isUnread() ? 1 : 0);
+					ps.setString(7, (mustBeReset) ? "PENDING" : petition.getState().toString());
+					ps.setString(8, petition.getRate().toString());
+					ps.setString(9, petition.getFeedback());
+					ps.setString(10, (mustBeReset) ? "" : petition.getResponders().stream().map(String::valueOf).collect(Collectors.joining(";")));
+					ps.addBatch();
+				}
+				ps.executeBatch();
+			}
+			
+			// Delete all entries from database.
+			try (PreparedStatement ps = con.prepareStatement(TRUNCATE_PETITION_MESSAGES))
+			{
+				ps.execute();
+			}
+			
+			// Save petitions messages.
+			try (PreparedStatement ps = con.prepareStatement(INSERT_PETITION_MESSAGE))
+			{
+				for (Petition petition : _petitions.values())
+				{
+					int id = 0;
+					
+					for (CreatureSay cs : petition.getMessages())
+					{
+						ps.setInt(1, id++);
+						ps.setInt(2, petition.getId());
+						ps.setInt(3, cs.getObjectId());
+						ps.setString(4, cs.getSayType().toString());
+						ps.setString(5, cs.getName());
+						ps.setString(6, cs.getContent());
+						ps.addBatch();
+					}
+					ps.executeBatch();
+				}
+			}
 		}
-		
-		return false;
+		catch (Exception e)
+		{
+			LOGGER.error("Failed to save petitions data.", e);
+		}
 	}
 	
 	public static PetitionManager getInstance()

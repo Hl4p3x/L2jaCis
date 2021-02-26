@@ -114,7 +114,7 @@
 		<set name="operateType" val="ACTIVE"/>
 		<set name="castRange" val="1500"/>
 	</skill>
-		<skill id="5111" levels="1" name="Big Bang">
+	<skill id="5111" levels="1" name="Big Bang">
 		<set name="magicLvl" val="70"/>
 		<set name="itemConsumeId" val="8872"/>
 		<set name="itemConsumeCount" val="5"/>
@@ -189,6 +189,7 @@
 		<set name="target" val="ONE" />
 		<for>
 			<effect name="TargetMe" val="0" />
+			<effect name="RandomizeHate" noicon="1" val="80"/>
 		</for>
 	</skill>
 	<skill id="5116" levels="12" name="Hold">
@@ -236,19 +237,19 @@
 		<set name="aggroPoints" val="100" />
 	</skill>
 	<skill id="5119" levels="1" name="Bleed">
-		<set name="magicLvl" val="90" />
-		<set name="mpConsume" val="84" />
-		<set name="power" val="2487" />
-		<set name="target" val="FRONT_AREA" />
+		<set name="magicLvl" val="85" />
+		<set name="mpConsume" val="94" />
+		<set name="power" val="17044" />
+		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
 		<set name="skillRadius" val="80" />
 		<set name="reuseDelay" val="17000" />
 		<set name="hitTime" val="1080" />
 		<set name="coolTime" val="720" />
-		<set name="skillType" val="PDAM" />
+		<set name="skillType" val="BLOW" />
 		<set name="operateType" val="ACTIVE" />
 		<set name="castRange" val="40" />
-		<set name="effectRange" val="400" />
-		<set name="nextActionAttack" val="true" />
+		<set name="effectRange" val="200" />
 		<set name="aggroPoints" val="351" />
 	</skill>
 	<skill id="5120" levels="1" name="Stun">
@@ -337,7 +338,7 @@
 			<effect name="Buff" time="8" val="0" stackOrder="99" stackType="combination">
 				<mul stat="pAtk" val="1.2" />
 			</effect>
-			<effect count="7" name="IncreaseCharges" val="1" />
+			<effect count="7" name="IncreaseCharges" noicon="1" val="1" />
 		</for>
 	</skill>
 	<skill id="5128" levels="1" name="Maximum Archery">
@@ -535,11 +536,11 @@
 		<set name="target" val="AREA_CORPSE_MOB" />
 	</skill>
 	<skill id="5143" levels="1" name="Sailren Use Blow">
-		<set name="magicLvl" val="89" />
-		<set name="mpConsume" val="84" />
-		<set name="condition" val="16" /> <!-- Crit -->
-		<set name="power" val="39544" />
+		<set name="magicLvl" val="84" />
+		<set name="mpConsume" val="93" />
+		<set name="power" val="14783" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
 		<set name="hitTime" val="2500" />
 		<set name="coolTime" val="660" />
 		<set name="skillType" val="BLOW" />

@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 public class PetDataEntry
 {
@@ -33,35 +33,35 @@ public class PetDataEntry
 	private final int _mountWaterSpeed;
 	private final int _mountFlySpeed;
 	
-	public PetDataEntry(StatsSet stats)
+	public PetDataEntry(StatSet set)
 	{
-		_maxExp = stats.getLong("exp");
+		_maxExp = set.getLong("exp");
 		
-		_maxMeal = stats.getInteger("maxMeal");
-		_expType = stats.getInteger("expType");
-		_mealInBattle = stats.getInteger("mealInBattle");
-		_mealInNormal = stats.getInteger("mealInNormal");
+		_maxMeal = set.getInteger("maxMeal");
+		_expType = set.getInteger("expType");
+		_mealInBattle = set.getInteger("mealInBattle");
+		_mealInNormal = set.getInteger("mealInNormal");
 		
-		_pAtk = stats.getDouble("pAtk");
-		_pDef = stats.getDouble("pDef");
-		_mAtk = stats.getDouble("mAtk");
-		_mDef = stats.getDouble("mDef");
-		_maxHp = stats.getDouble("hp");
-		_maxMp = stats.getDouble("mp");
+		_pAtk = set.getDouble("pAtk");
+		_pDef = set.getDouble("pDef");
+		_mAtk = set.getDouble("mAtk");
+		_mDef = set.getDouble("mDef");
+		_maxHp = set.getDouble("hp");
+		_maxMp = set.getDouble("mp");
 		
-		_hpRegen = stats.getFloat("hpRegen");
-		_mpRegen = stats.getFloat("mpRegen");
+		_hpRegen = set.getFloat("hpRegen");
+		_mpRegen = set.getFloat("mpRegen");
 		
-		_ssCount = stats.getInteger("ssCount");
-		_spsCount = stats.getInteger("spsCount");
+		_ssCount = set.getInteger("ssCount");
+		_spsCount = set.getInteger("spsCount");
 		
-		_mountMealInBattle = stats.getInteger("mealInBattleOnRide", 0);
-		_mountMealInNormal = stats.getInteger("mealInNormalOnRide", 0);
-		_mountAtkSpd = stats.getInteger("atkSpdOnRide", 0);
-		_mountPAtk = stats.getDouble("pAtkOnRide", 0);
-		_mountMAtk = stats.getDouble("mAtkOnRide", 0);
+		_mountMealInBattle = set.getInteger("mealInBattleOnRide", 0);
+		_mountMealInNormal = set.getInteger("mealInNormalOnRide", 0);
+		_mountAtkSpd = set.getInteger("atkSpdOnRide", 0);
+		_mountPAtk = set.getDouble("pAtkOnRide", 0);
+		_mountMAtk = set.getDouble("mAtkOnRide", 0);
 		
-		String speed = stats.getString("speedOnRide", null);
+		String speed = set.getString("speedOnRide", null);
 		if (speed != null)
 		{
 			String[] speeds = speed.split(";");

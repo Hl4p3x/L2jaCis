@@ -27,7 +27,7 @@ public class DrainSoul implements ISkillHandler
 		
 		// Check quest condition.
 		final Player player = (Player) activeChar;
-		QuestState st = player.getQuestState(qn);
+		QuestState st = player.getQuestList().getQuestState(qn);
 		if (st == null || !st.isStarted())
 			return;
 		

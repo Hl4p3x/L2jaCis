@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.item;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -17,7 +17,7 @@ public final class ArmorSet
 	private final int _shieldSkillId;
 	private final int _enchant6Skill;
 	
-	public ArmorSet(StatsSet set)
+	public ArmorSet(StatSet set)
 	{
 		_name = set.getString("name");
 		

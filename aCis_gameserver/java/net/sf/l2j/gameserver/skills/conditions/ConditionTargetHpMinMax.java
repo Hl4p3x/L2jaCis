@@ -6,7 +6,8 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class ConditionTargetHpMinMax extends Condition
 {
-	private final int _minHp, _maxHp;
+	private final int _minHp;
+	private final int _maxHp;
 	
 	public ConditionTargetHpMinMax(int minHp, int maxHp)
 	{

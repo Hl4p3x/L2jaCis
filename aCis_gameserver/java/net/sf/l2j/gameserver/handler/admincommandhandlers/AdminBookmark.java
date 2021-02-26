@@ -1,10 +1,9 @@
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
-import java.util.List;
 import java.util.StringTokenizer;
 
+import net.sf.l2j.commons.data.Pagination;
 import net.sf.l2j.commons.lang.StringUtil;
-import net.sf.l2j.commons.math.MathUtil;
 
 import net.sf.l2j.gameserver.data.sql.BookmarkTable;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
@@ -12,148 +11,104 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Bookmark;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 
-/**
- * This class handles bookmarks (stored locations for GMs use).<br>
- * A bookmark is registered using //bk name. The book itself is called with //bk without parameter.
- * @author Tryskell
- */
 public class AdminBookmark implements IAdminCommandHandler
 {
-	private static final int PAGE_LIMIT = 15;
-	
 	private static final String[] ADMIN_COMMANDS =
 	{
-		"admin_bkpage",
 		"admin_bk",
 		"admin_delbk"
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
-		if (command.startsWith("admin_bkpage"))
+		final StringTokenizer st = new StringTokenizer(command, " ");
+		st.nextToken();
+		
+		int page = 1;
+		
+		if (command.startsWith("admin_bk"))
 		{
-			StringTokenizer st = new StringTokenizer(command, " ");
-			st.nextToken(); // skip command
-			
-			int page = 1;
-			if (st.hasMoreTokens())
-				page = Integer.parseInt(st.nextToken());
-			
-			showBookmarks(activeChar, page);
-		}
-		else if (command.startsWith("admin_bk"))
-		{
-			StringTokenizer st = new StringTokenizer(command, " ");
-			st.nextToken(); // skip command
-			
-			// Save the bookmark on SQL, and call the HTM.
 			if (st.hasMoreTokens())
 			{
-				final String name = st.nextToken();
-				
-				if (name.length() > 15)
+				final String param = st.nextToken();
+				if (StringUtil.isDigit(param))
+					page = Integer.parseInt(param);
+				else
 				{
-					activeChar.sendMessage("The location name is too long.");
-					return true;
+					if (param.length() > 15)
+					{
+						player.sendMessage("The bookmark name is too long.");
+						return;
+					}
+					
+					if (BookmarkTable.getInstance().isExisting(param, player.getObjectId()))
+					{
+						player.sendMessage("The bookmark name already exists.");
+						return;
+					}
+					
+					BookmarkTable.getInstance().saveBookmark(param, player);
 				}
-				
-				if (BookmarkTable.getInstance().isExisting(name, activeChar.getObjectId()))
-				{
-					activeChar.sendMessage("That location is already existing.");
-					return true;
-				}
-				
-				BookmarkTable.getInstance().saveBookmark(name, activeChar);
 			}
-			
-			// Show the HTM.
-			showBookmarks(activeChar, 1);
 		}
 		else if (command.startsWith("admin_delbk"))
 		{
-			StringTokenizer st = new StringTokenizer(command, " ");
-			st.nextToken(); // skip command
-			
-			if (st.hasMoreTokens())
+			if (!st.hasMoreTokens())
 			{
-				final String name = st.nextToken();
-				final int objId = activeChar.getObjectId();
-				
-				if (!BookmarkTable.getInstance().isExisting(name, objId))
-				{
-					activeChar.sendMessage("That location doesn't exist.");
-					return true;
-				}
-				BookmarkTable.getInstance().deleteBookmark(name, objId);
+				player.sendMessage("The command delbk must be followed by a valid name.");
+				return;
 			}
-			else
-				activeChar.sendMessage("The command delbk must be followed by a valid name.");
 			
-			showBookmarks(activeChar, 1);
-		}
-		return true;
-	}
-	
-	/**
-	 * Show the basic HTM fed with generated data.
-	 * @param activeChar The player to make checks on.
-	 * @param page The page id to show.
-	 */
-	private static void showBookmarks(Player activeChar, int page)
-	{
-		final int objId = activeChar.getObjectId();
-		List<Bookmark> bookmarks = BookmarkTable.getInstance().getBookmarks(objId);
-		
-		// Load static Htm.
-		final NpcHtmlMessage html = new NpcHtmlMessage(0);
-		html.setFile("data/html/admin/bk.htm");
-		
-		if (bookmarks.isEmpty())
-		{
-			html.replace("%locs%", "<tr><td>No bookmarks are currently registered.</td></tr>");
-			activeChar.sendPacket(html);
-			return;
-		}
-		
-		final int max = MathUtil.countPagesNumber(bookmarks.size(), PAGE_LIMIT);
-		
-		bookmarks = bookmarks.subList((page - 1) * PAGE_LIMIT, Math.min(page * PAGE_LIMIT, bookmarks.size()));
-		
-		// Generate data.
-		final StringBuilder sb = new StringBuilder(2000);
-		
-		for (Bookmark bk : bookmarks)
-		{
-			final String name = bk.getName();
-			final int x = bk.getX();
-			final int y = bk.getY();
-			final int z = bk.getZ();
+			final String param = st.nextToken();
 			
-			StringUtil.append(sb, "<tr><td><a action=\"bypass -h admin_move_to ", x, " ", y, " ", z, "\">", name, " (", x, " ", y, " ", z, ")", "</a></td><td><a action=\"bypass -h admin_delbk ", name, "\">Remove</a></td></tr>");
+			if (!BookmarkTable.getInstance().isExisting(param, player.getObjectId()))
+			{
+				player.sendMessage("That bookmark doesn't exist.");
+				return;
+			}
+			
+			BookmarkTable.getInstance().deleteBookmark(param, player.getObjectId());
 		}
-		html.replace("%locs%", sb.toString());
-		
-		// Cleanup the sb.
-		sb.setLength(0);
-		
-		// End of table, open a new table for pages system.
-		for (int i = 0; i < max; i++)
-		{
-			final int pagenr = i + 1;
-			if (page == pagenr)
-				StringUtil.append(sb, pagenr, "&nbsp;");
-			else
-				StringUtil.append(sb, "<a action=\"bypass -h admin_bkpage ", pagenr, "\">", pagenr, "</a>&nbsp;");
-		}
-		
-		html.replace("%pages%", sb.toString());
-		activeChar.sendPacket(html);
+		showBookmarks(player, page);
 	}
 	
 	@Override
 	public String[] getAdminCommandList()
 	{
 		return ADMIN_COMMANDS;
+	}
+	
+	/**
+	 * Show the basic HTM fed with generated data.
+	 * @param player : The {@link Player} to test.
+	 * @param page : The page id to show.
+	 */
+	private static void showBookmarks(Player player, int page)
+	{
+		final Pagination<Bookmark> list = new Pagination<>(BookmarkTable.getInstance().getBookmarks(player.getObjectId()).stream(), page, PAGE_LIMIT_18);
+		
+		// Load static htm.
+		final NpcHtmlMessage html = new NpcHtmlMessage(0);
+		html.setFile("data/html/admin/bk.htm");
+		
+		final StringBuilder sb = new StringBuilder(2000);
+		sb.append("<table width=270><tr><td width=225></td><td width=45></td></tr>");
+		
+		if (list.isEmpty())
+			sb.append("<tr><td>No bookmarks are currently registered.</td></tr></table>");
+		else
+		{
+			for (Bookmark bk : list)
+				StringUtil.append(sb, "<tr><td><a action=\"bypass -h admin_teleport ", bk.getX(), " ", bk.getY(), " ", bk.getZ(), "\">", bk.getName(), " (", bk.getX(), " ", bk.getY(), " ", bk.getZ(), ")", "</a></td><td><a action=\"bypass -h admin_delbk ", bk.getName(), "\">Remove</a></td></tr>");
+			
+			sb.append("</table>");
+			
+			list.generateSpace(sb);
+			list.generatePages(sb, "bypass admin_bk %page%");
+		}
+		
+		html.replace("%content%", sb.toString());
+		player.sendPacket(html);
 	}
 }

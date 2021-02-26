@@ -77,7 +77,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	public final short getHeightNearest(int geoX, int geoY, int worldZ, IGeoObject ignore)
 	{
 		// Get geodata buffer based on given IGeoObject.
-		byte buffer[] = _objects.contains(ignore) ? _original : _buffer;
+		byte[] buffer = _objects.contains(ignore) ? _original : _buffer;
 		
 		// Get cell index.
 		final int index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3;
@@ -90,7 +90,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	public final byte getNsweNearest(int geoX, int geoY, int worldZ, IGeoObject ignore)
 	{
 		// Get geodata buffer based on given IGeoObject.
-		byte buffer[] = _objects.contains(ignore) ? _original : _buffer;
+		byte[] buffer = _objects.contains(ignore) ? _original : _buffer;
 		
 		// Get cell index.
 		final int index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3;
@@ -103,7 +103,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	public final int getIndexAbove(int geoX, int geoY, int worldZ, IGeoObject ignore)
 	{
 		// Get geodata buffer based on given IGeoObject.
-		byte buffer[] = _objects.contains(ignore) ? _original : _buffer;
+		byte[] buffer = _objects.contains(ignore) ? _original : _buffer;
 		
 		// Get cell index.
 		final int index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3;
@@ -119,7 +119,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	public final int getIndexBelow(int geoX, int geoY, int worldZ, IGeoObject ignore)
 	{
 		// Get geodata buffer based on given IGeoObject.
-		byte buffer[] = _objects.contains(ignore) ? _original : _buffer;
+		byte[] buffer = _objects.contains(ignore) ? _original : _buffer;
 		
 		// Get cell index.
 		final int index = ((geoX % GeoStructure.BLOCK_CELLS_X) * GeoStructure.BLOCK_CELLS_Y + (geoY % GeoStructure.BLOCK_CELLS_Y)) * 3;
@@ -135,7 +135,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	public final short getHeight(int index, IGeoObject ignore)
 	{
 		// Get geodata buffer based on given IGeoObject.
-		byte buffer[] = _objects.contains(ignore) ? _original : _buffer;
+		byte[] buffer = _objects.contains(ignore) ? _original : _buffer;
 		
 		// Get height.
 		return (short) (buffer[index + 1] & 0x00FF | buffer[index + 2] << 8);
@@ -145,14 +145,14 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	public final byte getNswe(int index, IGeoObject ignore)
 	{
 		// Get geodata buffer based on given IGeoObject.
-		byte buffer[] = _objects.contains(ignore) ? _original : _buffer;
+		byte[] buffer = _objects.contains(ignore) ? _original : _buffer;
 		
 		// Get nswe.
 		return buffer[index];
 	}
 	
 	@Override
-	public synchronized final void addGeoObject(IGeoObject object)
+	public final synchronized void addGeoObject(IGeoObject object)
 	{
 		// Add geo object, update block geodata when added.
 		if (_objects.add(object))
@@ -160,7 +160,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 	}
 	
 	@Override
-	public synchronized final void removeGeoObject(IGeoObject object)
+	public final synchronized void removeGeoObject(IGeoObject object)
 	{
 		// Remove geo object, update block geodata when removed.
 		if (_objects.remove(object))
@@ -206,7 +206,7 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 					final byte objNswe = geoData[gx - minOX][gy - minOY];
 					
 					// Object contains no change of data in this cell, continue to next cell.
-					if (objNswe == 0xFF)
+					if (objNswe == GeoStructure.CELL_FLAG_ALL)
 						continue;
 					
 					// Get block index of this cell.
@@ -215,18 +215,18 @@ public final class BlockComplexDynamic extends BlockComplex implements IBlockDyn
 					// Compare block data and original data, when height differs:
 					// -> height was affected by other geo object
 					// -> cell is inside an object
-					// -> no need to check/change it anymore (Z is lifted, nswe is 0).
+					// -> no need to check/change it anymore (Z is lifted, nswe is NONE).
 					// Compare is done in raw format (2 bytes) instead of conversion to short.
 					if (_buffer[ib + 1] != _original[ib + 1] || _buffer[ib + 2] != _original[ib + 2])
 						continue;
 					
 					// So far cell is not inside of any object.
-					if (objNswe == 0)
+					if (objNswe == GeoStructure.CELL_FLAG_NONE)
 					{
-						// Cell is inside of this object -> set nswe to 0 and lift Z up.
+						// Cell is inside of this object -> clear nswe and lift Z up.
 						
-						// Set block nswe.
-						_buffer[ib] = 0;
+						// Clear block nswe.
+						_buffer[ib] = GeoStructure.CELL_FLAG_NONE;
 						
 						// Set block Z to object height.
 						_buffer[ib + 1] = (byte) (maxOZ & 0x00FF);

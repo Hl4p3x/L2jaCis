@@ -1,7 +1,7 @@
 package net.sf.l2j.gameserver.model.actor.container.npc;
 
 /**
- * This class contains all infos of the L2Attackable against the absorber Creature.
+ * This class contains all infos of the Attackable against the absorber Creature.
  * <ul>
  * <li>_absorbedHP : The amount of HP at the moment attacker used the item.</li>
  * <li>_itemObjectId : The item id of the Soul Crystal used.</li>

@@ -9,7 +9,6 @@ import net.sf.l2j.gameserver.data.manager.ClanHallManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.SpawnType;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
-import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.clanhall.Auction;
 import net.sf.l2j.gameserver.model.clanhall.ClanHall;
@@ -17,9 +16,6 @@ import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 
-/**
- * This class handles //ch admincommand.
- */
 public class AdminClanHall implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
@@ -41,90 +37,92 @@ public class AdminClanHall implements IAdminCommandHandler
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
 		try
 		{
 			final StringTokenizer st = new StringTokenizer(command, " ");
 			st.nextToken();
 			
-			int chId = 0;
+			String param = null;
+			ClanHall ch = null;
 			
-			if (command.startsWith("admin_ch "))
+			final int paramCount = st.countTokens();
+			if (paramCount == 1)
+				ch = ClanHallManager.getInstance().getClanHall(Integer.parseInt(st.nextToken()));
+			else if (paramCount == 2)
 			{
-				if (st.hasMoreTokens())
-					chId = Integer.parseInt(st.nextToken());
+				param = st.nextToken();
+				ch = ClanHallManager.getInstance().getClanHall(Integer.parseInt(st.nextToken()));
 			}
 			
 			// Hold ClanHall reference, if not existing or chId is set to 0, we return the whole list of existing ClanHalls.
-			final ClanHall ch = ClanHallManager.getInstance().getClanHall(chId);
-			if (chId == 0 || ch == null)
+			if (ch == null)
 			{
-				showClanHallSelectPage(activeChar);
-				return true;
+				showClanHallSelectPage(player);
+				return;
 			}
 			
 			// No command token, we show the individual ClanHall informations.
-			if (!st.hasMoreTokens())
+			if (param == null)
 			{
-				showClanHallSelectPage(activeChar, ch);
-				return true;
+				showClanHallSelectPage(player, ch);
+				return;
 			}
 			
-			command = st.nextToken();
-			
-			if (command.equalsIgnoreCase("set"))
+			switch (param)
 			{
-				// Return current Player target.
-				final WorldObject target = activeChar.getTarget();
-				Player playerTarget = null;
-				if (target instanceof Player)
-					playerTarget = (Player) target;
+				case "set":
+					final Player targetPlayer = getTargetPlayer(player, false);
+					if (targetPlayer == null || targetPlayer.getClan() == null)
+						player.sendPacket(SystemMessageId.TARGET_IS_INCORRECT);
+					else if (!ch.isFree())
+						player.sendMessage("This ClanHall isn't free.");
+					else if (targetPlayer.getClan().hasClanHall())
+						player.sendMessage("Your target already owns a ClanHall.");
+					else
+						ch.setOwner(targetPlayer.getClan());
+					break;
 				
-				if (playerTarget == null || playerTarget.getClan() == null)
-					activeChar.sendPacket(SystemMessageId.TARGET_IS_INCORRECT);
-				else if (!ch.isFree())
-					activeChar.sendMessage("This ClanHall isn't free.");
-				else if (playerTarget.getClan().hasClanHall())
-					activeChar.sendMessage("Your target already owns a ClanHall.");
-				else
-					ch.setOwner(playerTarget.getClan());
+				case "remove":
+					if (ch.isFree())
+						player.sendMessage("This ClanHall is already free.");
+					else
+						ch.free();
+					break;
+				
+				case "open":
+					ch.openCloseDoors(true);
+					break;
+				
+				case "close":
+					ch.openCloseDoors(false);
+					break;
+				
+				case "teleportto":
+					player.teleportTo(ch.getRndSpawn(SpawnType.OWNER), 0);
+					break;
+				
+				case "end":
+					final Auction auction = ch.getAuction();
+					if (auction == null)
+						player.sendMessage("This ClanHall doesn't hold an auction.");
+					else
+						auction.endAuction();
+					break;
 			}
-			else if (command.equalsIgnoreCase("del"))
-			{
-				if (ch.isFree())
-					activeChar.sendMessage("This ClanHall is already free.");
-				else
-					ch.free();
-			}
-			else if (command.equalsIgnoreCase("open"))
-				ch.openCloseDoors(true);
-			else if (command.equalsIgnoreCase("close"))
-				ch.openCloseDoors(false);
-			else if (command.equalsIgnoreCase("goto"))
-				activeChar.teleportTo(ch.getRndSpawn(SpawnType.OWNER), 0);
-			else if (command.equalsIgnoreCase("end"))
-			{
-				final Auction auction = ch.getAuction();
-				if (auction == null)
-					activeChar.sendMessage("This ClanHall doesn't hold an auction.");
-				else
-					auction.endAuction();
-			}
-			
-			showClanHallSelectPage(activeChar, ch);
+			showClanHallSelectPage(player, ch);
 		}
 		catch (Exception e)
 		{
-			activeChar.sendMessage("Usage: //ch chId <set|del|open|close|goto|end>.");
+			player.sendMessage("Usage: //ch [set|remove|open|close|teleportto|end chId].");
 		}
-		return true;
 	}
 	
 	/**
 	 * Show detailed informations of a {@link ClanHall} to a {@link Player}.
-	 * @param player : The Player who requested the action.
-	 * @param ch : The ClanHall to show informations.
+	 * @param player : The {@link Player} who requested the action.
+	 * @param ch : The {@link ClanHall} to show informations.
 	 */
 	private static void showClanHallSelectPage(Player player, ClanHall ch)
 	{
@@ -164,8 +162,8 @@ public class AdminClanHall implements IAdminCommandHandler
 	}
 	
 	/**
-	 * Show the complete list of {@link ClanHall}s (listed, unlisted, owned, conquerable or auctionable).
-	 * @param player : The Player who requested the action.
+	 * Show the complete list of {@link ClanHall}s (listed, unlisted, owned, siegable or auctionable).
+	 * @param player : The {@link Player} who requested the action.
 	 */
 	private static void showClanHallSelectPage(Player player)
 	{
@@ -188,7 +186,7 @@ public class AdminClanHall implements IAdminCommandHandler
 					StringUtil.append(sb, "<tr><td><a action=\"bypass -h admin_ch ", ch.getId(), "\">", ch.getName(), ((ch.isFree()) ? "" : "*"), " [", auction.getBidders().size(), "]</a></td><td>", sdf.format(auction.getEndDate()), "</td><td>", auction.getMinimumBid(), "</td></tr>");
 			}
 			
-			sb.append("</table><br>");
+			sb.append("</table>");
 		}
 		
 		html.replace("%AGIT_LIST%", sb.toString());

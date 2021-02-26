@@ -9,6 +9,7 @@ import net.sf.l2j.commons.random.Rnd;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
+import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
@@ -359,6 +360,16 @@ public final class Spawn implements Runnable
 			return;
 		}
 		
+		// Check coordinates to be outside of world.
+		final int locX = _loc.getX();
+		final int locY = _loc.getY();
+		
+		if (World.isOutOfWorld(locX, locY))
+		{
+			LOGGER.error("{} spawn coords are outside of world.", _template.getName());
+			return;
+		}
+		
 		// reset effects and status
 		_npc.stopAllEffects();
 		_npc.setIsDead(false);
@@ -370,19 +381,17 @@ public final class Spawn implements Runnable
 		_npc.setScriptValue(0);
 		
 		// The Npc is spawned at the exact position (Lox, Locy, Locz)
-		int locx = _loc.getX();
-		int locy = _loc.getY();
-		int locz = GeoEngine.getInstance().getHeight(locx, locy, _loc.getZ());
+		int locZ = GeoEngine.getInstance().getHeight(locX, locY, _loc.getZ());
 		
 		// FIXME temporarily fix: when the spawn Z and geo Z differs more than 200, use spawn Z coord
-		if (Math.abs(locz - _loc.getZ()) > 200)
-			locz = _loc.getZ();
+		if (Math.abs(locZ - _loc.getZ()) > 200)
+			locZ = _loc.getZ();
 		
 		// Set the HP and MP of the Npc to the max
 		_npc.getStatus().setMaxHpMp();
 		
 		// spawn NPC on new coordinates
-		_npc.spawnMe(locx, locy, locz, (_loc.getHeading() < 0) ? Rnd.get(65536) : _loc.getHeading());
+		_npc.spawnMe(locX, locY, locZ, (_loc.getHeading() < 0) ? Rnd.get(65536) : _loc.getHeading());
 	}
 	
 	@Override

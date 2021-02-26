@@ -1,9 +1,11 @@
 package net.sf.l2j.gameserver.model.actor;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.Config;
+import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.SiegeSide;
@@ -12,6 +14,7 @@ import net.sf.l2j.gameserver.enums.skills.EffectFlag;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.attack.PlayableAttack;
 import net.sf.l2j.gameserver.model.actor.cast.PlayableCast;
+import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.actor.instance.SiegeGuard;
 import net.sf.l2j.gameserver.model.actor.status.PlayableStatus;
@@ -23,8 +26,10 @@ import net.sf.l2j.gameserver.model.item.kind.EtcItem;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ExUseSharedGroupItem;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.Revive;
-import net.sf.l2j.gameserver.scripting.QuestState;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
+import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
@@ -121,10 +126,9 @@ public abstract class Playable extends Creature
 		// Notify Creature AI
 		getAI().notifyEvent(AiEventType.DEAD, null, null);
 		
-		// Notify Quest of L2Playable's death
+		// Notify Quest of Playable's death
 		final Player actingPlayer = getActingPlayer();
-		for (final QuestState qs : actingPlayer.getNotifyQuestOfDeath())
-			qs.getQuest().notifyDeath((killer == null ? this : killer), actingPlayer);
+		actingPlayer.getQuestList().getQuests(Quest::isTriggeredOnDeath).forEach(q -> q.notifyDeath((killer == null ? this : killer), actingPlayer));
 		
 		if (killer != null)
 		{
@@ -183,19 +187,13 @@ public abstract class Playable extends Creature
 	}
 	
 	/**
-	 * <B><U> Overridden in </U> :</B>
-	 * <ul>
-	 * <li>L2Summon</li>
-	 * <li>Player</li>
-	 * </ul>
-	 * @param id The system message to send to player.
+	 * Send a {@link SystemMessage} packet using a {@link SystemMessageId} to the {@link Player} associated to this {@link Playable}.
+	 * @param id : The {@link SystemMessageId} to send.
 	 */
 	public void sendPacket(SystemMessageId id)
 	{
-		// default implementation
 	}
 	
-	// Support for Noblesse Blessing skill, where buffs are retained after resurrect
 	public final boolean isNoblesseBlessed()
 	{
 		return _effects.isAffected(EffectFlag.NOBLESS_BLESSING);
@@ -210,7 +208,6 @@ public abstract class Playable extends Creature
 		updateAbnormalEffect();
 	}
 	
-	// Support for Soul of the Phoenix and Salvation skills
 	public final boolean isPhoenixBlessed()
 	{
 		return _effects.isAffected(EffectFlag.PHOENIX_BLESSING);
@@ -226,15 +223,11 @@ public abstract class Playable extends Creature
 		updateAbnormalEffect();
 	}
 	
-	/**
-	 * @return True if the Silent Moving mode is active.
-	 */
 	public boolean isSilentMoving()
 	{
 		return _effects.isAffected(EffectFlag.SILENT_MOVE);
 	}
 	
-	// for Newbie Protection Blessing skill, keeps you safe from an attack by a chaotic character >= 10 levels apart from you
 	public final boolean getProtectionBlessing()
 	{
 		return _effects.isAffected(EffectFlag.PROTECTION_BLESSING);
@@ -250,7 +243,6 @@ public abstract class Playable extends Creature
 		updateAbnormalEffect();
 	}
 	
-	// Charm of Luck - During a Raid/Boss war, decreased chance for death penalty
 	public final boolean getCharmOfLuck()
 	{
 		return _effects.isAffected(EffectFlag.CHARM_OF_LUCK);
@@ -406,9 +398,7 @@ public abstract class Playable extends Creature
 		if (aClan != null && tClan != null && aClan.isAtWarWith(tClan.getClanId()) && tClan.isAtWarWith(aClan.getClanId()))
 			return isCtrlPressed;
 		
-		// If the target not from the same CC/party/alliance/clan is white, it may be damaged with CTRL.
-		final boolean isCtrlSignet = isCtrlPressed && skill.isSignetOffensiveSkill();
-		return isCtrlDamagingTheMainTarget || isCtrlSignet;
+		return isCtrlDamagingTheMainTarget;
 	}
 	
 	@Override
@@ -526,8 +516,128 @@ public abstract class Playable extends Creature
 			if (isInsideZone(ZoneId.PVP) && target.isInsideZone(ZoneId.PVP))
 				return true;
 			
+			// Betrayer Summon can continue the attack
+			if (this instanceof Summon && isBetrayed())
+				return true;
+			
 			return false;
 		}
 		return true;
+	}
+	
+	@Override
+	public boolean testCursesOnAttack(Npc npc, int npcId)
+	{
+		if (Config.RAID_DISABLE_CURSE || !(npc instanceof Attackable))
+			return false;
+		
+		// Petrification curse.
+		if (getStatus().getLevel() - npc.getStatus().getLevel() > 8)
+		{
+			final L2Skill curse = FrequentSkill.RAID_CURSE2.getSkill();
+			if (getFirstEffect(curse) == null)
+			{
+				broadcastPacket(new MagicSkillUse(npc, this, curse.getId(), curse.getLevel(), 300, 0));
+				curse.getEffects(npc, this);
+				
+				((Attackable) npc).getAggroList().stopHate(this);
+				return true;
+			}
+		}
+		
+		// Antistrider slow curse.
+		if (npc.getNpcId() == npcId && this instanceof Player && ((Player) this).isMounted())
+		{
+			final L2Skill curse = FrequentSkill.RAID_ANTI_STRIDER_SLOW.getSkill();
+			if (getFirstEffect(curse) == null)
+			{
+				broadcastPacket(new MagicSkillUse(npc, this, curse.getId(), curse.getLevel(), 300, 0));
+				curse.getEffects(npc, this);
+			}
+		}
+		return false;
+	}
+	
+	@Override
+	public boolean testCursesOnAttack(Npc npc)
+	{
+		return testCursesOnAttack(npc, npc.getNpcId());
+	}
+	
+	@Override
+	public boolean testCursesOnAggro(Npc npc)
+	{
+		return testCursesOnAttack(npc, -1);
+	}
+	
+	@Override
+	public boolean testCursesOnSkillSee(L2Skill skill, Creature[] targets)
+	{
+		if (Config.RAID_DISABLE_CURSE)
+			return false;
+		
+		final boolean isAggressive = skill.isOffensive() || skill.isDebuff();
+		
+		if (isAggressive)
+		{
+			// Petrification.
+			for (final Creature target : targets)
+			{
+				// Must be called by a raid related Attackable.
+				if (!(target instanceof Attackable) || !target.isRaidRelated())
+					continue;
+				
+				if (getStatus().getLevel() - target.getStatus().getLevel() > 8)
+				{
+					final L2Skill curse = FrequentSkill.RAID_CURSE2.getSkill();
+					if (getFirstEffect(curse) == null)
+					{
+						broadcastPacket(new MagicSkillUse(target, this, curse.getId(), curse.getLevel(), 300, 0));
+						curse.getEffects(target, this);
+						
+						((Attackable) target).getAggroList().stopHate(this);
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+		
+		// Silence - must be called by a raid related, the target must be in aggrolist with hate > 0, the effect must be beneficial.
+		final List<Attackable> list = getKnownTypeInRadius(Attackable.class, 1000);
+		if (!list.isEmpty())
+		{
+			for (final Creature target : targets)
+			{
+				// Tested target must be a Playable.
+				if (!(target instanceof Playable))
+					continue;
+				
+				for (Attackable attackable : list)
+				{
+					// Must be called by a raid related Attackable.
+					if (!attackable.isRaidRelated())
+						continue;
+					
+					if (getStatus().getLevel() - attackable.getStatus().getLevel() > 8)
+					{
+						final AggroInfo ai = attackable.getAggroList().get(target);
+						if (ai != null && ai.getHate() > 0)
+						{
+							final L2Skill curse = FrequentSkill.RAID_CURSE.getSkill();
+							if (getFirstEffect(curse) == null)
+							{
+								broadcastPacket(new MagicSkillUse(attackable, this, curse.getId(), curse.getLevel(), 300, 0));
+								curse.getEffects(attackable, this);
+								
+								attackable.getAggroList().stopHate(this);
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+		return false;
 	}
 }

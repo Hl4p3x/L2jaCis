@@ -7,9 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.geometry.Polygon;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.enums.DoorType;
@@ -17,6 +17,7 @@ import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.geoengine.geodata.ABlock;
 import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
+import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.template.DoorTemplate;
 import net.sf.l2j.gameserver.model.entity.Castle;
@@ -50,7 +51,7 @@ public class DoorData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "door", doorNode ->
 		{
-			final StatsSet set = parseAttributes(doorNode);
+			final StatSet set = parseAttributes(doorNode);
 			final int id = set.getInteger("id");
 			forEach(doorNode, "castle", castleNode -> set.set("castle", parseString(castleNode.getAttributes(), "id")));
 			forEach(doorNode, "clanHall", chNode -> set.set("clanHall", parseString(chNode.getAttributes(), "id")));
@@ -83,6 +84,12 @@ public class DoorData implements IXmlReader
 				maxX = Math.max(maxX, coord[0]);
 				minY = Math.min(minY, coord[1]);
 				maxY = Math.max(maxY, coord[1]);
+			}
+			
+			if (World.isOutOfWorld(minX, maxX, minY, maxY))
+			{
+				LOGGER.error("Door id {} coords are outside of world.", id);
+				return;
 			}
 			
 			forEach(doorNode, "stats|function", node -> set.putAll(parseAttributes(node)));

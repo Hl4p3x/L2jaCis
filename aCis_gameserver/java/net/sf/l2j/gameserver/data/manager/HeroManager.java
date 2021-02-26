@@ -11,15 +11,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
-import net.sf.l2j.commons.util.StatsSet;
 
+import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.data.xml.PlayerData;
+import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
@@ -39,6 +41,7 @@ public class HeroManager
 	
 	private static final String LOAD_HEROES = "SELECT heroes.char_id, characters.char_name, heroes.class_id, heroes.count, heroes.played, heroes.active FROM heroes, characters WHERE characters.obj_Id = heroes.char_id AND heroes.played = 1";
 	private static final String LOAD_ALL_HEROES = "SELECT heroes.char_id, characters.char_name, heroes.class_id, heroes.count, heroes.played, heroes.active FROM heroes, characters WHERE characters.obj_Id = heroes.char_id";
+	private static final String SELECT_HEROES_TO_BE = "SELECT olympiad_nobles.char_id, characters.char_name FROM olympiad_nobles, characters WHERE characters.obj_Id = olympiad_nobles.char_id AND olympiad_nobles.class_id = ? AND olympiad_nobles.competitions_done >= ? AND olympiad_nobles.competitions_won > 0 ORDER BY olympiad_nobles.olympiad_points DESC, olympiad_nobles.competitions_done DESC, olympiad_nobles.competitions_won DESC";
 	private static final String RESET_PLAYED = "UPDATE heroes SET played = 0";
 	private static final String INSERT_HERO = "INSERT INTO heroes (char_id, class_id, count, played, active) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE count=VALUES(count),played=VALUES(played),active=VALUES(active)";
 	private static final String LOAD_CLAN_DATA = "SELECT characters.clanid AS clanid, coalesce(clan_data.ally_Id, 0) AS allyId FROM characters LEFT JOIN clan_data ON clan_data.clan_id = characters.clanid WHERE characters.obj_Id = ?";
@@ -63,16 +66,16 @@ public class HeroManager
 	public static final int ACTION_HERO_GAINED = 2;
 	public static final int ACTION_CASTLE_TAKEN = 3;
 	
-	private final Map<Integer, StatsSet> _heroes = new HashMap<>();
-	private final Map<Integer, StatsSet> _completeHeroes = new HashMap<>();
+	private final Map<Integer, StatSet> _heroes = new HashMap<>();
+	private final Map<Integer, StatSet> _completeHeroes = new HashMap<>();
 	
-	private final Map<Integer, StatsSet> _heroCounts = new HashMap<>();
-	private final Map<Integer, List<StatsSet>> _heroFights = new HashMap<>();
-	private final List<StatsSet> _fights = new ArrayList<>();
+	private final Map<Integer, StatSet> _heroCounts = new HashMap<>();
+	private final Map<Integer, List<StatSet>> _heroFights = new HashMap<>();
+	private final List<StatSet> _fights = new ArrayList<>();
 	
-	private final Map<Integer, List<StatsSet>> _heroDiaries = new HashMap<>();
+	private final Map<Integer, List<StatSet>> _heroDiaries = new HashMap<>();
 	private final Map<Integer, String> _heroMessages = new HashMap<>();
-	private final List<StatsSet> _diary = new ArrayList<>();
+	private final List<StatSet> _diary = new ArrayList<>();
 	
 	protected HeroManager()
 	{
@@ -86,7 +89,7 @@ public class HeroManager
 				{
 					final int objectId = rs.getInt(Olympiad.CHAR_ID);
 					
-					final StatsSet hero = new StatsSet();
+					final StatSet hero = new StatSet();
 					hero.set(Olympiad.CHAR_NAME, rs.getString(Olympiad.CHAR_NAME));
 					hero.set(Olympiad.CLASS_ID, rs.getInt(Olympiad.CLASS_ID));
 					hero.set(COUNT, rs.getInt(COUNT));
@@ -145,7 +148,7 @@ public class HeroManager
 				{
 					final int objectId = rs.getInt(Olympiad.CHAR_ID);
 					
-					final StatsSet hero = new StatsSet();
+					final StatSet hero = new StatSet();
 					hero.set(Olympiad.CHAR_NAME, rs.getString(Olympiad.CHAR_NAME));
 					hero.set(Olympiad.CLASS_ID, rs.getInt(Olympiad.CLASS_ID));
 					hero.set(COUNT, rs.getInt(COUNT));
@@ -250,7 +253,7 @@ public class HeroManager
 					final int action = rs.getInt("action");
 					final int param = rs.getInt("param");
 					
-					final StatsSet entry = new StatsSet();
+					final StatSet entry = new StatSet();
 					entry.set("date", new SimpleDateFormat("yyyy-MM-dd HH").format(time));
 					
 					if (action == ACTION_RAID_KILLED)
@@ -284,7 +287,7 @@ public class HeroManager
 	
 	private void loadFights(int charId)
 	{
-		StatsSet heroCountData = new StatsSet();
+		StatSet heroCountData = new StatSet();
 		
 		Calendar data = Calendar.getInstance();
 		data.set(Calendar.DAY_OF_MONTH, 1);
@@ -324,7 +327,7 @@ public class HeroManager
 						String cls = PlayerData.getInstance().getClassNameById(charTwoClass);
 						if (name != null && cls != null)
 						{
-							StatsSet fight = new StatsSet();
+							StatSet fight = new StatSet();
 							fight.set("oponent", name);
 							fight.set("oponentclass", cls);
 							
@@ -359,7 +362,7 @@ public class HeroManager
 						String cls = PlayerData.getInstance().getClassNameById(charOneClass);
 						if (name != null && cls != null)
 						{
-							StatsSet fight = new StatsSet();
+							StatSet fight = new StatSet();
 							fight.set("oponent", name);
 							fight.set("oponentclass", cls);
 							
@@ -405,12 +408,12 @@ public class HeroManager
 		LOGGER.info("Loaded {} fights for: {}.", numberOfFights, PlayerInfoTable.getInstance().getPlayerName(charId));
 	}
 	
-	public Map<Integer, StatsSet> getHeroes()
+	public Map<Integer, StatSet> getHeroes()
 	{
 		return _heroes;
 	}
 	
-	public Map<Integer, StatsSet> getAllHeroes()
+	public Map<Integer, StatSet> getAllHeroes()
 	{
 		return _completeHeroes;
 	}
@@ -420,7 +423,7 @@ public class HeroManager
 		if (_heroes.isEmpty())
 			return 0;
 		
-		for (Map.Entry<Integer, StatsSet> hero : _heroes.entrySet())
+		for (Map.Entry<Integer, StatSet> hero : _heroes.entrySet())
 		{
 			if (hero.getValue().getInteger(Olympiad.CLASS_ID) == classId)
 				return hero.getKey();
@@ -438,7 +441,7 @@ public class HeroManager
 	
 	public void showHeroDiary(Player player, int heroclass, int objectId, int page)
 	{
-		final List<StatsSet> mainList = _heroDiaries.get(objectId);
+		final List<StatSet> mainList = _heroDiaries.get(objectId);
 		if (mainList == null)
 			return;
 		
@@ -450,7 +453,7 @@ public class HeroManager
 		
 		if (!mainList.isEmpty())
 		{
-			List<StatsSet> list = new ArrayList<>();
+			List<StatSet> list = new ArrayList<>();
 			list.addAll(mainList);
 			Collections.reverse(list);
 			
@@ -463,7 +466,7 @@ public class HeroManager
 			for (int i = ((page - 1) * perpage); i < list.size(); i++)
 			{
 				breakat = i;
-				StatsSet _diaryentry = list.get(i);
+				StatSet _diaryentry = list.get(i);
 				StringUtil.append(sb, "<tr><td>", ((color) ? "<table width=270 bgcolor=\"131210\">" : "<table width=270>"), "<tr><td width=270><font color=\"LEVEL\">", _diaryentry.getString("date"), ":xx</font></td></tr><tr><td width=270>", _diaryentry.getString("action"), "</td></tr><tr><td>&nbsp;</td></tr></table></td></tr>");
 				color = !color;
 				
@@ -495,7 +498,7 @@ public class HeroManager
 	
 	public void showHeroFights(Player player, int heroclass, int objectId, int page)
 	{
-		final List<StatsSet> list = _heroFights.get(objectId);
+		final List<StatSet> list = _heroFights.get(objectId);
 		if (list == null)
 			return;
 		
@@ -512,7 +515,7 @@ public class HeroManager
 		{
 			if (_heroCounts.containsKey(objectId))
 			{
-				StatsSet _herocount = _heroCounts.get(objectId);
+				StatSet _herocount = _heroCounts.get(objectId);
 				win = _herocount.getInteger("victory");
 				loss = _herocount.getInteger("loss");
 				draw = _herocount.getInteger("draw");
@@ -527,7 +530,7 @@ public class HeroManager
 			for (int i = ((page - 1) * perpage); i < list.size(); i++)
 			{
 				breakat = i;
-				StatsSet fight = list.get(i);
+				StatSet fight = list.get(i);
 				StringUtil.append(sb, "<tr><td>", ((color) ? "<table width=270 bgcolor=\"131210\">" : "<table width=270><tr><td width=220><font color=\"LEVEL\">"), fight.getString("start"), "</font>&nbsp;&nbsp;", fight.getString("result"), "</td><td width=50 align=right>", ((fight.getInteger("classed") > 0) ? "<font color=\"FFFF99\">cls</font>" : "<font color=\"999999\">non-cls<font>"), "</td></tr><tr><td width=220>vs ", fight.getString("oponent"), " (", fight.getString("oponentclass"), ")</td><td width=50 align=right>(", fight.getString("time"), ")</td></tr><tr><td colspan=2>&nbsp;</td></tr></table></td></tr>");
 				color = !color;
 				
@@ -562,7 +565,7 @@ public class HeroManager
 		player.sendPacket(html);
 	}
 	
-	public synchronized void computeNewHeroes(List<StatsSet> newHeroes)
+	public synchronized void computeNewHeroes()
 	{
 		// Reset heroes played variable.
 		try (Connection con = ConnectionPool.getConnection();
@@ -575,36 +578,67 @@ public class HeroManager
 			LOGGER.error("Couldn't reset heroes.", e);
 		}
 		
-		if (!_heroes.isEmpty())
+		// If heroes exist, do special operations on them before computing new heroes.
+		for (StatSet set : _heroes.values())
 		{
-			for (StatsSet hero : _heroes.values())
+			final Player worldPlayer = World.getInstance().getPlayer(set.getString(Olympiad.CHAR_NAME));
+			if (worldPlayer == null)
+				continue;
+			
+			// Unset the Player as Hero.
+			worldPlayer.setHero(false);
+			
+			// Unequip Hero items, if found.
+			for (ItemInstance item : worldPlayer.getInventory().getPaperdollItems())
 			{
-				String name = hero.getString(Olympiad.CHAR_NAME);
-				
-				Player player = World.getInstance().getPlayer(name);
-				if (player == null)
+				if (item.isHeroItem())
+					worldPlayer.useEquippableItem(item, true);
+			}
+			
+			// Check inventory and delete Hero items.
+			for (ItemInstance item : worldPlayer.getInventory().getAvailableItems(false, true, false))
+			{
+				if (!item.isHeroItem())
 					continue;
 				
-				player.setHero(false);
-				
-				// Unequip hero items, if found.
-				for (ItemInstance item : player.getInventory().getPaperdollItems())
-				{
-					if (item.isHeroItem())
-						player.useEquippableItem(item, true);
-				}
-				
-				// Check inventory items.
-				for (ItemInstance item : player.getInventory().getAvailableItems(false, true, false))
-				{
-					if (!item.isHeroItem())
-						continue;
-					
-					player.destroyItem("Hero", item, null, true);
-				}
-				
-				player.broadcastUserInfo();
+				worldPlayer.destroyItem("Hero", item, null, true);
 			}
+			
+			worldPlayer.broadcastUserInfo();
+		}
+		
+		// Compute new heroes.
+		final List<StatSet> newHeroes = new ArrayList<>();
+		
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(SELECT_HEROES_TO_BE))
+		{
+			for (ClassId id : ClassId.VALUES)
+			{
+				if (id.getLevel() != 3)
+					continue;
+				
+				ps.setInt(1, id.getId());
+				ps.setInt(2, Config.OLY_MIN_MATCHES);
+				
+				try (ResultSet rs = ps.executeQuery())
+				{
+					if (rs.next())
+					{
+						final StatSet hero = new StatSet();
+						hero.set(Olympiad.CLASS_ID, id.getId());
+						hero.set(Olympiad.CHAR_ID, rs.getInt(Olympiad.CHAR_ID));
+						hero.set(Olympiad.CHAR_NAME, rs.getString(Olympiad.CHAR_NAME));
+						
+						newHeroes.add(hero);
+					}
+					ps.clearParameters();
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Couldn't load heroes to be.", e);
 		}
 		
 		if (newHeroes.isEmpty())
@@ -613,13 +647,13 @@ public class HeroManager
 			return;
 		}
 		
-		final Map<Integer, StatsSet> heroes = new HashMap<>();
+		final Map<Integer, StatSet> heroes = new HashMap<>();
 		
-		for (StatsSet hero : newHeroes)
+		for (StatSet hero : newHeroes)
 		{
 			final int objectId = hero.getInteger(Olympiad.CHAR_ID);
 			
-			StatsSet set = _completeHeroes.get(objectId);
+			StatSet set = _completeHeroes.get(objectId);
 			if (set != null)
 			{
 				set.set(COUNT, set.getInteger(COUNT) + 1);
@@ -628,7 +662,7 @@ public class HeroManager
 			}
 			else
 			{
-				set = new StatsSet();
+				set = new StatSet();
 				set.set(Olympiad.CHAR_NAME, hero.getString(Olympiad.CHAR_NAME));
 				set.set(Olympiad.CLASS_ID, hero.getInteger(Olympiad.CLASS_ID));
 				set.set(COUNT, 1);
@@ -652,8 +686,6 @@ public class HeroManager
 		_heroes.clear();
 		_heroes.putAll(heroes);
 		
-		heroes.clear();
-		
 		updateHeroes();
 	}
 	
@@ -662,10 +694,10 @@ public class HeroManager
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_HERO))
 		{
-			for (Map.Entry<Integer, StatsSet> heroEntry : _heroes.entrySet())
+			for (Map.Entry<Integer, StatSet> heroEntry : _heroes.entrySet())
 			{
 				final int heroId = heroEntry.getKey();
-				final StatsSet hero = heroEntry.getValue();
+				final StatSet hero = heroEntry.getValue();
 				
 				ps.setInt(1, heroId);
 				ps.setInt(2, hero.getInteger(Olympiad.CLASS_ID));
@@ -741,7 +773,7 @@ public class HeroManager
 			return;
 		
 		// Get Data
-		final List<StatsSet> list = _heroDiaries.get(objectId);
+		final List<StatSet> list = _heroDiaries.get(objectId);
 		if (list == null)
 			return;
 		
@@ -749,7 +781,7 @@ public class HeroManager
 		_heroDiaries.remove(objectId);
 		
 		// Prepare new data
-		StatsSet entry = new StatsSet();
+		StatSet entry = new StatSet();
 		entry.set("date", new SimpleDateFormat("yyyy-MM-dd HH").format(System.currentTimeMillis()));
 		entry.set("action", template.getName() + " was defeated");
 		
@@ -769,7 +801,7 @@ public class HeroManager
 			return;
 		
 		// Get Data
-		final List<StatsSet> list = _heroDiaries.get(objectId);
+		final List<StatSet> list = _heroDiaries.get(objectId);
 		if (list == null)
 			return;
 		
@@ -777,7 +809,7 @@ public class HeroManager
 		_heroDiaries.remove(objectId);
 		
 		// Prepare new data
-		final StatsSet entry = new StatsSet();
+		final StatSet entry = new StatSet();
 		entry.set("date", new SimpleDateFormat("yyyy-MM-dd HH").format(System.currentTimeMillis()));
 		entry.set("action", castle.getName() + " Castle was successfuly taken");
 		
@@ -848,21 +880,21 @@ public class HeroManager
 	
 	public boolean isActiveHero(int id)
 	{
-		final StatsSet entry = _heroes.get(id);
+		final StatSet entry = _heroes.get(id);
 		
 		return entry != null && entry.getInteger(ACTIVE) == 1;
 	}
 	
 	public boolean isInactiveHero(int id)
 	{
-		final StatsSet entry = _heroes.get(id);
+		final StatSet entry = _heroes.get(id);
 		
 		return entry != null && entry.getInteger(ACTIVE) == 0;
 	}
 	
 	public void activateHero(Player player)
 	{
-		final StatsSet hero = _heroes.get(player.getObjectId());
+		final StatSet hero = _heroes.get(player.getObjectId());
 		if (hero == null)
 			return;
 		

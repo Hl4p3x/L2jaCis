@@ -45,6 +45,7 @@ public class SummonMove extends CreatureMove<Summon>
 	@Override
 	protected void offensiveFollowTask(Creature target, int offset)
 	{
+		// No follow task, return.
 		if (_followTask == null)
 			return;
 		
@@ -56,21 +57,23 @@ public class SummonMove extends CreatureMove<Summon>
 			return;
 		}
 		
-		Location targetLoc = _actor.getPosition().clone();
-		targetLoc.setLocationMinusOffset(target.getPosition(), target.getStatus().getMoveSpeed() / -2);
+		final Location destination = target.getPosition().clone();
+		final int realOffset = (int) (offset + _actor.getCollisionRadius() + target.getCollisionRadius());
 		
 		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(targetLoc, offset) : _actor.isIn3DRadius(targetLoc, offset))
+		if ((getMoveType() == MoveType.GROUND) ? _actor.isIn2DRadius(destination, realOffset) : _actor.isIn3DRadius(destination, realOffset))
 			return;
 		
 		_pawn = target;
 		_offset = offset;
-		moveToLocation(targetLoc, true);
+		
+		moveToLocation(destination, true);
 	}
 	
 	@Override
 	protected void friendlyFollowTask(Creature target, int offset)
 	{
+		// No follow task, return.
 		if (_followTask == null)
 			return;
 		
@@ -82,15 +85,16 @@ public class SummonMove extends CreatureMove<Summon>
 			return;
 		}
 		
-		Location targetLoc = _actor.getPosition().clone();
-		targetLoc.setLocationMinusOffset(target.getPosition(), (int) (offset + target.getCollisionRadius() + _actor.getCollisionRadius()));
+		final Location destination = target.getPosition().clone();
+		final int realOffset = (int) (offset + _actor.getCollisionRadius() + target.getCollisionRadius());
 		
 		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(targetLoc, offset) : _actor.isIn3DRadius(targetLoc, offset))
+		if ((getMoveType() == MoveType.GROUND) ? _actor.isIn2DRadius(destination, realOffset) : _actor.isIn3DRadius(destination, realOffset))
 			return;
 		
 		_pawn = null;
 		_offset = 0;
-		moveToLocation(targetLoc, true);
+		
+		moveToLocation(destination, true);
 	}
 }

@@ -1,23 +1,28 @@
 package net.sf.l2j.gameserver.model.actor;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
+import net.sf.l2j.commons.util.ArraysUtil;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
+import net.sf.l2j.gameserver.enums.ZoneId;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.ai.type.AttackableAI;
 import net.sf.l2j.gameserver.model.actor.ai.type.CreatureAI;
 import net.sf.l2j.gameserver.model.actor.attack.AttackableAttack;
-import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
+import net.sf.l2j.gameserver.model.actor.container.attackable.AggroList;
+import net.sf.l2j.gameserver.model.actor.instance.Door;
+import net.sf.l2j.gameserver.model.actor.instance.FriendlyMonster;
+import net.sf.l2j.gameserver.model.actor.instance.Guard;
+import net.sf.l2j.gameserver.model.actor.instance.Monster;
+import net.sf.l2j.gameserver.model.actor.instance.RiftInvader;
 import net.sf.l2j.gameserver.model.actor.status.AttackableStatus;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
@@ -25,11 +30,11 @@ import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 /**
- * This class manages all NPCs which can hold an aggro list. It inherits from {@link Npc}.
+ * This class manages all {@link Npc}s which can hold an {@link AggroList}.
  */
 public class Attackable extends Npc
 {
-	private final Map<Creature, AggroInfo> _aggroList = new ConcurrentHashMap<>();
+	private final AggroList _aggroList = new AggroList(this);
 	
 	private final Set<Creature> _attackedBy = ConcurrentHashMap.newKeySet();
 	
@@ -101,33 +106,15 @@ public class Attackable extends Npc
 	}
 	
 	@Override
-	public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, L2Skill skill)
-	{
-		// Test the ON_ATTACK ScriptEventType.
-		if (attacker != null && !isDead())
-		{
-			final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_ATTACK);
-			if (scripts != null)
-				for (Quest quest : scripts)
-					quest.notifyAttack(this, attacker, (int) damage, skill);
-		}
-		
-		// Reduce the current HP of the Attackable and launch the doDie Task if necessary
-		super.reduceCurrentHp(damage, attacker, awake, isDOT, skill);
-	}
-	
-	@Override
 	public boolean doDie(Creature killer)
 	{
 		if (!super.doDie(killer))
 			return false;
 		
 		// Test the ON_KILL ScriptEventType.
-		final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_KILL);
-		if (scripts != null)
-			for (Quest quest : scripts)
-				ThreadPool.schedule(() -> quest.notifyKill(this, killer), 3000);
-			
+		for (Quest quest : getTemplate().getEventQuests(ScriptEventType.ON_KILL))
+			ThreadPool.schedule(() -> quest.notifyKill(this, killer), 3000);
+		
 		_attackedBy.clear();
 		
 		return true;
@@ -187,9 +174,17 @@ public class Attackable extends Npc
 			getAI().tryToIdle();
 	}
 	
+	@Override
+	public void forceAttack(Creature creature, int hate)
+	{
+		forceRunStance();
+		getAggroList().addDamageHate(creature, 0, hate);
+		getAI().tryToAttack(creature);
+	}
+	
 	/**
 	 * Add a {@link Creature} attacker on _attackedBy {@link List}.
-	 * @param attacker : The Creature to add.
+	 * @param attacker : The {@link Creature} to add.
 	 */
 	public void addAttacker(Creature attacker)
 	{
@@ -200,197 +195,7 @@ public class Attackable extends Npc
 	}
 	
 	/**
-	 * Add damage and hate to the {@link Creature} attacker {@link AggroInfo} of this {@link Attackable}.
-	 * @param attacker : The Creature which dealt damages.
-	 * @param damage : The done amount of damages.
-	 * @param aggro : The generated hate.
-	 */
-	public void addDamageHate(Creature attacker, int damage, int aggro)
-	{
-		if (attacker == null)
-			return;
-		
-		// Get or create the AggroInfo of the attacker.
-		final AggroInfo ai = _aggroList.computeIfAbsent(attacker, AggroInfo::new);
-		ai.addDamage(damage);
-		ai.addHate(aggro);
-		
-		if (aggro == 0)
-		{
-			final Player targetPlayer = attacker.getActingPlayer();
-			if (targetPlayer != null)
-			{
-				final List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.ON_AGGRO);
-				if (scripts != null)
-					for (Quest quest : scripts)
-						quest.notifyAggro(this, targetPlayer, (attacker instanceof Summon));
-			}
-			else
-			{
-				aggro = 1;
-				ai.addHate(1);
-			}
-		}
-		else
-		{
-			// Set the intention to the Attackable to ACTIVE
-			if (aggro > 0 && getAI().getCurrentIntention().getType() == IntentionType.IDLE)
-				getAI().tryToActive();
-		}
-	}
-	
-	/**
-	 * Reduce hate for the {@link Creature} target. If the target is null, decrease the hate for the whole aggro list.
-	 * @param target : The Creature to check.
-	 * @param amount : The amount of hate to remove.
-	 */
-	public void reduceHate(Creature target, int amount)
-	{
-		// No target ; we first check if most hated exists, if no we process the whole aggro list. If the amount of hate is <= 0, we stop the aggro behavior.
-		if (target == null)
-		{
-			Creature mostHated = getMostHated();
-			if (mostHated == null)
-			{
-				((AttackableAI) getAI()).setGlobalAggro(-25);
-				return;
-			}
-			
-			for (AggroInfo ai : _aggroList.values())
-				ai.addHate(-amount);
-			
-			amount = getHating(mostHated);
-			
-			if (amount <= 0)
-			{
-				((AttackableAI) getAI()).setGlobalAggro(-25);
-				_aggroList.clear();
-				getAI().tryToActive();
-				forceWalkStance();
-			}
-			return;
-		}
-		
-		// Retrieve the AggroInfo related to the target.
-		AggroInfo ai = _aggroList.get(target);
-		if (ai == null)
-			return;
-		
-		// Reduce hate.
-		ai.addHate(-amount);
-		
-		// If hate is <= 0 and no most hated target is found, we stop the aggro behavior.
-		if (ai.getHate() <= 0 && getMostHated() == null)
-		{
-			((AttackableAI) getAI()).setGlobalAggro(-25);
-			_aggroList.clear();
-			getAI().tryToActive();
-			forceWalkStance();
-		}
-	}
-	
-	/**
-	 * Clears the hate of a {@link Creature} target without removing it from the list.
-	 * @param target : The Creature to clean hate.
-	 */
-	public void stopHating(Creature target)
-	{
-		if (target == null)
-			return;
-		
-		AggroInfo ai = _aggroList.get(target);
-		if (ai != null)
-			ai.stopHate();
-	}
-	
-	/**
-	 * Clean the hate values of all registered aggroed {@link Creature}s, without dropping them.
-	 */
-	public void cleanAllHate()
-	{
-		for (AggroInfo ai : _aggroList.values())
-			ai.stopHate();
-	}
-	
-	/**
-	 * @return the most hated {@link Creature} of this {@link Attackable}.
-	 */
-	public Creature getMostHated()
-	{
-		if (_aggroList.isEmpty() || isAlikeDead())
-			return null;
-		
-		Creature mostHated = null;
-		int maxHate = 0;
-		
-		for (AggroInfo ai : _aggroList.values())
-		{
-			if (ai.checkHate(this) > maxHate)
-			{
-				mostHated = ai.getAttacker();
-				maxHate = ai.getHate();
-			}
-		}
-		return mostHated;
-	}
-	
-	/**
-	 * @return the {@link List} of hated {@link Creature}s. It also make checks, setting hate to 0 following conditions.
-	 */
-	public List<Creature> getHateList()
-	{
-		if (_aggroList.isEmpty() || isAlikeDead())
-			return Collections.emptyList();
-		
-		final List<Creature> result = new ArrayList<>();
-		for (AggroInfo ai : _aggroList.values())
-		{
-			ai.checkHate(this);
-			result.add(ai.getAttacker());
-		}
-		return result;
-	}
-	
-	/**
-	 * @param target : The Creature whose hate level must be returned.
-	 * @return the hate level of this {@link Attackable} against the {@link Creature} set as target.
-	 */
-	public int getHating(final Creature target)
-	{
-		if (_aggroList.isEmpty() || target == null)
-			return 0;
-		
-		// Retrieve the AggroInfo related to the target.
-		final AggroInfo ai = _aggroList.get(target);
-		if (ai == null)
-			return 0;
-		
-		// Delete hate of invisible Players.
-		if (ai.getAttacker() instanceof Player && !((Player) ai.getAttacker()).getAppearance().isVisible())
-		{
-			_aggroList.remove(target);
-			return 0;
-		}
-		
-		// Delete hate of invisible-region Creatures.
-		if (!ai.getAttacker().isVisible())
-		{
-			_aggroList.remove(target);
-			return 0;
-		}
-		
-		// Stop the hate process if the attacker is dead-alike.
-		if (ai.getAttacker().isAlikeDead())
-		{
-			ai.stopHate();
-			return 0;
-		}
-		
-		return ai.getHate();
-	}
-	
-	/**
-	 * @return true if the {@link Attackable} successfully returned to spawn point. In case of minions, they are simply deleted.
+	 * @return True if the {@link Attackable} successfully returned to spawn point. In case of minions, they are simply deleted.
 	 */
 	public boolean returnHome()
 	{
@@ -413,7 +218,8 @@ public class Attackable extends Npc
 		// For regular Attackable, we check if a spawn exists, and if we're far from it (using drift range).
 		if (getSpawn() != null && !isIn2DRadius(getSpawn().getLoc(), getDriftRange()))
 		{
-			cleanAllHate();
+			_aggroList.cleanAllHate();
+			
 			setIsReturningToSpawnPoint(true);
 			forceWalkStance();
 			getAI().tryToMoveTo(getSpawn().getLoc(), null);
@@ -432,7 +238,7 @@ public class Attackable extends Npc
 		return _attackedBy;
 	}
 	
-	public final Map<Creature, AggroInfo> getAggroList()
+	public final AggroList getAggroList()
 	{
 		return _aggroList;
 	}
@@ -468,7 +274,7 @@ public class Attackable extends Npc
 	}
 	
 	/**
-	 * @return the {@link ItemInstance} used as weapon of this {@link Attackable} (null by default).
+	 * @return The {@link ItemInstance} used as weapon of this {@link Attackable} (null by default).
 	 */
 	public ItemInstance getActiveWeapon()
 	{
@@ -476,7 +282,7 @@ public class Attackable extends Npc
 	}
 	
 	/**
-	 * @return the {@link Attackable} leader of this Attackable, or null if this Attackable isn't linked to any master.
+	 * @return The {@link Attackable} leader of this {@link Attackable}, or null if this {@link Attackable} isn't linked to any master.
 	 */
 	public Attackable getMaster()
 	{
@@ -486,5 +292,100 @@ public class Attackable extends Npc
 	public boolean isGuard()
 	{
 		return false;
+	}
+	
+	/**
+	 * The range used by default is getTemplate().getAggroRange().
+	 * @param target : The targeted {@link Creature}.
+	 * @return True if the {@link Creature} used as target is autoattackable, or false otherwise.
+	 * @see #canAutoAttack(Creature)
+	 */
+	public boolean canAutoAttack(Creature target)
+	{
+		return canAutoAttack(target, getTemplate().getAggroRange(), false);
+	}
+	
+	/**
+	 * @param target : The targeted {@link Creature}.
+	 * @param range : The range to check.
+	 * @param allowPeaceful : If true, peaceful {@link Attackable}s are able to auto-attack.
+	 * @return True if the {@link Creature} used as target is autoattackable, or false otherwise.
+	 */
+	public boolean canAutoAttack(Creature target, int range, boolean allowPeaceful)
+	{
+		// Check if the target isn't null, a Door or dead.
+		if (target == null || target instanceof Door || target.isAlikeDead())
+			return false;
+		
+		if (target instanceof Playable)
+		{
+			// Check if target is in the Aggro range
+			if (!isIn3DRadius(target, range))
+				return false;
+			
+			// Check if the AI isn't a Raid Boss, can See Silent Moving players and the target isn't in silent move mode
+			if (!(isRaidRelated()) && !(canSeeThroughSilentMove()) && ((Playable) target).isSilentMoving())
+				return false;
+			
+			// Check if the target is a Player
+			final Player targetPlayer = target.getActingPlayer();
+			if (targetPlayer != null)
+			{
+				// GM checks ; check if the target is invisible or got access level
+				if (targetPlayer.isGM() && !targetPlayer.getAppearance().isVisible())
+					return false;
+				
+				// Check if player is an allied Varka.
+				if (ArraysUtil.contains(getTemplate().getClans(), "varka_silenos_clan") && targetPlayer.isAlliedWithVarka())
+					return false;
+				
+				// Check if player is an allied Ketra.
+				if (ArraysUtil.contains(getTemplate().getClans(), "ketra_orc_clan") && targetPlayer.isAlliedWithKetra())
+					return false;
+				
+				// check if the target is within the grace period for JUST getting up from fake death
+				if (targetPlayer.isRecentFakeDeath())
+					return false;
+				
+				if (this instanceof RiftInvader && targetPlayer.isInParty() && targetPlayer.getParty().isInDimensionalRift() && !targetPlayer.getParty().getDimensionalRift().isInCurrentRoomZone(this))
+					return false;
+			}
+		}
+		
+		if (this instanceof Guard)
+		{
+			// Check if the Playable target has karma.
+			if (target instanceof Playable && target.getActingPlayer().getKarma() > 0)
+				return GeoEngine.getInstance().canSeeTarget(this, target);
+			
+			// Check if the Monster target is aggressive.
+			if (target instanceof Monster && Config.GUARD_ATTACK_AGGRO_MOB)
+				return (((Monster) target).isAggressive() && GeoEngine.getInstance().canSeeTarget(this, target));
+			
+			return false;
+		}
+		else if (this instanceof FriendlyMonster)
+		{
+			// Check if the Playable target has karma.
+			if (target instanceof Playable && target.getActingPlayer().getKarma() > 0)
+				return GeoEngine.getInstance().canSeeTarget(this, target);
+			
+			return false;
+		}
+		else
+		{
+			if (target instanceof Attackable && isConfused())
+				return GeoEngine.getInstance().canSeeTarget(this, target);
+			
+			if (target instanceof Npc)
+				return false;
+			
+			// Depending on Config, do not allow mobs to attack players in PEACE zones, unless they are already following those players outside.
+			if (!Config.MOB_AGGRO_IN_PEACEZONE && target.isInsideZone(ZoneId.PEACE))
+				return false;
+			
+			// Check if the actor is Aggressive
+			return ((allowPeaceful || isAggressive()) && GeoEngine.getInstance().canSeeTarget(this, target));
+		}
 	}
 }

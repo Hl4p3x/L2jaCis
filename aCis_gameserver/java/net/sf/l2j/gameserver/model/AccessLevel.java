@@ -1,11 +1,11 @@
 package net.sf.l2j.gameserver.model;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.data.xml.AdminData;
 
 /**
- * A datatype used to retain access level informations, such as isGM() and multiple allowed actions (experience gain, allow transactions/peace attack/damage dealing/...).
+ * A datatype used to retain access level informations, such as isGM() and multiple allowed actions.
  */
 public class AccessLevel
 {
@@ -20,15 +20,12 @@ public class AccessLevel
 	private int _titleColor;
 	
 	private boolean _isGm;
-	private boolean _allowPeaceAttack;
 	private boolean _allowFixedRes;
 	private boolean _allowTransaction;
 	private boolean _allowAltG;
 	private boolean _giveDamage;
-	private boolean _takeAggro;
-	private boolean _gainExp;
 	
-	public AccessLevel(StatsSet set)
+	public AccessLevel(StatSet set)
 	{
 		_accessLevel = set.getInteger("level");
 		_name = set.getString("name");
@@ -36,13 +33,10 @@ public class AccessLevel
 		_titleColor = Integer.decode("0x" + set.getString("titleColor", "FFFF77"));
 		_childLevel = set.getInteger("childLevel", 0);
 		_isGm = set.getBool("isGM", false);
-		_allowPeaceAttack = set.getBool("allowPeaceAttack", false);
 		_allowFixedRes = set.getBool("allowFixedRes", false);
 		_allowTransaction = set.getBool("allowTransaction", true);
 		_allowAltG = set.getBool("allowAltg", false);
 		_giveDamage = set.getBool("giveDamage", true);
-		_takeAggro = set.getBool("takeAggro", true);
-		_gainExp = set.getBool("gainExp", true);
 	}
 	
 	/**
@@ -86,14 +80,6 @@ public class AccessLevel
 	}
 	
 	/**
-	 * @return true if the {@link AccessLevel} is allowed to attack in peace zone or not.
-	 */
-	public boolean allowPeaceAttack()
-	{
-		return _allowPeaceAttack;
-	}
-	
-	/**
 	 * @return true if the {@link AccessLevel} is allowed to use fixed res or not.
 	 */
 	public boolean allowFixedRes()
@@ -123,22 +109,6 @@ public class AccessLevel
 	public boolean canGiveDamage()
 	{
 		return _giveDamage;
-	}
-	
-	/**
-	 * @return true if the {@link AccessLevel} can take aggro or not.
-	 */
-	public boolean canTakeAggro()
-	{
-		return _takeAggro;
-	}
-	
-	/**
-	 * @return true if the {@link AccessLevel} can gain exp or not.
-	 */
-	public boolean canGainExp()
-	{
-		return _gainExp;
 	}
 	
 	/**

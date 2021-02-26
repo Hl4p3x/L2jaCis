@@ -1,12 +1,11 @@
 package net.sf.l2j.gameserver.handler.chathandlers;
 
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.handler.IChatHandler;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 
 public class ChatTrade implements IChatHandler
@@ -17,18 +16,18 @@ public class ChatTrade implements IChatHandler
 	};
 	
 	@Override
-	public void handleChat(SayType type, Player activeChar, String target, String text)
+	public void handleChat(SayType type, Player player, String target, String text)
 	{
-		if (!FloodProtectors.performAction(activeChar.getClient(), Action.TRADE_CHAT))
+		if (!player.getClient().performAction(FloodProtector.TRADE_CHAT))
 			return;
 		
-		final CreatureSay cs = new CreatureSay(activeChar, type, text);
-		final int region = MapRegionData.getInstance().getMapRegion(activeChar.getX(), activeChar.getY());
+		final CreatureSay cs = new CreatureSay(player, type, text);
+		final int region = MapRegionData.getInstance().getMapRegion(player.getX(), player.getY());
 		
-		for (Player player : World.getInstance().getPlayers())
+		for (Player worldPlayer : World.getInstance().getPlayers())
 		{
-			if (region == MapRegionData.getInstance().getMapRegion(player.getX(), player.getY()))
-				player.sendPacket(cs);
+			if (region == MapRegionData.getInstance().getMapRegion(worldPlayer.getX(), worldPlayer.getY()))
+				worldPlayer.sendPacket(cs);
 		}
 	}
 	

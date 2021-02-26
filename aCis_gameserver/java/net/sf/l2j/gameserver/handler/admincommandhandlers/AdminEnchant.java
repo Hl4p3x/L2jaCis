@@ -6,7 +6,6 @@ import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.xml.ArmorSetData;
 import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
-import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.ArmorSet;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
@@ -24,50 +23,46 @@ public class AdminEnchant implements IAdminCommandHandler
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
 		final StringTokenizer st = new StringTokenizer(command, " ");
-		st.nextToken();
+		st.nextToken(); // skip command
 		
 		if (st.countTokens() == 2)
 		{
 			try
 			{
-				final Paperdoll slot = Paperdoll.getEnumByName(st.nextToken());
-				if (slot == Paperdoll.NULL)
+				final Paperdoll paperdoll = Paperdoll.getEnumByName(st.nextToken());
+				if (paperdoll == Paperdoll.NULL)
 				{
-					activeChar.sendMessage("Unknown paperdoll slot.");
-					return false;
+					player.sendMessage("Unknown paperdoll slot.");
+					return;
 				}
 				
 				final int enchant = Integer.parseInt(st.nextToken());
 				if (enchant < 0 || enchant > 65535)
 				{
-					activeChar.sendMessage("You must set the enchant level between 0 - 65535.");
-					return false;
+					player.sendMessage("You must set the enchant level between 0 - 65535.");
+					return;
 				}
 				
-				WorldObject target = activeChar.getTarget();
-				if (!(target instanceof Player))
-					target = activeChar;
+				final Player targetPlayer = getTargetPlayer(player, true);
 				
-				final Player player = (Player) target;
-				
-				final ItemInstance item = player.getInventory().getItemFrom(slot);
+				final ItemInstance item = targetPlayer.getInventory().getItemFrom(paperdoll);
 				if (item == null)
 				{
-					activeChar.sendMessage(player.getName() + " doesn't wear any item in " + slot + " slot.");
-					return false;
+					player.sendMessage(targetPlayer.getName() + " doesn't wear any item in " + paperdoll + " slot.");
+					return;
 				}
 				
-				final Item it = item.getItem();
+				final Item toTestItem = item.getItem();
 				final int oldEnchant = item.getEnchantLevel();
 				
 				// Do nothing if both values are the same.
 				if (oldEnchant == enchant)
 				{
-					activeChar.sendMessage(player.getName() + "'s " + it.getName() + " enchant is already set to " + enchant + ".");
-					return false;
+					player.sendMessage(targetPlayer.getName() + "'s " + toTestItem.getName() + " enchant is already set to " + enchant + ".");
+					return;
 				}
 				
 				item.setEnchantLevel(enchant);
@@ -79,37 +74,37 @@ public class AdminEnchant implements IAdminCommandHandler
 					final int currentEnchant = item.getEnchantLevel();
 					
 					// Skill bestowed by +4 duals.
-					if (it instanceof Weapon)
+					if (toTestItem instanceof Weapon)
 					{
 						// Old enchant was >= 4 and new is lower : we drop the skill.
 						if (oldEnchant >= 4 && currentEnchant < 4)
 						{
-							final L2Skill enchant4Skill = ((Weapon) it).getEnchant4Skill();
+							final L2Skill enchant4Skill = ((Weapon) toTestItem).getEnchant4Skill();
 							if (enchant4Skill != null)
 							{
-								player.removeSkill(enchant4Skill.getId(), false);
-								player.sendSkillList();
+								targetPlayer.removeSkill(enchant4Skill.getId(), false);
+								targetPlayer.sendSkillList();
 							}
 						}
 						// Old enchant was < 4 and new is 4 or more : we add the skill.
 						else if (oldEnchant < 4 && currentEnchant >= 4)
 						{
-							final L2Skill enchant4Skill = ((Weapon) it).getEnchant4Skill();
+							final L2Skill enchant4Skill = ((Weapon) toTestItem).getEnchant4Skill();
 							if (enchant4Skill != null)
 							{
-								player.addSkill(enchant4Skill, false);
-								player.sendSkillList();
+								targetPlayer.addSkill(enchant4Skill, false);
+								targetPlayer.sendSkillList();
 							}
 						}
 					}
 					// Add skill bestowed by +6 armorset.
-					else if (it instanceof Armor)
+					else if (toTestItem instanceof Armor)
 					{
 						// Old enchant was >= 6 and new is lower : we drop the skill.
 						if (oldEnchant >= 6 && currentEnchant < 6)
 						{
 							// Check if player is wearing a chest item.
-							final int itemId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+							final int itemId = targetPlayer.getInventory().getItemIdFrom(Paperdoll.CHEST);
 							if (itemId > 0)
 							{
 								final ArmorSet armorSet = ArmorSetData.getInstance().getSet(itemId);
@@ -118,8 +113,8 @@ public class AdminEnchant implements IAdminCommandHandler
 									final int skillId = armorSet.getEnchant6skillId();
 									if (skillId > 0)
 									{
-										player.removeSkill(skillId, false);
-										player.sendSkillList();
+										targetPlayer.removeSkill(skillId, false);
+										targetPlayer.sendSkillList();
 									}
 								}
 							}
@@ -128,11 +123,11 @@ public class AdminEnchant implements IAdminCommandHandler
 						else if (oldEnchant < 6 && currentEnchant >= 6)
 						{
 							// Check if player is wearing a chest item.
-							final int itemId = player.getInventory().getItemIdFrom(Paperdoll.CHEST);
+							final int itemId = targetPlayer.getInventory().getItemIdFrom(Paperdoll.CHEST);
 							if (itemId > 0)
 							{
 								final ArmorSet armorSet = ArmorSetData.getInstance().getSet(itemId);
-								if (armorSet != null && armorSet.isEnchanted6(player)) // has all parts of set enchanted to 6 or more
+								if (armorSet != null && armorSet.isEnchanted6(targetPlayer)) // has all parts of set enchanted to 6 or more
 								{
 									final int skillId = armorSet.getEnchant6skillId();
 									if (skillId > 0)
@@ -140,8 +135,8 @@ public class AdminEnchant implements IAdminCommandHandler
 										final L2Skill skill = SkillTable.getInstance().getInfo(skillId, 1);
 										if (skill != null)
 										{
-											player.addSkill(skill, false);
-											player.sendSkillList();
+											targetPlayer.addSkill(skill, false);
+											targetPlayer.sendSkillList();
 										}
 									}
 								}
@@ -152,27 +147,23 @@ public class AdminEnchant implements IAdminCommandHandler
 				
 				final InventoryUpdate iu = new InventoryUpdate();
 				iu.addModifiedItem(item);
-				player.sendPacket(iu);
+				targetPlayer.sendPacket(iu);
 				
-				player.broadcastUserInfo();
+				targetPlayer.broadcastUserInfo();
 				
-				activeChar.sendMessage(player.getName() + "'s " + it.getName() + " enchant was modified from " + oldEnchant + " to " + enchant + ".");
+				player.sendMessage(targetPlayer.getName() + "'s " + toTestItem.getName() + " enchant was modified from " + oldEnchant + " to " + enchant + ".");
 			}
 			catch (Exception e)
 			{
-				activeChar.sendMessage("Please specify a new enchant value.");
+				player.sendMessage("Please specify a new enchant value.");
 			}
 		}
 		else
 		{
-			activeChar.sendMessage("Usage: //enchant [slot name] [enchant level]");
-			activeChar.sendMessage("Slots: under|lear|rear|neck|lfinger|rfinger|head|rhand|lhand");
-			activeChar.sendMessage("Slots: gloves|chest|legs|feet|cloak|face|hair|hairall");
+			player.sendMessage("Usage: //enchant slot enchant");
+			player.sendMessage("Slots: under|lear|rear|neck|lfinger|rfinger|head|rhand|lhand");
+			player.sendMessage("Slots: gloves|chest|legs|feet|cloak|face|hair|hairall");
 		}
-		
-		AdminHelpPage.showHelpPage(activeChar, "main_menu.htm");
-		
-		return true;
 	}
 	
 	@Override

@@ -2,9 +2,11 @@ package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.concurrent.Future;
 
+import net.sf.l2j.commons.math.MathUtil;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
 
+import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
@@ -100,6 +102,20 @@ public final class BabyPet extends Pet
 		super.doRevive();
 		
 		startCastTask();
+	}
+	
+	@Override
+	public final int getSkillLevel(int skillId)
+	{
+		// Unknown skill. Return 0.
+		if (getSkill(skillId) == null)
+			return 0;
+		
+		// Baby pet levels increase the skill level by 1 per 6 levels.
+		final int level = 1 + getStatus().getLevel() / 6;
+		
+		// Validate skill level.
+		return MathUtil.limit(level, 1, SkillTable.getInstance().getMaxLevel(skillId));
 	}
 	
 	private final void startCastTask()

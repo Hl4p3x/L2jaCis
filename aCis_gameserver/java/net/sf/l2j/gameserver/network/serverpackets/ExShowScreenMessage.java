@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.network.serverpackets;
 
 public class ExShowScreenMessage extends L2GameServerPacket
 {
-	public static enum SMPOS
+	public enum SMPOS
 	{
 		DUMMY,
 		TOP_LEFT,
@@ -16,65 +16,40 @@ public class ExShowScreenMessage extends L2GameServerPacket
 	}
 	
 	private final int _type;
-	private final int _sysMessageId;
-	private final boolean _hide;
+	private final int _sysMsgId;
+	private final boolean _showHide;
 	private final int _unk2;
 	private final int _unk3;
-	private final boolean _fade;
+	private final boolean _showFading;
 	private final int _size;
-	private final int _position;
-	private final boolean _effect;
+	private final SMPOS _position;
+	private final boolean _showEffect;
 	private final String _text;
 	private final int _time;
 	
 	public ExShowScreenMessage(String text, int time)
 	{
-		_type = 1;
-		_sysMessageId = -1;
-		_hide = false;
-		_unk2 = 0;
-		_unk3 = 0;
-		_fade = false;
-		_position = 0x02;
-		_text = text;
-		_time = time;
-		_size = 0;
-		_effect = false;
+		this(1, -1, SMPOS.TOP_CENTER, false, 0, 0, 0, false, time, false, text);
 	}
 	
 	public ExShowScreenMessage(String text, int time, SMPOS pos, boolean effect)
 	{
-		this(text, time, pos.ordinal(), effect);
+		this(1, -1, pos, false, 0, 0, 0, effect, time, false, text);
 	}
 	
-	public ExShowScreenMessage(String text, int time, int pos, boolean effect)
-	{
-		_type = 1;
-		_sysMessageId = -1;
-		_hide = false;
-		_unk2 = 0;
-		_unk3 = 0;
-		_fade = false;
-		_position = pos;
-		_text = text;
-		_time = time;
-		_size = 0;
-		_effect = effect;
-	}
-	
-	public ExShowScreenMessage(int type, int messageId, int position, boolean hide, int size, int unk2, int unk3, boolean showEffect, int time, boolean fade, String text)
+	public ExShowScreenMessage(int type, int sysMsgId, SMPOS position, boolean showHide, int size, int unk2, int unk3, boolean showEffect, int time, boolean showFading, String text)
 	{
 		_type = type;
-		_sysMessageId = messageId;
-		_hide = hide;
+		_sysMsgId = sysMsgId;
+		_position = position;
+		_showHide = showHide;
+		_size = size;
 		_unk2 = unk2;
 		_unk3 = unk3;
-		_fade = fade;
-		_position = position;
-		_text = text;
+		_showEffect = showEffect;
 		_time = time;
-		_size = size;
-		_effect = showEffect;
+		_showFading = showFading;
+		_text = text;
 	}
 	
 	@Override
@@ -83,15 +58,15 @@ public class ExShowScreenMessage extends L2GameServerPacket
 		writeC(0xfe);
 		writeH(0x38);
 		writeD(_type); // 0 - system messages, 1 - your defined text
-		writeD(_sysMessageId); // system message id (_type must be 0 otherwise no effect)
-		writeD(_position); // message position
-		writeD(_hide ? 1 : 0); // hide
+		writeD(_sysMsgId); // system message id (_type must be 0 otherwise no effect)
+		writeD(_position.ordinal()); // message position
+		writeD(_showHide ? 1 : 0); // hide
 		writeD(_size); // font size 0 - normal, 1 - small
 		writeD(_unk2); // ?
 		writeD(_unk3); // ?
-		writeD(_effect ? 1 : 0); // upper effect (0 - disabled, 1 enabled) - _position must be 2 (center) otherwise no effect
+		writeD(_showEffect ? 1 : 0); // upper effect (0 - disabled, 1 enabled) - _position must be 2 (center) otherwise no effect
 		writeD(_time); // time
-		writeD(_fade ? 1 : 0); // fade effect (0 - disabled, 1 enabled)
+		writeD(_showFading ? 1 : 0); // fade effect (0 - disabled, 1 enabled)
 		writeS(_text); // your text (_type must be 1, otherwise no effect)
 	}
 }

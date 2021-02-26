@@ -23,7 +23,7 @@ public class RecipeShopManageList extends L2GameServerPacket
 		manufactureList.setState(isDwarven);
 		
 		// Integrity check.
-		final Iterator<ManufactureItem> it = manufactureList.getList().iterator();
+		final Iterator<ManufactureItem> it = manufactureList.iterator();
 		while (it.hasNext())
 		{
 			ManufactureItem item = it.next();
@@ -54,7 +54,7 @@ public class RecipeShopManageList extends L2GameServerPacket
 			}
 		}
 		
-		final List<ManufactureItem> list = _player.getManufactureList().getList();
+		final List<ManufactureItem> list = _player.getManufactureList();
 		writeD(list.size());
 		
 		for (ManufactureItem item : list)

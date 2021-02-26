@@ -6,6 +6,7 @@ import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.data.xml.PlayerData;
 import net.sf.l2j.gameserver.data.xml.ScriptData;
+import net.sf.l2j.gameserver.enums.QuestStatus;
 import net.sf.l2j.gameserver.enums.ShortcutType;
 import net.sf.l2j.gameserver.enums.actors.Sex;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
@@ -21,19 +22,12 @@ import net.sf.l2j.gameserver.network.serverpackets.CharCreateOk;
 import net.sf.l2j.gameserver.network.serverpackets.CharSelectInfo;
 import net.sf.l2j.gameserver.scripting.Quest;
 
-@SuppressWarnings("unused")
 public final class RequestCharacterCreate extends L2GameClientPacket
 {
 	private String _name;
 	private int _race;
 	private byte _sex;
 	private int _classId;
-	private int _int;
-	private int _str;
-	private int _con;
-	private int _men;
-	private int _dex;
-	private int _wit;
 	private byte _hairStyle;
 	private byte _hairColor;
 	private byte _face;
@@ -45,12 +39,12 @@ public final class RequestCharacterCreate extends L2GameClientPacket
 		_race = readD();
 		_sex = (byte) readD();
 		_classId = readD();
-		_int = readD();
-		_str = readD();
-		_con = readD();
-		_men = readD();
-		_dex = readD();
-		_wit = readD();
+		readD(); // int
+		readD(); // str
+		readD(); // con
+		readD(); // men
+		readD(); // dex
+		readD(); // wit
 		_hairStyle = (byte) readD();
 		_hairColor = (byte) readD();
 		_face = (byte) readD();
@@ -173,7 +167,7 @@ public final class RequestCharacterCreate extends L2GameClientPacket
 		// Tutorial runs here.
 		final Quest quest = ScriptData.getInstance().getQuest("Tutorial");
 		if (quest != null)
-			quest.newQuestState(player).setState(Quest.STATE_STARTED);
+			quest.newQuestState(player).setState(QuestStatus.STARTED);
 		
 		player.setOnlineStatus(true, false);
 		player.deleteMe();

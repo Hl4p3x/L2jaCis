@@ -57,11 +57,11 @@ public class DimensionalRiftManager implements IXmlReader
 			
 			// Generate new layer of rooms if that type doesn't exist yet.
 			if (!_rooms.containsKey(type))
-				_rooms.put(type, new HashMap<Byte, DimensionalRiftRoom>(9));
+				_rooms.put(type, new HashMap<>(9));
 			
 			forEach(areaNode, "room", roomNode ->
 			{
-				// Generate the room using StatsSet content.
+				// Generate the room.
 				final DimensionalRiftRoom riftRoom = new DimensionalRiftRoom(type, parseAttributes(roomNode));
 				
 				// Store it.

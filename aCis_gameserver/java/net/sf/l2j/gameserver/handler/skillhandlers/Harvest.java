@@ -55,7 +55,7 @@ public class Harvest implements ISkillHandler
 			return;
 		}
 		
-		final List<IntIntHolder> items = target.getSeedState().getHarvestItems();
+		final List<IntIntHolder> items = target.getSeedState();
 		if (items.isEmpty())
 			return;
 		

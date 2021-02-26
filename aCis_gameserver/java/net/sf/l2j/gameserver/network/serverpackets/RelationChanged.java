@@ -14,22 +14,26 @@ public class RelationChanged extends L2GameServerPacket
 	public static final int RELATION_MUTUAL_WAR = 0x08000; // double fist
 	public static final int RELATION_1SIDED_WAR = 0x10000; // single fist
 	
-	private final int _objId, _relation, _autoAttackable, _karma, _pvpFlag;
+	private final int _objectId;
+	private final int _relation;
+	private final int _autoAttackable;
+	private final int _karma;
+	private final int _pvpFlag;
 	
-	public RelationChanged(Playable cha, int relation, boolean autoattackable)
+	public RelationChanged(Playable playable, int relation, boolean isAutoAttackable)
 	{
-		_objId = cha.getObjectId();
+		_objectId = playable.getObjectId();
 		_relation = relation;
-		_autoAttackable = autoattackable ? 1 : 0;
-		_karma = cha.getKarma();
-		_pvpFlag = cha.getPvpFlag();
+		_autoAttackable = (isAutoAttackable) ? 1 : 0;
+		_karma = playable.getKarma();
+		_pvpFlag = playable.getPvpFlag();
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0xce);
-		writeD(_objId);
+		writeD(_objectId);
 		writeD(_relation);
 		writeD(_autoAttackable);
 		writeD(_karma);

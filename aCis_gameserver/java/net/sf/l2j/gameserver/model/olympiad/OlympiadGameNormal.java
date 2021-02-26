@@ -264,8 +264,8 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 		if (_aborted)
 			return;
 		
-		final int playerOnePoints = _playerOne.getStats().getInteger(POINTS);
-		final int playerTwoPoints = _playerTwo.getStats().getInteger(POINTS);
+		final int playerOnePoints = _playerOne.getStatSet().getInteger(POINTS);
+		final int playerTwoPoints = _playerTwo.getStatSet().getInteger(POINTS);
 		
 		// Check for if a player defected before battle started.
 		if (_playerOne.isDefecting() || _playerTwo.isDefecting())
@@ -426,20 +426,20 @@ abstract public class OlympiadGameNormal extends AbstractOlympiadGame
 		_playerOne.updatePlayer();
 		_playerTwo.updatePlayer();
 		
-		SystemMessage reason = checkDefection(_playerOne.getPlayer());
-		if (reason != null)
+		SystemMessage sm = checkDefection(_playerOne.getPlayer());
+		if (sm != null)
 		{
 			_playerOne.setDefection(true);
 			if (_playerTwo.getPlayer() != null)
-				_playerTwo.getPlayer().sendPacket(reason);
+				_playerTwo.getPlayer().sendPacket(sm);
 		}
 		
-		reason = checkDefection(_playerTwo.getPlayer());
-		if (reason != null)
+		sm = checkDefection(_playerTwo.getPlayer());
+		if (sm != null)
 		{
 			_playerTwo.setDefection(true);
 			if (_playerOne.getPlayer() != null)
-				_playerOne.getPlayer().sendPacket(reason);
+				_playerOne.getPlayer().sendPacket(sm);
 		}
 		
 		return _playerOne.isDefecting() || _playerTwo.isDefecting();

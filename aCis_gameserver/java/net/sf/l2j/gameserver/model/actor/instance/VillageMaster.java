@@ -11,6 +11,7 @@ import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.data.xml.PlayerData;
 import net.sf.l2j.gameserver.data.xml.SkillTreeData;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.enums.skills.AcquireSkillType;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -22,8 +23,6 @@ import net.sf.l2j.gameserver.model.olympiad.OlympiadManager;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.model.pledge.ClanMember;
 import net.sf.l2j.gameserver.model.pledge.SubPledge;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.AcquireSkillList;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
@@ -251,10 +250,10 @@ public class VillageMaster extends Folk
 			if (clan.getNewLeaderId() == 0)
 			{
 				clan.setNewLeaderId(member.getObjectId(), true);
-				html.setFile("data/html/scripts/village_master/Clan/9000-07-success.htm");
+				html.setFile("data/html/script/feature/Clan/9000-07-success.htm");
 			}
 			else
-				html.setFile("data/html/scripts/village_master/Clan/9000-07-in-progress.htm");
+				html.setFile("data/html/script/feature/Clan/9000-07-in-progress.htm");
 			
 			player.sendPacket(html);
 		}
@@ -271,10 +270,10 @@ public class VillageMaster extends Folk
 			if (clan.getNewLeaderId() != 0)
 			{
 				clan.setNewLeaderId(0, true);
-				html.setFile("data/html/scripts/village_master/Clan/9000-08-success.htm");
+				html.setFile("data/html/script/feature/Clan/9000-08-success.htm");
 			}
 			else
-				html.setFile("data/html/scripts/village_master/Clan/9000-08-no.htm");
+				html.setFile("data/html/script/feature/Clan/9000-08-no.htm");
 			
 			player.sendPacket(html);
 		}
@@ -446,7 +445,7 @@ public class VillageMaster extends Folk
 					break;
 				
 				case 4: // Add Subclass - Action (Subclass 4 x[x])
-					if (!FloodProtectors.performAction(player.getClient(), Action.SUBCLASS))
+					if (!player.getClient().performAction(FloodProtector.SUBCLASS))
 						return;
 					
 					boolean allowAddition = true;
@@ -489,7 +488,7 @@ public class VillageMaster extends Folk
 					break;
 				
 				case 5: // Change Class - Action
-					if (!FloodProtectors.performAction(player.getClient(), Action.SUBCLASS))
+					if (!player.getClient().performAction(FloodProtector.SUBCLASS))
 						return;
 					
 					if (player.getClassIndex() == paramOne)
@@ -560,7 +559,7 @@ public class VillageMaster extends Folk
 					break;
 				
 				case 7: // Change Subclass - Action
-					if (!FloodProtectors.performAction(player.getClient(), Action.SUBCLASS))
+					if (!player.getClient().performAction(FloodProtector.SUBCLASS))
 						return;
 					
 					if (!isValidNewSubClass(player, paramTwo))
@@ -599,11 +598,11 @@ public class VillageMaster extends Folk
 		if (player.isNoble())
 			return true;
 		
-		QuestState qs = player.getQuestState("Q234_FatesWhisper");
+		QuestState qs = player.getQuestList().getQuestState("Q234_FatesWhisper");
 		if (qs == null || !qs.isCompleted())
 			return false;
 		
-		qs = player.getQuestState("Q235_MimirsElixir");
+		qs = player.getQuestList().getQuestState("Q235_MimirsElixir");
 		if (qs == null || !qs.isCompleted())
 			return false;
 		
@@ -860,7 +859,7 @@ public class VillageMaster extends Folk
 		if (!player.isClanLeader())
 		{
 			final NpcHtmlMessage html = new NpcHtmlMessage(0);
-			html.setFile("data/html/scripts/village_master/Clan/9000-09-no.htm");
+			html.setFile("data/html/script/feature/Clan/9000-09-no.htm");
 			player.sendPacket(html);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 			return;
@@ -870,7 +869,7 @@ public class VillageMaster extends Folk
 		if (skills.isEmpty())
 		{
 			final NpcHtmlMessage html = new NpcHtmlMessage(0);
-			html.setFile("data/html/scripts/village_master/Clan/9000-09-no.htm");
+			html.setFile("data/html/script/feature/Clan/9000-09-no.htm");
 			player.sendPacket(html);
 		}
 		else

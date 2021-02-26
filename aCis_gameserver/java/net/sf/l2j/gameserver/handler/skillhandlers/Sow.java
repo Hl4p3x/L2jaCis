@@ -12,7 +12,7 @@ import net.sf.l2j.gameserver.model.group.Party;
 import net.sf.l2j.gameserver.model.manor.Seed;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
-import net.sf.l2j.gameserver.scripting.QuestState;
+import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class Sow implements ISkillHandler
@@ -49,7 +49,7 @@ public class Sow implements ISkillHandler
 		SystemMessageId smId;
 		if (calcSuccess(activeChar, target, seed))
 		{
-			player.sendPacket(new PlaySound(QuestState.SOUND_ITEMGET));
+			player.sendPacket(new PlaySound(Quest.SOUND_ITEMGET));
 			target.getSeedState().calculateHarvestItems(activeChar.getObjectId());
 			smId = SystemMessageId.THE_SEED_WAS_SUCCESSFULLY_SOWN;
 		}

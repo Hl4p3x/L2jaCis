@@ -96,7 +96,8 @@ public class LotteryManager
 	
 	public static int[] decodeNumbers(int enchant, int type2)
 	{
-		int res[] = new int[5];
+		int[] res = new int[5];
+		
 		int id = 0;
 		int nr = 1;
 		
@@ -132,7 +133,7 @@ public class LotteryManager
 	
 	public static int[] checkTicket(int id, int enchant, int type2)
 	{
-		int res[] =
+		int[] res =
 		{
 			0,
 			0

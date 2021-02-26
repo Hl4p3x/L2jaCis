@@ -19,7 +19,7 @@ public class PetInventoryUpdate extends L2GameServerPacket
 	
 	public PetInventoryUpdate()
 	{
-		this(new ArrayList<ItemInfo>());
+		this(new ArrayList<>());
 	}
 	
 	public void addItem(ItemInstance item)

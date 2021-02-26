@@ -1,10 +1,9 @@
 package net.sf.l2j.gameserver.handler.chathandlers;
 
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.enums.SayType;
 import net.sf.l2j.gameserver.handler.IChatHandler;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 
 public class ChatAll implements IChatHandler
@@ -15,16 +14,16 @@ public class ChatAll implements IChatHandler
 	};
 	
 	@Override
-	public void handleChat(SayType type, Player activeChar, String params, String text)
+	public void handleChat(SayType type, Player player, String target, String text)
 	{
-		if (!FloodProtectors.performAction(activeChar.getClient(), Action.GLOBAL_CHAT))
+		if (!player.getClient().performAction(FloodProtector.GLOBAL_CHAT))
 			return;
 		
-		final CreatureSay cs = new CreatureSay(activeChar, type, text);
-		for (Player player : activeChar.getKnownTypeInRadius(Player.class, 1250))
-			player.sendPacket(cs);
+		final CreatureSay cs = new CreatureSay(player, type, text);
+		for (Player knownPlayer : player.getKnownTypeInRadius(Player.class, 1250))
+			knownPlayer.sendPacket(cs);
 		
-		activeChar.sendPacket(cs);
+		player.sendPacket(cs);
 	}
 	
 	@Override

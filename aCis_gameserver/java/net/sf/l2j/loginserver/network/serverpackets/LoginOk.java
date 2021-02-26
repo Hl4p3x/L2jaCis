@@ -2,12 +2,10 @@ package net.sf.l2j.loginserver.network.serverpackets;
 
 import net.sf.l2j.loginserver.network.SessionKey;
 
-/**
- * Format: dddddddd f: the session key d: ? d: ? d: ? d: ? d: ? d: ? b: 16 bytes - unknown
- */
 public final class LoginOk extends L2LoginServerPacket
 {
-	private final int _loginOk1, _loginOk2;
+	private final int _loginOk1;
+	private final int _loginOk2;
 	
 	public LoginOk(SessionKey sessionKey)
 	{

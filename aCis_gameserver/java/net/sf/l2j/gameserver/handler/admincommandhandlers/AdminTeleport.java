@@ -1,246 +1,185 @@
 package net.sf.l2j.gameserver.handler.admincommandhandlers;
 
-import java.util.NoSuchElementException;
 import java.util.StringTokenizer;
 
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
+import net.sf.l2j.gameserver.enums.TeleportMode;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.World;
-import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.group.Party;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 
-/**
- * This class handles teleport admin commands
- */
 public class AdminTeleport implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
 	{
-		"admin_runmod",
-		"admin_instant_move",
+		"admin_instant_move", // alt+G menu
+		"admin_recall", // alt+G menu
+		"admin_sendhome", // alt+G menu
 		"admin_tele",
-		"admin_tele_areas",
-		"admin_goto",
-		"admin_teleportto", // deprecated
-		"admin_recall",
-		"admin_recall_party",
-		"admin_recall_clan",
-		"admin_move_to",
-		"admin_sendhome"
+		"admin_teleport",
+		"admin_teleportto" // alt+G menu
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
-		// runmod
-		if (command.equals("admin_runmod") || command.equals("admin_instant_move"))
-			activeChar.setTeleMode(1);
-		if (command.equals("admin_runmod tele"))
-			activeChar.setTeleMode(2);
-		if (command.equals("admin_runmod norm"))
-			activeChar.setTeleMode(0);
-		
-		// teleport via panels
 		if (command.equals("admin_tele"))
-			AdminHelpPage.showHelpPage(activeChar, "teleports.htm");
-		if (command.equals("admin_tele_areas"))
-			AdminHelpPage.showHelpPage(activeChar, "tele/other.htm");
+		{
+			sendFile(player, "teleports.htm");
+			return;
+		}
 		
-		// recalls / goto types
-		if (command.startsWith("admin_goto") || command.startsWith("admin_teleportto"))
+		final StringTokenizer st = new StringTokenizer(command);
+		st.nextToken();
+		
+		if (command.startsWith("admin_instant_move"))
 		{
-			StringTokenizer st = new StringTokenizer(command);
-			if (st.countTokens() > 1)
+			if (!st.hasMoreTokens())
+				player.setTeleportMode(TeleportMode.ONE_TIME);
+			else
 			{
-				st.nextToken();
-				String plyr = st.nextToken();
-				Player player = World.getInstance().getPlayer(plyr);
-				if (player == null)
+				try
 				{
-					activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-				
-				teleportToCharacter(activeChar, player);
-			}
-		}
-		else if (command.startsWith("admin_recall "))
-		{
-			try
-			{
-				String targetName = command.substring(13);
-				Player player = World.getInstance().getPlayer(targetName);
-				if (player == null)
-				{
-					activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-				
-				teleportCharacter(player, activeChar.getX(), activeChar.getY(), activeChar.getZ());
-			}
-			catch (StringIndexOutOfBoundsException e)
-			{
-			}
-		}
-		else if (command.startsWith("admin_recall_party"))
-		{
-			try
-			{
-				String targetName = command.substring(19);
-				Player player = World.getInstance().getPlayer(targetName);
-				if (player == null)
-				{
-					activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-				
-				final Party party = player.getParty();
-				if (party != null)
-				{
-					for (Player member : party.getMembers())
-						teleportCharacter(member, activeChar.getX(), activeChar.getY(), activeChar.getZ());
+					final int mode = Integer.parseInt(st.nextToken());
+					if (mode < 0 || mode > 2)
+					{
+						player.sendMessage("Usage: //instant_move [0|1|2]");
+						return;
+					}
 					
-					activeChar.sendMessage("You recall " + player.getName() + "'s party.");
+					player.setTeleportMode(TeleportMode.VALUES[mode]);
 				}
-				else
+				catch (Exception e)
 				{
-					activeChar.sendMessage("You recall " + player.getName() + ", but he isn't in a party.");
-					teleportCharacter(player, activeChar.getX(), activeChar.getY(), activeChar.getZ());
+					player.sendMessage("Usage: //instant_move [0|1|2]");
 				}
-			}
-			catch (StringIndexOutOfBoundsException e)
-			{
 			}
 		}
-		else if (command.startsWith("admin_recall_clan"))
+		else if (command.startsWith("admin_recall"))
 		{
-			try
+			if (!st.hasMoreTokens())
 			{
-				String targetName = command.substring(18);
-				Player player = World.getInstance().getPlayer(targetName);
-				if (player == null)
-				{
-					activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-				
-				Clan clan = player.getClan();
-				if (clan != null)
-				{
-					for (Player member : clan.getOnlineMembers())
-						teleportCharacter(member, activeChar.getX(), activeChar.getY(), activeChar.getZ());
+				player.sendPacket(SystemMessageId.INVALID_TARGET);
+				return;
+			}
+			
+			final String param = st.nextToken();
+			switch (param)
+			{
+				case "clan":
+					if (!st.hasMoreTokens())
+					{
+						player.sendPacket(SystemMessageId.INVALID_TARGET);
+						return;
+					}
 					
-					activeChar.sendMessage("You recall " + player.getName() + "'s clan.");
-				}
-				else
-				{
-					activeChar.sendMessage("You recall " + player.getName() + ", but he isn't a clan member.");
-					teleportCharacter(player, activeChar.getX(), activeChar.getY(), activeChar.getZ());
-				}
-			}
-			catch (StringIndexOutOfBoundsException e)
-			{
-			}
-		}
-		else if (command.startsWith("admin_move_to"))
-		{
-			try
-			{
-				String val = command.substring(14);
-				teleportTo(activeChar, val);
-			}
-			catch (Exception e)
-			{
-				// Case of empty or missing coordinates
-				AdminHelpPage.showHelpPage(activeChar, "teleports.htm");
+					Player worldPlayer = World.getInstance().getPlayer(st.nextToken());
+					if (worldPlayer == null)
+					{
+						player.sendPacket(SystemMessageId.INVALID_TARGET);
+						return;
+					}
+					
+					final Clan clan = worldPlayer.getClan();
+					if (clan == null)
+						worldPlayer.teleportTo(player.getPosition(), 0);
+					else
+					{
+						for (Player clanMember : clan.getOnlineMembers())
+							clanMember.teleportTo(player.getPosition(), 0);
+					}
+					break;
+				
+				case "party":
+					if (!st.hasMoreTokens())
+					{
+						player.sendPacket(SystemMessageId.INVALID_TARGET);
+						return;
+					}
+					
+					worldPlayer = World.getInstance().getPlayer(st.nextToken());
+					if (worldPlayer == null)
+					{
+						player.sendPacket(SystemMessageId.INVALID_TARGET);
+						return;
+					}
+					
+					final Party party = worldPlayer.getParty();
+					if (party == null)
+						worldPlayer.teleportTo(player.getPosition(), 0);
+					else
+					{
+						for (Player partyMember : party.getMembers())
+							partyMember.teleportTo(player.getPosition(), 0);
+					}
+					break;
+				
+				default:
+					worldPlayer = World.getInstance().getPlayer(param);
+					if (worldPlayer == null)
+					{
+						player.sendPacket(SystemMessageId.INVALID_TARGET);
+						return;
+					}
+					
+					worldPlayer.teleportTo(player.getPosition(), 0);
+					break;
 			}
 		}
 		else if (command.startsWith("admin_sendhome"))
 		{
-			StringTokenizer st = new StringTokenizer(command);
-			if (st.countTokens() > 1)
+			Player targetPlayer;
+			
+			if (st.hasMoreTokens())
 			{
-				st.nextToken();
-				String plyr = st.nextToken();
-				Player player = World.getInstance().getPlayer(plyr);
-				if (player == null)
+				targetPlayer = World.getInstance().getPlayer(st.nextToken());
+				if (targetPlayer == null)
 				{
-					activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
+					player.sendPacket(SystemMessageId.INVALID_TARGET);
+					return;
 				}
-				
-				sendHome(player);
 			}
 			else
+				targetPlayer = getTargetPlayer(player, true);
+			
+			targetPlayer.teleportTo(TeleportType.TOWN);
+			targetPlayer.setIsIn7sDungeon(false);
+		}
+		else if (command.startsWith("admin_teleportto"))
+		{
+			if (!st.hasMoreTokens())
 			{
-				WorldObject target = activeChar.getTarget();
-				Player player = null;
-				
-				// if target isn't a player, select yourself as target
-				if (target instanceof Player)
-					player = (Player) target;
-				else
-					player = activeChar;
-				
-				sendHome(player);
+				player.sendPacket(SystemMessageId.INVALID_TARGET);
+				return;
 			}
-		}
-		return true;
-	}
-	
-	private static void sendHome(Player player)
-	{
-		player.teleportTo(TeleportType.TOWN);
-		player.setIsIn7sDungeon(false);
-		player.sendMessage("A GM sent you at nearest town.");
-	}
-	
-	private static void teleportTo(Player activeChar, String Cords)
-	{
-		try
-		{
-			StringTokenizer st = new StringTokenizer(Cords);
-			String x1 = st.nextToken();
-			int x = Integer.parseInt(x1);
-			String y1 = st.nextToken();
-			int y = Integer.parseInt(y1);
-			String z1 = st.nextToken();
-			int z = Integer.parseInt(z1);
 			
-			activeChar.getAI().tryToIdle();
-			activeChar.teleportTo(x, y, z, 0);
+			final Player worldPlayer = World.getInstance().getPlayer(st.nextToken());
+			if (worldPlayer == null)
+			{
+				player.sendPacket(SystemMessageId.INVALID_TARGET);
+				return;
+			}
 			
-			activeChar.sendMessage("You have been teleported to " + Cords + ".");
+			player.teleportTo(worldPlayer.getPosition(), 0);
 		}
-		catch (NoSuchElementException nsee)
+		else if (command.startsWith("admin_teleport"))
 		{
-			activeChar.sendMessage("Coordinates you entered as parameter [" + Cords + "] are wrong.");
-		}
-	}
-	
-	private static void teleportCharacter(Player player, int x, int y, int z)
-	{
-		player.getAI().tryToIdle();
-		player.teleportTo(x, y, z, 0);
-		player.sendMessage("A GM is teleporting you.");
-	}
-	
-	private static void teleportToCharacter(Player activeChar, Player target)
-	{
-		if (target.getObjectId() == activeChar.getObjectId())
-			activeChar.sendPacket(SystemMessageId.CANNOT_USE_ON_YOURSELF);
-		else
-		{
-			int x = target.getX();
-			int y = target.getY();
-			int z = target.getZ();
-			
-			activeChar.getAI().tryToIdle();
-			activeChar.teleportTo(x, y, z, 0);
-			activeChar.sendMessage("You have teleported to " + target.getName() + ".");
+			try
+			{
+				final int x = Integer.parseInt(st.nextToken());
+				final int y = Integer.parseInt(st.nextToken());
+				final int z = (st.hasMoreTokens()) ? Integer.parseInt(st.nextToken()) : GeoEngine.getInstance().getHeight(x, y, player.getZ());
+				
+				player.teleportTo(x, y, z, 0);
+			}
+			catch (Exception e)
+			{
+				sendFile(player, "teleports.htm");
+			}
 		}
 	}
 	

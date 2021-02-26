@@ -4,11 +4,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.logging.CLogger;
@@ -16,14 +18,16 @@ import net.sf.l2j.commons.math.MathUtil;
 import net.sf.l2j.commons.pool.ConnectionPool;
 
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.communitybbs.BB.Forum;
-import net.sf.l2j.gameserver.communitybbs.Manager.ForumsBBSManager;
+import net.sf.l2j.gameserver.communitybbs.CommunityBoard;
+import net.sf.l2j.gameserver.communitybbs.model.Forum;
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.data.cache.CrestCache;
 import net.sf.l2j.gameserver.data.cache.CrestCache.CrestType;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.SiegeSide;
+import net.sf.l2j.gameserver.enums.bbs.ForumAccess;
+import net.sf.l2j.gameserver.enums.bbs.ForumType;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.entity.Castle;
@@ -38,6 +42,7 @@ import net.sf.l2j.gameserver.network.serverpackets.PledgeShowInfoUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowMemberListAll;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowMemberListDeleteAll;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeShowMemberListUpdate;
+import net.sf.l2j.gameserver.network.serverpackets.PledgeSkillList;
 import net.sf.l2j.gameserver.network.serverpackets.PledgeSkillListAdd;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.network.serverpackets.UserInfo;
@@ -54,7 +59,7 @@ public class Clan
 	
 	private static final String LOAD_MEMBERS = "SELECT char_name,level,classid,obj_Id,title,power_grade,subpledge,apprentice,sponsor,sex,race FROM characters WHERE clanid=?";
 	private static final String LOAD_SUBPLEDGES = "SELECT sub_pledge_id,name,leader_id FROM clan_subpledges WHERE clan_id=?";
-	private static final String LOAD_PRIVILEDGES = "SELECT privs,rank FROM clan_privs WHERE clan_id=?";
+	private static final String LOAD_PRIVILEGES = "SELECT ranking,privs FROM clan_privs WHERE clan_id=?";
 	private static final String LOAD_SKILLS = "SELECT skill_id,skill_level FROM clan_skills WHERE clan_id=?";
 	
 	private static final String RESET_MEMBER_PRIVS = "UPDATE characters SET clan_privs=0 WHERE obj_Id=?";
@@ -70,11 +75,13 @@ public class Clan
 	private static final String UPDATE_INTRODUCTION = "UPDATE clan_data SET introduction=? WHERE clan_id=?";
 	
 	private static final String ADD_OR_UPDATE_SKILL = "INSERT INTO clan_skills (clan_id,skill_id,skill_level) VALUES (?,?,?) ON DUPLICATE KEY UPDATE skill_level=VALUES(skill_level)";
+	private static final String REMOVE_SKILL = "DELETE FROM clan_skills WHERE clan_id=? AND skill_id=?";
+	private static final String REMOVE_ALL_SKILLS = "DELETE FROM clan_skills WHERE clan_id=?";
 	
 	private static final String INSERT_SUBPLEDGE = "INSERT INTO clan_subpledges (clan_id,sub_pledge_id,name,leader_id) values (?,?,?,?)";
 	private static final String UPDATE_SUBPLEDGE = "UPDATE clan_subpledges SET leader_id=?, name=? WHERE clan_id=? AND sub_pledge_id=?";
 	
-	private static final String ADD_OR_UPDATE_PRIVILEDGE = "INSERT INTO clan_privs (clan_id,rank,privs) VALUES (?,?,?) ON DUPLICATE KEY UPDATE privs=VALUES(privs)";
+	private static final String ADD_OR_UPDATE_PRIVILEGE = "INSERT INTO clan_privs (clan_id,ranking,privs) VALUES (?,?,?) ON DUPLICATE KEY UPDATE privs=VALUES(privs)";
 	
 	private static final String UPDATE_CRP = "UPDATE clan_data SET reputation_score=? WHERE clan_id=?";
 	private static final String UPDATE_AUCTION = "UPDATE clan_data SET auction_bid_at=? WHERE clan_id=?";
@@ -129,7 +136,7 @@ public class Clan
 	private final Map<Integer, ClanMember> _members = new ConcurrentHashMap<>();
 	private final Map<Integer, Long> _warPenaltyExpiryTime = new ConcurrentHashMap<>();
 	private final Map<Integer, L2Skill> _skills = new ConcurrentHashMap<>();
-	private final Map<Integer, Integer> _priviledges = new ConcurrentHashMap<>();
+	private final Map<Integer, Integer> _privileges = new ConcurrentHashMap<>();
 	private final Map<Integer, SubPledge> _subPledges = new ConcurrentHashMap<>();
 	
 	private final Set<Integer> _atWarWith = ConcurrentHashMap.newKeySet();
@@ -155,7 +162,8 @@ public class Clan
 	private long _charPenaltyExpiryTime;
 	private long _dissolvingExpiryTime;
 	
-	private Forum _forum;
+	private Forum _annBoard; // Clan Announcements
+	private Forum _cbbBoard; // Clan Community Board
 	
 	private int _reputationScore;
 	private int _rank;
@@ -180,7 +188,7 @@ public class Clan
 		_clanId = clanId;
 		
 		for (int i = 1; i < 10; i++)
-			_priviledges.put(i, CP_NOTHING);
+			_privileges.put(i, CP_NOTHING);
 		
 		try (Connection con = ConnectionPool.getConnection())
 		{
@@ -218,15 +226,15 @@ public class Clan
 				}
 			}
 			
-			// Load priviledges.
-			try (PreparedStatement ps = con.prepareStatement(LOAD_PRIVILEDGES))
+			// Load privileges.
+			try (PreparedStatement ps = con.prepareStatement(LOAD_PRIVILEGES))
 			{
 				ps.setInt(1, _clanId);
 				
 				try (ResultSet rs = ps.executeQuery())
 				{
 					while (rs.next())
-						_priviledges.put(rs.getInt("rank"), rs.getInt("privs"));
+						_privileges.put(rs.getInt("ranking"), rs.getInt("privs"));
 				}
 			}
 			
@@ -278,7 +286,7 @@ public class Clan
 	}
 	
 	/**
-	 * A constructor called to create a new {@link Clan}. It feeds all priviledges ranks with CP_NOTHING.
+	 * A constructor called to create a new {@link Clan}. It feeds all privileges ranks with CP_NOTHING.
 	 * @param clanId : A valid id to use.
 	 * @param clanName : A valid clan name.
 	 */
@@ -287,8 +295,11 @@ public class Clan
 		_clanId = clanId;
 		_name = clanName;
 		
+		_notice = "";
+		_introduction = "";
+		
 		for (int i = 1; i < 10; i++)
-			_priviledges.put(i, CP_NOTHING);
+			_privileges.put(i, CP_NOTHING);
 	}
 	
 	public String getName()
@@ -461,15 +472,13 @@ public class Clan
 	{
 		_level = level;
 		
-		if (Config.ENABLE_COMMUNITY_BOARD && _level >= 2 && _forum == null)
+		if (Config.ENABLE_COMMUNITY_BOARD && _level >= 2)
 		{
-			final Forum forum = ForumsBBSManager.getInstance().getForumByName("ClanRoot");
-			if (forum != null)
-			{
-				_forum = forum.getChildByName(_name);
-				if (_forum == null)
-					_forum = ForumsBBSManager.getInstance().createNewForum(_name, forum, Forum.CLAN, Forum.CLANMEMBERONLY, _clanId);
-			}
+			if (_annBoard == null)
+				_annBoard = CommunityBoard.getInstance().getOrCreateForum(ForumType.CLAN_ANN, ForumAccess.READ, _clanId);
+			
+			if (_cbbBoard == null)
+				_cbbBoard = CommunityBoard.getInstance().getOrCreateForum(ForumType.CLAN_CBB, ForumAccess.READ, _clanId);
 		}
 	}
 	
@@ -591,6 +600,16 @@ public class Clan
 	public void setDissolvingExpiryTime(long time)
 	{
 		_dissolvingExpiryTime = time;
+	}
+	
+	public Forum getAnnBoard()
+	{
+		return _annBoard;
+	}
+	
+	public Forum getCbbBoard()
+	{
+		return _cbbBoard;
 	}
 	
 	/**
@@ -877,7 +896,7 @@ public class Clan
 	 */
 	public int getOnlineMembersCount()
 	{
-		return (int) _members.values().stream().filter(m -> m.isOnline()).count();
+		return (int) _members.values().stream().filter(ClanMember::isOnline).count();
 	}
 	
 	/**
@@ -1039,12 +1058,20 @@ public class Clan
 	 * Add a new {@link L2Skill} to the {@link Clan}.
 	 * @param skill : The {@link L2Skill} to add.
 	 * @param needRefresh : If True, a status refresh occured. Bypass {@link Player} {@link L2Skill} acquisition.
+	 * @return True if the operation was successful (the {@link L2Skill} wasn't existing or at a lower level), or false otherwise.
 	 */
-	public void addNewSkill(L2Skill skill, boolean needRefresh)
+	public boolean addClanSkill(L2Skill skill, boolean needRefresh)
 	{
+		// Integrity check.
 		if (skill == null)
-			return;
+			return false;
 		
+		// Don't try to add skill if the exact same level already exists.
+		final L2Skill existingSkill = _skills.get(skill.getId());
+		if (existingSkill != null && existingSkill.getLevel() == skill.getLevel())
+			return false;
+		
+		// Update db.
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(ADD_OR_UPDATE_SKILL))
 		{
@@ -1056,7 +1083,7 @@ public class Clan
 		catch (Exception e)
 		{
 			LOGGER.error("Error while storing a clan skill.", e);
-			return;
+			return false;
 		}
 		
 		// Replace or add the skill.
@@ -1065,9 +1092,10 @@ public class Clan
 		final PledgeSkillListAdd psla = new PledgeSkillListAdd(skill);
 		final SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.CLAN_SKILL_S1_ADDED).addSkillName(skill.getId());
 		
+		// Test each online member, reward the skill if checks are successful.
 		for (Player player : getOnlineMembers())
 		{
-			if (!needRefresh && skill.getMinPledgeClass() <= player.getPledgeClass())
+			if (!needRefresh && checkAndAddClanSkill(player, skill))
 			{
 				player.addSkill(skill, false);
 				player.sendSkillList();
@@ -1075,24 +1103,171 @@ public class Clan
 			player.sendPacket(psla);
 			player.sendPacket(sm);
 		}
+		return true;
 	}
 	
 	/**
-	 * Add all {@link Clan} {@link L2Skill}s to the {@link Player} set as parameter.<br>
-	 * <br>
-	 * Only {@link L2Skill}s related to {@link Player} pledge are rewarded. Also, don't reward if reputation score is 0 or lower, or if the {@link Player} is on Olympiad mode.
-	 * @param player : The {@link Player} to test.
+	 * Remove a {@link L2Skill} based on its id from the {@link Clan}.
+	 * @param id : The id to remove, if existing.
+	 * @return True if the operation was successful (the {@link L2Skill} was deleted), or false otherwise.
 	 */
-	public void addClanSkillsTo(Player player)
+	public boolean removeClanSkill(int id)
+	{
+		// Don't try to remove skill if not existing.
+		final L2Skill skill = _skills.remove(id);
+		if (skill == null)
+			return false;
+		
+		// Update db.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(REMOVE_SKILL))
+		{
+			ps.setInt(1, _clanId);
+			ps.setInt(2, id);
+			ps.executeUpdate();
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error while removing a clan skill.", e);
+			return false;
+		}
+		
+		final PledgeSkillList psl = new PledgeSkillList(this);
+		
+		// Test each online member, remove the skill.
+		for (Player player : getOnlineMembers())
+		{
+			player.removeSkill(id, false);
+			player.sendSkillList();
+			
+			player.sendPacket(psl);
+		}
+		return true;
+	}
+	
+	/**
+	 * Add all existing {@link Clan} {@link L2Skill}s to this {@link Clan}.
+	 * @return True if the operation was successful (at least one {@link L2Skill} was rewarded), or false otherwise.
+	 */
+	public boolean addAllClanSkills()
+	{
+		// Build the complete List of skills to reward. If all skills are already learnt, don't process it.
+		final List<L2Skill> list = Arrays.stream(SkillTable.getClanSkills()).filter(s -> !_skills.containsKey(s.getId()) || _skills.get(s.getId()).getLevel() < s.getLevel()).collect(Collectors.toList());
+		if (list.isEmpty())
+			return false;
+		
+		// Update db.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(ADD_OR_UPDATE_SKILL))
+		{
+			ps.setInt(1, _clanId);
+			
+			for (L2Skill skill : list)
+			{
+				ps.setInt(2, skill.getId());
+				ps.setInt(3, skill.getLevel());
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error while adding all clan skills.", e);
+			return false;
+		}
+		
+		// Replace or add the skill.
+		for (L2Skill skill : list)
+			_skills.put(skill.getId(), skill);
+		
+		final PledgeSkillList psl = new PledgeSkillList(this);
+		
+		// Test each online member, reward skills if checks are successful.
+		for (Player player : getOnlineMembers())
+		{
+			if (checkAndAddClanSkills(player))
+				player.sendSkillList();
+			
+			player.sendPacket(psl);
+		}
+		return true;
+	}
+	
+	/**
+	 * Remove all existing {@link Clan} {@link L2Skill}s from this {@link Clan}.
+	 * @return True if the operation was successful (all {@link L2Skill}s are deleted), or false otherwise.
+	 */
+	public boolean removeAllClanSkills()
+	{
+		// Don't try to remove skills if empty.
+		if (_skills.isEmpty())
+			return false;
+		
+		// Update db.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(REMOVE_ALL_SKILLS))
+		{
+			ps.setInt(1, _clanId);
+			ps.executeUpdate();
+		}
+		catch (Exception e)
+		{
+			LOGGER.error("Error while removing all clan skills.", e);
+			return false;
+		}
+		
+		final PledgeSkillList psl = new PledgeSkillList(this);
+		
+		// Test each online member, remove all skills.
+		for (Player player : getOnlineMembers())
+		{
+			for (L2Skill skill : _skills.values())
+				player.removeSkill(skill.getId(), false);
+			
+			player.sendSkillList();
+			player.sendPacket(psl);
+		}
+		
+		// Clear memory.
+		_skills.clear();
+		
+		return true;
+	}
+	
+	/**
+	 * Check olympiad state, clan reputation and pledge rank, then reward the {@link L2Skill} to the {@link Player} set as parameter if everything is ok.
+	 * @param player : The {@link Player} to test.
+	 * @param skill : The {@link L2Skill} to test.
+	 * @return True if the {@link Clan} {@link L2Skill} could be properly added to the {@link Player}, or false otherwise.
+	 */
+	public boolean checkAndAddClanSkill(Player player, L2Skill skill)
 	{
 		if (_reputationScore <= 0 || player.isInOlympiadMode())
-			return;
+			return false;
+		
+		if (skill.getMinPledgeClass() > player.getPledgeClass())
+			return false;
+		
+		player.addSkill(skill, false);
+		return true;
+	}
+	
+	/**
+	 * Check olympiad state, clan reputation and pledge rank, then reward all {@link Clan} {@link L2Skill}s to the {@link Player} set as parameter if everything is ok.
+	 * @param player : The {@link Player} to test.
+	 * @return True if all {@link Clan} {@link L2Skill}s could be properly added to the {@link Player}, or false otherwise.
+	 */
+	public boolean checkAndAddClanSkills(Player player)
+	{
+		if (_reputationScore <= 0 || player.isInOlympiadMode())
+			return false;
 		
 		for (L2Skill skill : _skills.values())
 		{
 			if (skill.getMinPledgeClass() <= player.getPledgeClass())
 				player.addSkill(skill, false);
 		}
+		return true;
 	}
 	
 	public void broadcastToOnlineAllyMembers(L2GameServerPacket packet)
@@ -1354,50 +1529,50 @@ public class Clan
 		}
 	}
 	
-	public final Map<Integer, Integer> getPriviledges()
+	public final Map<Integer, Integer> getPrivileges()
 	{
-		return _priviledges;
+		return _privileges;
 	}
 	
-	public int getPriviledgesByRank(int rank)
+	public int getPrivilegesByRank(int ranking)
 	{
-		return _priviledges.getOrDefault(rank, CP_NOTHING);
+		return _privileges.getOrDefault(ranking, CP_NOTHING);
 	}
 	
 	/**
-	 * Update ranks priviledges.
-	 * @param rank : The rank to edit.
-	 * @param privs : The priviledges to be set.
+	 * Update ranks privileges.
+	 * @param ranking : The ranking to edit.
+	 * @param privs : The privileges to be set.
 	 */
-	public void setPriviledgesForRank(int rank, int privs)
+	public void setPrivilegesForRanking(int ranking, int privs)
 	{
-		// Avoid to bother with invalid ranks.
-		if (!_priviledges.containsKey(rank))
+		// Avoid to bother with invalid rankings.
+		if (!_privileges.containsKey(ranking))
 			return;
 		
-		// Replace the priviledges.
-		_priviledges.put(rank, privs);
+		// Replace the privileges.
+		_privileges.put(ranking, privs);
 		
-		// Refresh online members priviledges.
+		// Refresh online members privileges.
 		for (Player member : getOnlineMembers())
 		{
-			if (member.getPowerGrade() == rank)
+			if (member.getPowerGrade() == ranking)
 				member.setClanPrivileges(privs);
 		}
 		broadcastClanStatus();
 		
 		// Update database.
 		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(ADD_OR_UPDATE_PRIVILEDGE))
+			PreparedStatement ps = con.prepareStatement(ADD_OR_UPDATE_PRIVILEGE))
 		{
 			ps.setInt(1, _clanId);
-			ps.setInt(2, rank);
+			ps.setInt(2, ranking);
 			ps.setInt(3, privs);
 			ps.executeUpdate();
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Error while storing rank.", e);
+			LOGGER.error("Error while storing ranking.", e);
 		}
 	}
 	

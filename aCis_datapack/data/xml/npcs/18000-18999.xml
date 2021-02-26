@@ -13470,7 +13470,7 @@
 		<set name="height" val="10"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="421"/>
 		<set name="sp" val="14"/>
 		<set name="hp" val="163.28607"/>
@@ -13520,7 +13520,7 @@
 		<set name="height" val="27"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="843"/>
 		<set name="sp" val="37"/>
 		<set name="hp" val="342.5127"/>
@@ -13570,7 +13570,7 @@
 		<set name="height" val="39"/>
 		<set name="rHand" val="156"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="1550"/>
 		<set name="sp" val="85"/>
 		<set name="hp" val="604.08419"/>
@@ -13620,7 +13620,7 @@
 		<set name="height" val="44"/>
 		<set name="rHand" val="131"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="2755"/>
 		<set name="sp" val="178"/>
 		<set name="hp" val="966.57792"/>
@@ -13670,7 +13670,7 @@
 		<set name="height" val="32"/>
 		<set name="rHand" val="291"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="4305"/>
 		<set name="sp" val="324"/>
 		<set name="hp" val="1421.00103"/>
@@ -13720,7 +13720,7 @@
 		<set name="height" val="32.5"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="6200"/>
 		<set name="sp" val="538"/>
 		<set name="hp" val="1933.24044"/>
@@ -13770,7 +13770,7 @@
 		<set name="height" val="34"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="8438"/>
 		<set name="sp" val="837"/>
 		<set name="hp" val="2444.46819"/>
@@ -13820,7 +13820,7 @@
 		<set name="height" val="55"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="PenaltyMonster"/>
+		<set name="type" val="Monster"/>
 		<set name="exp" val="10478"/>
 		<set name="sp" val="1237"/>
 		<set name="hp" val="2880.37628"/>

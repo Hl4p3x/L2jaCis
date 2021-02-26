@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.model.actor.container.player;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 
 import net.sf.l2j.commons.logging.CLogger;
@@ -20,8 +19,10 @@ import net.sf.l2j.gameserver.network.serverpackets.ShortCutDelete;
 import net.sf.l2j.gameserver.network.serverpackets.ShortCutRegister;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
-public class ShortcutList
+public class ShortcutList extends ConcurrentSkipListMap<Integer, Shortcut>
 {
+	private static final long serialVersionUID = 1L;
+	
 	private static final CLogger LOGGER = new CLogger(ShortcutList.class.getName());
 	
 	private static final String INSERT_SHORTCUT = "REPLACE INTO character_shortcuts (char_obj_id,slot,page,type,id,level,class_index) values(?,?,?,?,?,?,?)";
@@ -30,7 +31,6 @@ public class ShortcutList
 	
 	private static final int MAX_SHORTCUTS_PER_BAR = 12;
 	
-	private final Map<Integer, Shortcut> _shortcuts = new ConcurrentSkipListMap<>();
 	private final Player _owner;
 	
 	public ShortcutList(Player owner)
@@ -40,7 +40,7 @@ public class ShortcutList
 	
 	public Shortcut[] getShortcuts()
 	{
-		return _shortcuts.values().toArray(new Shortcut[_shortcuts.values().size()]);
+		return values().toArray(new Shortcut[values().size()]);
 	}
 	
 	/**
@@ -83,7 +83,7 @@ public class ShortcutList
 					break;
 				
 				case MACRO:
-					final Macro macro = _owner.getMacroList().getMacro(shortcut.getId());
+					final Macro macro = _owner.getMacroList().get(shortcut.getId());
 					if (macro == null)
 						return;
 					break;
@@ -95,7 +95,7 @@ public class ShortcutList
 			}
 		}
 		
-		final Shortcut oldShortcut = _shortcuts.put(shortcut.getSlot() + (shortcut.getPage() * MAX_SHORTCUTS_PER_BAR), shortcut);
+		final Shortcut oldShortcut = put(shortcut.getSlot() + (shortcut.getPage() * MAX_SHORTCUTS_PER_BAR), shortcut);
 		if (oldShortcut != null)
 			deleteShortCutFromDb(oldShortcut);
 		
@@ -126,7 +126,7 @@ public class ShortcutList
 	{
 		slot += page * 12;
 		
-		final Shortcut oldShortcut = _shortcuts.remove(slot);
+		final Shortcut oldShortcut = remove(slot);
 		if (oldShortcut == null || _owner == null)
 			return;
 		
@@ -170,7 +170,7 @@ public class ShortcutList
 	 */
 	public void restore()
 	{
-		_shortcuts.clear();
+		clear();
 		
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_SHORTCUTS))
@@ -196,7 +196,7 @@ public class ShortcutList
 							shortcut.setSharedReuseGroup(item.getEtcItem().getSharedReuseGroup());
 					}
 					
-					_shortcuts.put(slot + (page * MAX_SHORTCUTS_PER_BAR), shortcut);
+					put(slot + (page * MAX_SHORTCUTS_PER_BAR), shortcut);
 				}
 			}
 		}
@@ -214,7 +214,7 @@ public class ShortcutList
 	 */
 	public void refreshShortcuts(int id, int level, ShortcutType type)
 	{
-		for (Shortcut shortcut : _shortcuts.values())
+		for (Shortcut shortcut : values())
 		{
 			if (shortcut.getId() == id && shortcut.getType() == type)
 			{
@@ -232,7 +232,7 @@ public class ShortcutList
 	 */
 	public void deleteShortcuts(int id, ShortcutType type)
 	{
-		for (Shortcut shortcut : _shortcuts.values())
+		for (Shortcut shortcut : values())
 		{
 			if (shortcut.getId() == id && shortcut.getType() == type)
 				deleteShortcut(shortcut.getSlot(), shortcut.getPage());

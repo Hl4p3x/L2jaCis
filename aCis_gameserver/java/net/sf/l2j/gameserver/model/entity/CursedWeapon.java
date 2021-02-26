@@ -5,11 +5,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.concurrent.ScheduledFuture;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.enums.MessageType;
@@ -93,7 +93,7 @@ public class CursedWeapon
 	protected int _hungryTime = 0;
 	protected long _endTime = 0;
 	
-	public CursedWeapon(StatsSet set)
+	public CursedWeapon(StatSet set)
 	{
 		_name = set.getString("name");
 		_itemId = set.getInteger("id");
@@ -447,25 +447,25 @@ public class CursedWeapon
 	 */
 	public void cursedOnLogin()
 	{
-		SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.S2_OWNER_HAS_LOGGED_INTO_THE_S1_REGION);
-		msg.addZoneName(_player.getPosition());
-		msg.addItemName(_player.getCursedWeaponEquippedId());
-		World.toAllOnlinePlayers(msg);
+		SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.S2_OWNER_HAS_LOGGED_INTO_THE_S1_REGION);
+		sm.addZoneName(_player.getPosition());
+		sm.addItemName(_player.getCursedWeaponEquippedId());
+		World.toAllOnlinePlayers(sm);
 		
 		final int timeLeft = (int) (getTimeLeft() / 60000);
 		if (timeLeft > 60)
 		{
-			msg = SystemMessage.getSystemMessage(SystemMessageId.S2_HOUR_OF_USAGE_TIME_ARE_LEFT_FOR_S1);
-			msg.addItemName(_player.getCursedWeaponEquippedId());
-			msg.addNumber(Math.round(timeLeft / 60));
+			sm = SystemMessage.getSystemMessage(SystemMessageId.S2_HOUR_OF_USAGE_TIME_ARE_LEFT_FOR_S1);
+			sm.addItemName(_player.getCursedWeaponEquippedId());
+			sm.addNumber(Math.round(timeLeft / 60F));
 		}
 		else
 		{
-			msg = SystemMessage.getSystemMessage(SystemMessageId.S2_MINUTE_OF_USAGE_TIME_ARE_LEFT_FOR_S1);
-			msg.addItemName(_player.getCursedWeaponEquippedId());
-			msg.addNumber(timeLeft);
+			sm = SystemMessage.getSystemMessage(SystemMessageId.S2_MINUTE_OF_USAGE_TIME_ARE_LEFT_FOR_S1);
+			sm.addItemName(_player.getCursedWeaponEquippedId());
+			sm.addNumber(timeLeft);
 		}
-		_player.sendPacket(msg);
+		_player.sendPacket(sm);
 	}
 	
 	/**
@@ -546,14 +546,9 @@ public class CursedWeapon
 	 */
 	public void activate(Player player, ItemInstance item)
 	{
-		// if the player is mounted, attempt to unmount first and pick it if successful.
-		if (player.isMounted() && !player.dismount())
-		{
-			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.FAILED_TO_PICKUP_S1).addItemName(item.getItemId()));
-			item.setDestroyProtected(true);
-			player.dropItem("InvDrop", item, null, true);
-			return;
-		}
+		// If the Player is mounted, unmount him first.
+		if (player.isMounted())
+			player.dismount();
 		
 		_isActivated = true;
 		
@@ -626,7 +621,6 @@ public class CursedWeapon
 		// Refresh player stats
 		_player.broadcastUserInfo();
 		
-		// _player.broadcastPacket(new SocialAction(_player, 17));
 		World.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.THE_OWNER_OF_S2_HAS_APPEARED_IN_THE_S1_REGION).addZoneName(_player.getPosition()).addItemName(_item.getItemId()));
 	}
 	
@@ -709,7 +703,7 @@ public class CursedWeapon
 		_player.broadcastPacket(new SocialAction(_player, 17));
 	}
 	
-	public void goTo(Player player)
+	public void teleportTo(Player player)
 	{
 		if (player == null)
 			return;
@@ -760,7 +754,7 @@ public class CursedWeapon
 				{
 					msg = SystemMessage.getSystemMessage(SystemMessageId.S2_HOUR_OF_USAGE_TIME_ARE_LEFT_FOR_S1);
 					msg.addItemName(_player.getCursedWeaponEquippedId());
-					msg.addNumber(Math.round(timeLeft / 60));
+					msg.addNumber(Math.round(timeLeft / 60F));
 				}
 				else
 				{

@@ -83,6 +83,6 @@ public class PreparedListContainer extends ListContainer
 	
 	public final boolean checkNpcObjectId(int npcObjectId)
 	{
-		return (_npcObjectId != 0) ? _npcObjectId == npcObjectId : true;
+		return _npcObjectId == 0 || _npcObjectId == npcObjectId;
 	}
 }

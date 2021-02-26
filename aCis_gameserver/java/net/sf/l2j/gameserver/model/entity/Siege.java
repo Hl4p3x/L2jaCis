@@ -194,7 +194,7 @@ public class Siege implements Siegable
 		// Refresh reputation points towards siege end.
 		updateClansReputation();
 		
-		// Teleport all non-owning castle players on second closest town.
+		// Teleport all non-owning castle players.
 		_castle.getSiegeZone().banishForeigners(_castle.getOwnerId());
 		
 		// Clear all flags.
@@ -562,15 +562,11 @@ public class Siege implements Siegable
 		if (_castle.getOwnerId() != 0)
 			allyId = ClanTable.getInstance().getClan(_castle.getOwnerId()).getAllyId();
 		
-		// If the castle owning clan got an alliance
-		if (allyId != 0)
+		// If the castle owning clan got an alliance, same alliance can't be attacked.
+		if (allyId != 0 && player.getClan().getAllyId() == allyId)
 		{
-			// Same alliance can't be attacked
-			if (player.getClan().getAllyId() == allyId)
-			{
-				player.sendPacket(SystemMessageId.CANNOT_ATTACK_ALLIANCE_CASTLE);
-				return;
-			}
+			player.sendPacket(SystemMessageId.CANNOT_ATTACK_ALLIANCE_CASTLE);
+			return;
 		}
 		
 		// Can't register as attacker if at least one allied clan is registered as defender
@@ -681,7 +677,7 @@ public class Siege implements Siegable
 			if (_siegeTask != null)
 				_siegeTask.cancel(false);
 			
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), 1000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, 1000);
 		}
 	}
 	
@@ -782,7 +778,7 @@ public class Siege implements Siegable
 		if (_siegeTask != null)
 		{
 			_siegeTask.cancel(false);
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), 1000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, 1000);
 		}
 		
 		try (Connection con = ConnectionPool.getConnection();
@@ -964,7 +960,7 @@ public class Siege implements Siegable
 	
 	public int getControlTowerCount()
 	{
-		return (int) _controlTowers.stream().filter(lc -> lc.isActive()).count();
+		return (int) _controlTowers.stream().filter(ControlTower::isActive).count();
 	}
 	
 	public List<ControlTower> getControlTowers()
@@ -1015,7 +1011,7 @@ public class Siege implements Siegable
 			final long regTimeRemaining = getSiegeRegistrationEndDate() - Calendar.getInstance().getTimeInMillis();
 			if (regTimeRemaining > 0)
 			{
-				_siegeTask = ThreadPool.schedule(() -> siegeStart(), regTimeRemaining);
+				_siegeTask = ThreadPool.schedule(this::siegeStart, regTimeRemaining);
 				return;
 			}
 			
@@ -1025,22 +1021,22 @@ public class Siege implements Siegable
 		final long timeRemaining = getSiegeDate().getTimeInMillis() - Calendar.getInstance().getTimeInMillis();
 		
 		if (timeRemaining > 86400000)
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), timeRemaining - 86400000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, timeRemaining - 86400000);
 		else if (timeRemaining <= 86400000 && timeRemaining > 13600000)
 		{
 			World.toAllOnlinePlayers(SystemMessage.getSystemMessage(SystemMessageId.REGISTRATION_TERM_FOR_S1_ENDED).addString(_castle.getName()));
 			changeStatus(SiegeStatus.REGISTRATION_OVER);
 			clearPendingClans();
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), timeRemaining - 13600000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, timeRemaining - 13600000);
 		}
 		else if (timeRemaining <= 13600000 && timeRemaining > 600000)
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), timeRemaining - 600000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, timeRemaining - 600000);
 		else if (timeRemaining <= 600000 && timeRemaining > 300000)
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), timeRemaining - 300000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, timeRemaining - 300000);
 		else if (timeRemaining <= 300000 && timeRemaining > 10000)
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), timeRemaining - 10000);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, timeRemaining - 10000);
 		else if (timeRemaining <= 10000 && timeRemaining > 0)
-			_siegeTask = ThreadPool.schedule(() -> siegeStart(), timeRemaining);
+			_siegeTask = ThreadPool.schedule(this::siegeStart, timeRemaining);
 		else
 			startSiege();
 	}
@@ -1053,81 +1049,81 @@ public class Siege implements Siegable
 		final long timeRemaining = _siegeEndDate.getTimeInMillis() - Calendar.getInstance().getTimeInMillis();
 		
 		if (timeRemaining > 3600000)
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 3600000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 3600000);
 		else if (timeRemaining > 1800000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.S1_HOURS_UNTIL_SIEGE_CONCLUSION).addNumber(1), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 1800000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 1800000);
 		}
 		else if (timeRemaining > 600000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.S1_MINUTES_UNTIL_SIEGE_CONCLUSION).addNumber(30), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 600000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 600000);
 		}
 		else if (timeRemaining > 300000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.S1_MINUTES_UNTIL_SIEGE_CONCLUSION).addNumber(10), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 300000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 300000);
 		}
 		else if (timeRemaining > 60000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.S1_MINUTES_UNTIL_SIEGE_CONCLUSION).addNumber(5), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 60000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 60000);
 		}
 		else if (timeRemaining > 10000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.S1_MINUTES_UNTIL_SIEGE_CONCLUSION).addNumber(1), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 10000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 10000);
 		}
 		else if (timeRemaining > 9000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(10), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 9000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 9000);
 		}
 		else if (timeRemaining > 8000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(9), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 8000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 8000);
 		}
 		else if (timeRemaining > 7000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(8), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 7000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 7000);
 		}
 		else if (timeRemaining > 6000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(7), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 6000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 6000);
 		}
 		else if (timeRemaining > 5000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(6), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 5000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 5000);
 		}
 		else if (timeRemaining > 4000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(5), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 4000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 4000);
 		}
 		else if (timeRemaining > 3000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(4), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 3000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 3000);
 		}
 		else if (timeRemaining > 2000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(3), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 2000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 2000);
 		}
 		else if (timeRemaining > 1000)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(2), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining - 1000);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining - 1000);
 		}
 		else if (timeRemaining > 0)
 		{
 			announce(SystemMessage.getSystemMessage(SystemMessageId.CASTLE_SIEGE_S1_SECONDS_LEFT).addNumber(1), SiegeSide.ATTACKER, SiegeSide.DEFENDER);
-			ThreadPool.schedule(() -> processSiegeTimer(), timeRemaining);
+			ThreadPool.schedule(this::processSiegeTimer, timeRemaining);
 		}
 		else
 			endSiege();

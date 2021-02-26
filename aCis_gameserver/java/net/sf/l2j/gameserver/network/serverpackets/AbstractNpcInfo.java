@@ -2,13 +2,11 @@ package net.sf.l2j.gameserver.network.serverpackets;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
-import net.sf.l2j.gameserver.enums.PolyType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 
@@ -54,13 +52,13 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			_isAttackable = _npc.isAttackableWithoutForceBy(attacker);
 			
 			// Support for polymorph.
-			if (_npc.getPolyType() == PolyType.NPC)
+			if (_npc.getPolymorphTemplate() != null)
 			{
-				_idTemplate = _npc.getPolyTemplate().getIdTemplate();
-				_rhand = _npc.getPolyTemplate().getRightHand();
-				_lhand = _npc.getPolyTemplate().getLeftHand();
-				_collisionHeight = _npc.getPolyTemplate().getCollisionHeight();
-				_collisionRadius = _npc.getPolyTemplate().getCollisionRadius();
+				_idTemplate = _npc.getPolymorphTemplate().getIdTemplate();
+				_rhand = _npc.getPolymorphTemplate().getRightHand();
+				_lhand = _npc.getPolymorphTemplate().getLeftHand();
+				_collisionHeight = _npc.getPolymorphTemplate().getCollisionHeight();
+				_collisionRadius = _npc.getPolymorphTemplate().getCollisionRadius();
 			}
 			else
 			{
@@ -178,7 +176,7 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			if (_summon.isShowSummonAnimation())
 				_summonAnimation = 2; // override for spawn
 				
-			_isAttackable = _summon.isAttackableBy(attacker);
+			_isAttackable = _summon.isAttackableWithoutForceBy(attacker);
 			_rhand = _summon.getWeapon();
 			_lhand = 0;
 			_chest = _summon.getArmor();
@@ -249,7 +247,7 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			writeS(_name);
 			writeS(_title);
 			
-			writeD(_summon instanceof Pet ? 0x00 : 0x01);
+			writeD(0x01);
 			writeD(_summon.getPvpFlag());
 			writeD(_summon.getKarma());
 			
@@ -303,7 +301,7 @@ public abstract class AbstractNpcInfo extends L2GameServerPacket
 			writeC(0x16);
 			
 			writeD(_pc.getObjectId());
-			writeD(_pc.getPolyId() + 1000000);
+			writeD(_template.getNpcId() + 1000000);
 			writeD(1);
 			
 			writeD(_x);

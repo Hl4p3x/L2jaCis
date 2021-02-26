@@ -786,7 +786,7 @@ public class EffectList
 	
 	protected void updateEffectIcons()
 	{
-		if (_owner == null || !(_owner instanceof Playable))
+		if (!(_owner instanceof Playable))
 			return;
 		
 		AbnormalStatusUpdate mi = null;

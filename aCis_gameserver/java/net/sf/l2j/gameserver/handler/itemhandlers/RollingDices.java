@@ -2,12 +2,11 @@ package net.sf.l2j.gameserver.handler.itemhandlers;
 
 import net.sf.l2j.commons.random.Rnd;
 
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.Dice;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -22,7 +21,7 @@ public class RollingDices implements IItemHandler
 		
 		final Player player = (Player) playable;
 		
-		if (!FloodProtectors.performAction(player.getClient(), Action.ROLL_DICE))
+		if (!player.getClient().performAction(FloodProtector.ROLL_DICE))
 		{
 			player.sendPacket(SystemMessageId.YOU_MAY_NOT_THROW_THE_DICE_AT_THIS_TIME_TRY_AGAIN_LATER);
 			return;

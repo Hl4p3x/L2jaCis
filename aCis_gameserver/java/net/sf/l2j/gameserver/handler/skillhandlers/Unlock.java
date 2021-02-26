@@ -53,7 +53,7 @@ public class Unlock implements ISkillHandler
 			}
 			else
 			{
-				chest.addDamageHate(activeChar, 0, 999);
+				chest.getAggroList().addDamageHate(activeChar, 0, 200);
 				chest.getAI().tryToAttack(activeChar);
 			}
 		}

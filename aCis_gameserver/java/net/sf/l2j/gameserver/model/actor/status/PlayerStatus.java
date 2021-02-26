@@ -238,7 +238,7 @@ public class PlayerStatus extends PlayableStatus<Player>
 			
 			_actor.doDie(attacker);
 			
-			final QuestState qs = _actor.getQuestState("Tutorial");
+			final QuestState qs = _actor.getQuestList().getQuestState("Tutorial");
 			if (qs != null)
 				qs.getQuest().notifyEvent("CE30", null, _actor);
 		}
@@ -249,7 +249,7 @@ public class PlayerStatus extends PlayableStatus<Player>
 	{
 		super.setHp(newHp, broadcastPacket);
 		
-		final QuestState qs = _actor.getQuestState("Tutorial");
+		final QuestState qs = _actor.getQuestList().getQuestState("Tutorial");
 		if (qs != null && getHpRatio() < 0.3)
 			qs.getQuest().notifyEvent("CE45", null, _actor);
 	}
@@ -477,10 +477,6 @@ public class PlayerStatus extends PlayableStatus<Player>
 	@Override
 	public boolean addExp(long value)
 	{
-		// Allowed to gain exp?
-		if (!_actor.getAccessLevel().canGainExp())
-			return false;
-		
 		if (!super.addExp(value))
 			return false;
 		
@@ -538,10 +534,6 @@ public class PlayerStatus extends PlayableStatus<Player>
 	 */
 	public boolean addExpAndSp(long addToExp, int addToSp, Map<Creature, RewardInfo> rewards)
 	{
-		// GM check concerning canGainExp().
-		if (!_actor.getAccessLevel().canGainExp())
-			return false;
-		
 		// If this player has a pet, give the xp to the pet now (if any).
 		if (_actor.hasPet())
 		{
@@ -619,7 +611,7 @@ public class PlayerStatus extends PlayableStatus<Player>
 		
 		if (levelIncreased)
 		{
-			final QuestState qs = _actor.getQuestState("Tutorial");
+			final QuestState qs = _actor.getQuestList().getQuestState("Tutorial");
 			if (qs != null)
 				qs.getQuest().notifyEvent("CE40", null, _actor);
 			

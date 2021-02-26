@@ -3,7 +3,7 @@ package net.sf.l2j.gameserver.data.manager;
 import java.util.HashMap;
 import java.util.Map;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.World;
@@ -39,7 +39,7 @@ public class BoatManager
 	 */
 	public Boat getNewBoat(int boatId, int x, int y, int z, int heading)
 	{
-		final StatsSet set = new StatsSet();
+		final StatSet set = new StatSet();
 		set.set("id", boatId);
 		set.set("level", 0);
 		

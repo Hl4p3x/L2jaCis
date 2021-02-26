@@ -279,7 +279,7 @@ public final class RequestActionUse extends L2GameClientPacket
 				break;
 			
 			case 52: // Unsummon a servitor
-				if (summon == null || !(summon instanceof Servitor))
+				if (!(summon instanceof Servitor))
 					return;
 				
 				if (summon.isDead())

@@ -146,11 +146,11 @@ public class OlympiadManagerNpc extends Folk
 					break;
 				
 				case 4: // register non classed based
-					OlympiadManager.getInstance().registerNoble(player, OlympiadType.NON_CLASSED);
+					OlympiadManager.getInstance().registerNoble(this, player, OlympiadType.NON_CLASSED);
 					break;
 				
 				case 5: // register classed based
-					OlympiadManager.getInstance().registerNoble(player, OlympiadType.CLASSED);
+					OlympiadManager.getInstance().registerNoble(this, player, OlympiadType.CLASSED);
 					break;
 				
 				case 6: // request tokens reward

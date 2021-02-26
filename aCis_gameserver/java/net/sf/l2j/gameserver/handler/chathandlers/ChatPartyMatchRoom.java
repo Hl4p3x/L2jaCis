@@ -15,16 +15,16 @@ public class ChatPartyMatchRoom implements IChatHandler
 	};
 	
 	@Override
-	public void handleChat(SayType type, Player activeChar, String target, String text)
+	public void handleChat(SayType type, Player player, String target, String text)
 	{
-		if (!activeChar.isInPartyMatchRoom())
+		if (!player.isInPartyMatchRoom())
 			return;
 		
-		final PartyMatchRoom room = PartyMatchRoomManager.getInstance().getRoom(activeChar.getPartyRoom());
+		final PartyMatchRoom room = PartyMatchRoomManager.getInstance().getRoom(player.getPartyRoom());
 		if (room == null)
 			return;
 		
-		room.broadcastPacket(new CreatureSay(activeChar, type, text));
+		room.broadcastPacket(new CreatureSay(player, type, text));
 	}
 	
 	@Override

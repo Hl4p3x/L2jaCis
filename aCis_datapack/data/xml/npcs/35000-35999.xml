@@ -14072,7 +14072,7 @@
 		<set name="height" val="40"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="Monster"/>
+		<set name="type" val="SiegeGuard"/>
 		<set name="exp" val="532"/>
 		<set name="sp" val="0"/>
 		<set name="hp" val="2586.66898"/>
@@ -14114,7 +14114,7 @@
 		<set name="height" val="40"/>
 		<set name="rHand" val="0"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="Monster"/>
+		<set name="type" val="SiegeGuard"/>
 		<set name="exp" val="547"/>
 		<set name="sp" val="0"/>
 		<set name="hp" val="2632.19636"/>
@@ -14156,7 +14156,7 @@
 		<set name="height" val="27"/>
 		<set name="rHand" val="286"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="Monster"/>
+		<set name="type" val="SiegeGuard"/>
 		<set name="exp" val="561"/>
 		<set name="sp" val="0"/>
 		<set name="hp" val="2676.65854"/>
@@ -14198,7 +14198,7 @@
 		<set name="height" val="28"/>
 		<set name="rHand" val="301"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="Monster"/>
+		<set name="type" val="SiegeGuard"/>
 		<set name="exp" val="577"/>
 		<set name="sp" val="0"/>
 		<set name="hp" val="2758.05923328"/>
@@ -14240,7 +14240,7 @@
 		<set name="height" val="25"/>
 		<set name="rHand" val="71"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="Monster"/>
+		<set name="type" val="SiegeGuard"/>
 		<set name="exp" val="593"/>
 		<set name="sp" val="0"/>
 		<set name="hp" val="2856.7687256316"/>
@@ -14282,7 +14282,7 @@
 		<set name="height" val="45"/>
 		<set name="rHand" val="1472"/>
 		<set name="lHand" val="0"/>
-		<set name="type" val="Monster"/>
+		<set name="type" val="SiegeGuard"/>
 		<set name="exp" val="608"/>
 		<set name="sp" val="0"/>
 		<set name="hp" val="2974.35686398316"/>

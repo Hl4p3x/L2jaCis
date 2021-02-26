@@ -3,7 +3,7 @@ package net.sf.l2j.gameserver.model.actor.instance;
 import java.util.Calendar;
 import java.util.List;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.FestivalOfDarknessManager;
@@ -289,9 +289,9 @@ public final class FestivalGuide extends Folk
 				case 4: // Current High Scores
 					final StringBuilder sb = new StringBuilder("<html><body>Festival Guide:<br>These are the top scores of the week, for the ");
 					
-					final StatsSet dawnData = FestivalOfDarknessManager.getInstance().getHighestScoreData(CabalType.DAWN, festivalIndex);
-					final StatsSet duskData = FestivalOfDarknessManager.getInstance().getHighestScoreData(CabalType.DUSK, festivalIndex);
-					final StatsSet overallData = FestivalOfDarknessManager.getInstance().getOverallHighestScoreData(festivalIndex);
+					final StatSet dawnData = FestivalOfDarknessManager.getInstance().getHighestScoreData(CabalType.DAWN, festivalIndex);
+					final StatSet duskData = FestivalOfDarknessManager.getInstance().getHighestScoreData(CabalType.DUSK, festivalIndex);
+					final StatSet overallData = FestivalOfDarknessManager.getInstance().getOverallHighestScoreData(festivalIndex);
 					
 					final int dawnScore = dawnData.getInteger("score");
 					final int duskScore = duskData.getInteger("score");

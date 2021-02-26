@@ -16,7 +16,7 @@ import net.sf.l2j.commons.logging.CLogger;
  */
 public class CrestCache
 {
-	public static enum CrestType
+	public enum CrestType
 	{
 		PLEDGE("Crest_", 256),
 		PLEDGE_LARGE("LargeCrest_", 2176),

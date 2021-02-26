@@ -1,9 +1,8 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.model.CharSelectSlot;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.GameClient;
 import net.sf.l2j.gameserver.network.GameClient.GameClientState;
 import net.sf.l2j.gameserver.network.serverpackets.CharSelected;
@@ -27,7 +26,7 @@ public class RequestGameStart extends L2GameClientPacket
 	protected void runImpl()
 	{
 		final GameClient client = getClient();
-		if (!FloodProtectors.performAction(client, Action.CHARACTER_SELECT))
+		if (!client.performAction(FloodProtector.CHARACTER_SELECT))
 			return;
 		
 		// we should always be able to acquire the lock but if we cant lock then nothing should be done (ie repeated packet)

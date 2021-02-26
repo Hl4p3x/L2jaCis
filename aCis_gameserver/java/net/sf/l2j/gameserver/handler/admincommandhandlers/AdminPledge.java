@@ -4,27 +4,11 @@ import java.util.StringTokenizer;
 
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
-import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.GMViewPledgeInfo;
 
-/**
- * This handler handles pledge commands.<br>
- * <br>
- * With any player target:
- * <ul>
- * <li>//pledge create <b>String</b></li>
- * </ul>
- * With clan member target:
- * <ul>
- * <li>//pledge info</li>
- * <li>//pledge dismiss</li>
- * <li>//pledge setlevel <b>int</b></li>
- * <li>//pledge rep <b>int</b></li>
- * </ul>
- */
 public class AdminPledge implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
@@ -33,84 +17,75 @@ public class AdminPledge implements IAdminCommandHandler
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
-		final WorldObject target = activeChar.getTarget();
-		if (!(target instanceof Player))
-		{
-			activeChar.sendPacket(SystemMessageId.INVALID_TARGET);
-			showMainPage(activeChar);
-			return false;
-		}
+		final Player targetPlayer = getTargetPlayer(player, true);
 		
 		if (command.startsWith("admin_pledge"))
 		{
-			StringTokenizer st = new StringTokenizer(command, " ");
+			final StringTokenizer st = new StringTokenizer(command, " ");
+			st.nextToken();
+			
 			try
 			{
-				st.nextToken();
 				final String action = st.nextToken();
-				final Player player = (Player) target;
 				
 				if (action.equals("create"))
 				{
 					try
 					{
 						final String parameter = st.nextToken();
+						final long cet = targetPlayer.getClanCreateExpiryTime();
 						
-						long cet = player.getClanCreateExpiryTime();
-						player.setClanCreateExpiryTime(0);
-						Clan clan = ClanTable.getInstance().createClan(player, parameter);
+						targetPlayer.setClanCreateExpiryTime(0);
+						
+						final Clan clan = ClanTable.getInstance().createClan(targetPlayer, parameter);
 						if (clan != null)
-							activeChar.sendMessage("Clan " + parameter + " have been created. Clan leader is " + player.getName() + ".");
+							player.sendMessage("Clan " + parameter + " have been created. Clan leader is " + targetPlayer.getName() + ".");
 						else
 						{
-							player.setClanCreateExpiryTime(cet);
-							activeChar.sendMessage("There was a problem while creating the clan.");
+							targetPlayer.setClanCreateExpiryTime(cet);
+							player.sendMessage("There was a problem while creating the clan.");
 						}
 					}
 					catch (Exception e)
 					{
-						activeChar.sendMessage("Invalid string parameter for //pledge create.");
+						player.sendMessage("Invalid string parameter for //pledge create.");
 					}
 				}
 				else
 				{
-					if (player.getClan() == null)
+					final Clan targetClan = targetPlayer.getClan();
+					if (targetClan == null)
 					{
-						activeChar.sendPacket(SystemMessageId.TARGET_MUST_BE_IN_CLAN);
-						showMainPage(activeChar);
-						return false;
+						player.sendPacket(SystemMessageId.TARGET_MUST_BE_IN_CLAN);
+						sendFile(player, "game_menu.htm");
+						return;
 					}
 					
 					if (action.equals("dismiss"))
 					{
-						ClanTable.getInstance().destroyClan(player.getClan());
-						
-						if (player.getClan() == null)
-							activeChar.sendMessage("The clan is now disbanded.");
-						else
-							activeChar.sendMessage("There was a problem while destroying the clan.");
+						ClanTable.getInstance().destroyClan(targetClan);
+						player.sendMessage("The clan is now disbanded.");
 					}
 					else if (action.equals("info"))
-						activeChar.sendPacket(new GMViewPledgeInfo(player.getClan(), player));
-					else if (action.equals("setlevel"))
+						player.sendPacket(new GMViewPledgeInfo(targetClan, targetPlayer));
+					else if (action.equals("level"))
 					{
 						try
 						{
 							final int level = Integer.parseInt(st.nextToken());
-							
 							if (level >= 0 && level < 9)
 							{
-								player.getClan().changeLevel(level);
-								activeChar.sendMessage("You have set clan " + player.getClan().getName() + " to level " + level);
+								targetClan.changeLevel(level);
+								player.sendMessage("You have set clan " + targetClan.getName() + " to level " + level);
 							}
 							else
-								activeChar.sendMessage("This clan level is incorrect. Put a number between 0 and 8.");
+								player.sendMessage("This clan level is incorrect. Put a number between 0 and 8.");
 						}
 						catch (Exception e)
 						{
-							activeChar.sendMessage("Invalid number parameter for //pledge setlevel.");
+							player.sendMessage("Invalid number parameter for //pledge setlevel.");
 						}
 					}
 					else if (action.startsWith("rep"))
@@ -118,42 +93,35 @@ public class AdminPledge implements IAdminCommandHandler
 						try
 						{
 							final int points = Integer.parseInt(st.nextToken());
-							final Clan clan = player.getClan();
 							
-							if (clan.getLevel() < 5)
+							if (targetClan.getLevel() < 5)
 							{
-								activeChar.sendMessage("Only clans of level 5 or above may receive reputation points.");
-								showMainPage(activeChar);
-								return false;
+								player.sendMessage("Only clans of level 5 or above may receive reputation points.");
+								sendFile(player, "game_menu.htm");
+								return;
 							}
 							
-							clan.addReputationScore(points);
-							activeChar.sendMessage("You " + (points > 0 ? "added " : "removed ") + Math.abs(points) + " points " + (points > 0 ? "to " : "from ") + clan.getName() + "'s reputation. Their current score is: " + clan.getReputationScore());
+							targetClan.addReputationScore(points);
+							player.sendMessage("You " + (points > 0 ? "added " : "removed ") + Math.abs(points) + " points " + (points > 0 ? "to " : "from ") + targetClan.getName() + "'s reputation. Their current score is: " + targetClan.getReputationScore());
 						}
 						catch (Exception e)
 						{
-							activeChar.sendMessage("Invalid number parameter for //pledge rep.");
+							player.sendMessage("Invalid number parameter for //pledge rep.");
 						}
 					}
 				}
 			}
 			catch (Exception e)
 			{
-				activeChar.sendMessage("Invalid action or parameter.");
+				player.sendMessage("Usage: //pledge create|dismiss|info|level|rep");
 			}
 		}
-		showMainPage(activeChar);
-		return true;
+		sendFile(player, "game_menu.htm");
 	}
 	
 	@Override
 	public String[] getAdminCommandList()
 	{
 		return ADMIN_COMMANDS;
-	}
-	
-	private static void showMainPage(Player activeChar)
-	{
-		AdminHelpPage.showHelpPage(activeChar, "game_menu.htm");
 	}
 }

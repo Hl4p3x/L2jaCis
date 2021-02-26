@@ -32,12 +32,6 @@ public class EffectChameleonRest extends AbstractEffect
 	}
 	
 	@Override
-	public void onExit()
-	{
-		super.onExit();
-	}
-	
-	@Override
 	public boolean onActionTime()
 	{
 		if (getEffected().isDead())
@@ -47,11 +41,8 @@ public class EffectChameleonRest extends AbstractEffect
 		if (getSkill().getSkillType() != SkillType.CONT)
 			return false;
 		
-		if (getEffected() instanceof Player)
-		{
-			if (!((Player) getEffected()).isSitting())
-				return false;
-		}
+		if (getEffected() instanceof Player && !((Player) getEffected()).isSitting())
+			return false;
 		
 		if (getTemplate().getValue() > getEffected().getStatus().getMp())
 		{

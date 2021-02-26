@@ -12,7 +12,6 @@ import net.sf.l2j.gameserver.handler.IItemHandler;
 import net.sf.l2j.gameserver.handler.ItemHandler;
 import net.sf.l2j.gameserver.model.actor.ai.type.CreatureAI;
 import net.sf.l2j.gameserver.model.actor.ai.type.SummonAI;
-import net.sf.l2j.gameserver.model.actor.cast.SummonCast;
 import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
 import net.sf.l2j.gameserver.model.actor.instance.FriendlyMonster;
 import net.sf.l2j.gameserver.model.actor.instance.Guard;
@@ -70,18 +69,6 @@ public abstract class Summon extends Playable
 	public void setStatus()
 	{
 		_status = new SummonStatus<>(this);
-	}
-	
-	@Override
-	public SummonCast getCast()
-	{
-		return (SummonCast) _cast;
-	}
-	
-	@Override
-	public void setCast()
-	{
-		_cast = new SummonCast(this);
 	}
 	
 	@Override
@@ -233,7 +220,7 @@ public abstract class Summon extends Playable
 			
 			final AggroInfo info = attackable.getAggroList().get(this);
 			if (info != null && (!isGuard || info.getDamage() > 0))
-				attackable.addDamageHate(getOwner(), 0, 1);
+				attackable.getAggroList().addDamageHate(getOwner(), 0, 1);
 		}
 		
 		// Disable beastshots
@@ -383,7 +370,7 @@ public abstract class Summon extends Playable
 	@Override
 	public boolean isInParty()
 	{
-		return (_owner == null) ? false : _owner.getParty() != null;
+		return _owner != null && _owner.getParty() != null;
 	}
 	
 	@Override
@@ -446,7 +433,7 @@ public abstract class Summon extends Playable
 	@Override
 	public boolean isInCombat()
 	{
-		return getOwner() != null ? getOwner().isInCombat() : false;
+		return getOwner() != null && getOwner().isInCombat();
 	}
 	
 	@Override

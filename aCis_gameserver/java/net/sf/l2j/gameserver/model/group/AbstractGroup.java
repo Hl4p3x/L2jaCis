@@ -6,8 +6,10 @@ import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
+import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
@@ -39,17 +41,32 @@ public abstract class AbstractGroup
 	public abstract boolean containsPlayer(final WorldObject player);
 	
 	/**
-	 * Broadcast a packet to every member of this group.
-	 * @param packet : the packet to broadcast.
+	 * Broadcast a {@link L2GameServerPacket} to every member of this group.
+	 * @param packet : The {@link L2GameServerPacket} to broadcast.
 	 */
 	public abstract void broadcastPacket(final L2GameServerPacket packet);
 	
 	/**
-	 * Broadcast a CreatureSay packet to every member of this group. Similar to broadcastPacket, but with an embbed BlockList check.
-	 * @param msg : the msg to broadcast.
-	 * @param broadcaster : the player who broadcasts the message.
+	 * Broadcast a {@link CreatureSay} packet to every member of this group. Similar to broadcastPacket, but with an embbed BlockList check.
+	 * @param msg : The {@link CreatureSay} to broadcast.
+	 * @param broadcaster : The {@link Player} who broadcasts the message.
 	 */
 	public abstract void broadcastCreatureSay(final CreatureSay msg, final Player broadcaster);
+	
+	/**
+	 * Broadcast a {@link ExShowScreenMessage} packet to every member of this group.
+	 * @param time : The time to show the message on screen.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 */
+	public abstract void broadcastOnScreen(int time, NpcStringId npcStringId);
+	
+	/**
+	 * Broadcast a {@link ExShowScreenMessage} packet to every member of this group.
+	 * @param time : The time to show the message on screen.
+	 * @param npcStringId : The {@link NpcStringId} to send.
+	 * @param params : Additional parameters for {@link NpcStringId} construction.
+	 */
+	public abstract void broadcastOnScreen(int time, NpcStringId npcStringId, Object... params);
 	
 	/**
 	 * Recalculate the group level.

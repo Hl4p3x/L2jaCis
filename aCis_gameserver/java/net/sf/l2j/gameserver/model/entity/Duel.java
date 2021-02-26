@@ -26,7 +26,7 @@ import net.sf.l2j.gameserver.skills.AbstractEffect;
 
 public class Duel
 {
-	public static enum DuelState
+	public enum DuelState
 	{
 		NO_DUEL,
 		ON_COUNTDOWN,
@@ -38,7 +38,7 @@ public class Duel
 	
 	private static final PlaySound B04_S01 = new PlaySound(1, "B04_S01");
 	
-	private static enum DuelResult
+	private enum DuelResult
 	{
 		CONTINUE,
 		TEAM_1_WIN,
@@ -269,33 +269,25 @@ public class Duel
 					_checkTask = null;
 				}
 				
-				stopFighting();
+				if (_isPartyDuel)
+				{
+					for (Player member : _playerA.getParty().getMembers())
+						stopFighting(member);
+					
+					for (Player member : _playerB.getParty().getMembers())
+						stopFighting(member);
+				}
+				else
+				{
+					stopFighting(_playerA);
+					stopFighting(_playerB);
+				}
 				
 				if (status != DuelResult.CANCELED)
 					playAnimations();
 				
 				endDuel(status);
 			}
-		}
-	}
-	
-	/**
-	 * Stops all players from attacking. Used for duel timeout / interrupt.
-	 */
-	private void stopFighting()
-	{
-		if (_isPartyDuel)
-		{
-			for (Player member : _playerA.getParty().getMembers())
-				stopFighting(member);
-			
-			for (Player member : _playerB.getParty().getMembers())
-				stopFighting(member);
-		}
-		else
-		{
-			stopFighting(_playerA);
-			stopFighting(_playerB);
 		}
 	}
 	

@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.geoengine.geodata;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -46,15 +44,15 @@ public class BlockMultilayer extends ABlock
 	/**
 	 * Creates MultilayerBlock.
 	 * @param bb : Input byte buffer.
-	 * @param format : GeoFormat specifying format of loaded data.
+	 * @param type : The type of loaded geodata.
 	 */
-	public BlockMultilayer(ByteBuffer bb, GeoType format)
+	public BlockMultilayer(ByteBuffer bb, GeoType type)
 	{
 		// Move buffer pointer to end of MultilayerBlock.
 		for (int cell = 0; cell < GeoStructure.BLOCK_CELLS; cell++)
 		{
 			// Get layer count for this cell.
-			final byte layers = format != GeoType.L2OFF ? bb.get() : (byte) bb.getShort();
+			final byte layers = type != GeoType.L2OFF ? bb.get() : (byte) bb.getShort();
 			
 			if (layers <= 0 || layers > MAX_LAYERS)
 				throw new RuntimeException("Invalid layer count for MultilayerBlock");
@@ -65,23 +63,12 @@ public class BlockMultilayer extends ABlock
 			// Loop over layers.
 			for (byte layer = 0; layer < layers; layer++)
 			{
-				if (format != GeoType.L2D)
-				{
-					// Get data.
-					short data = bb.getShort();
-					
-					// Add nswe and height.
-					_temp.put((byte) (data & 0x000F));
-					_temp.putShort((short) ((short) (data & 0xFFF0) >> 1));
-				}
-				else
-				{
-					// Add nswe.
-					_temp.put(bb.get());
-					
-					// Add height.
-					_temp.putShort(bb.getShort());
-				}
+				// Get data.
+				short data = bb.getShort();
+				
+				// Add nswe and height.
+				_temp.put((byte) (data & 0x000F));
+				_temp.putShort((short) ((short) (data & 0xFFF0) >> 1));
 			}
 		}
 		
@@ -233,34 +220,5 @@ public class BlockMultilayer extends ABlock
 	{
 		// Get nswe.
 		return _buffer[index];
-	}
-	
-	@Override
-	public final void setNswe(int index, byte nswe)
-	{
-		// Set nswe.
-		_buffer[index] = nswe;
-	}
-	
-	@Override
-	public final void saveBlock(BufferedOutputStream stream) throws IOException
-	{
-		// Write block type.
-		stream.write(GeoStructure.TYPE_MULTILAYER_L2D);
-		
-		// For each cell.
-		int index = 0;
-		for (int i = 0; i < GeoStructure.BLOCK_CELLS; i++)
-		{
-			// Write layers count.
-			byte layers = _buffer[index++];
-			stream.write(layers);
-			
-			// Write cell's layer data.
-			stream.write(_buffer, index, layers * 3);
-			
-			// Move index to next cell.
-			index += layers * 3;
-		}
 	}
 }

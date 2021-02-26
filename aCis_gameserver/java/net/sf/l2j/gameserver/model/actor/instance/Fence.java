@@ -6,9 +6,6 @@ import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.serverpackets.ExColosseumFenceInfo;
 
-/**
- * @author Hasha
- */
 public class Fence extends WorldObject implements IGeoObject
 {
 	private static final int FENCE_HEIGHT = 24;
@@ -127,7 +124,6 @@ public class Fence extends WorldObject implements IGeoObject
 	
 	/**
 	 * Dummy fence class in order to spawn/delete multi-layer fences correctly.
-	 * @author Hasha
 	 */
 	protected class L2DummyFence extends WorldObject
 	{

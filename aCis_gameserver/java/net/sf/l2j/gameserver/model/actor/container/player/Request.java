@@ -33,7 +33,7 @@ public class Request
 	/**
 	 * @return the {@link Player} partner of a request.
 	 */
-	public Player getPartner()
+	public synchronized Player getPartner()
 	{
 		return _partner;
 	}
@@ -50,7 +50,7 @@ public class Request
 	/**
 	 * @return the {@link L2GameClientPacket} originally sent by the requestor.
 	 */
-	public L2GameClientPacket getRequestPacket()
+	public synchronized L2GameClientPacket getRequestPacket()
 	{
 		return _requestPacket;
 	}
@@ -108,7 +108,7 @@ public class Request
 	
 	private void clearRequestOnTimeout()
 	{
-		_requestTimer = ThreadPool.schedule(() -> clear(), REQUEST_TIMEOUT);
+		_requestTimer = ThreadPool.schedule(this::clear, REQUEST_TIMEOUT);
 	}
 	
 	/**

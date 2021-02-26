@@ -8,7 +8,7 @@
 		<table name="#magicLvl"> 40 48 60 </table>
 		<set name="mpInitialConsume" val="#mpInitialConsume"/>
 		<set name="mpConsume" val="#mpConsume"/>
-		<set name="target" val="PET"/>
+		<set name="target" val="SUMMON"/>
 		<set name="hitTime" val="4000"/>
 		<set name="reuseDelay" val="15000"/>
 		<set name="skillType" val="NEGATE"/>
@@ -25,7 +25,7 @@
 		<set name="magicLvl" val="62"/>
 		<set name="mpInitialConsume" val="12"/>
 		<set name="mpConsume" val="46"/>
-		<set name="target" val="PET"/>
+		<set name="target" val="SUMMON"/>
 		<set name="hitTime" val="4000"/>
 		<set name="reuseDelay" val="15000"/>
 		<set name="skillType" val="NEGATE"/>
@@ -912,7 +912,7 @@
 		<set name="itemConsumeCount" val="10"/>
 		<set name="hitTime" val="4000"/>
 		<set name="reuseDelay" val="300000"/>
-		<set name="target" val="PET"/>
+		<set name="target" val="SUMMON"/>
 		<set name="skillType" val="BUFF"/>
 		<set name="operateType" val="ACTIVE"/>
 		<set name="castRange" val="400"/>
@@ -938,7 +938,7 @@
 		<set name="itemConsumeCount" val="10"/>
 		<set name="hitTime" val="4000"/>
 		<set name="reuseDelay" val="300000"/>
-		<set name="target" val="PET"/>
+		<set name="target" val="SUMMON"/>
 		<set name="skillType" val="BUFF"/>
 		<set name="operateType" val="ACTIVE"/>
 		<set name="castRange" val="400"/>
@@ -961,7 +961,7 @@
 		<set name="mpConsume" val="56"/>
 		<set name="itemConsumeId" val="3031"/>
 		<set name="itemConsumeCount" val="10"/>
-		<set name="target" val="PET"/>
+		<set name="target" val="SUMMON"/>
 		<set name="reuseDelay" val="300000"/>
 		<set name="hitTime" val="4000"/>
 		<set name="skillType" val="BUFF"/>
@@ -993,7 +993,7 @@
 		<set name="itemConsumeCount" val="20"/>
 		<set name="hitTime" val="4000"/>
 		<set name="reuseDelay" val="600000"/>
-		<set name="target" val="PET"/>
+		<set name="target" val="SUMMON"/>
 		<set name="skillType" val="BUFF"/>
 		<set name="operateType" val="ACTIVE"/>
 		<set name="castRange" val="400"/>

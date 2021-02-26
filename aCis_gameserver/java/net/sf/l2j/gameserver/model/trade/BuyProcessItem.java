@@ -15,15 +15,6 @@ public class BuyProcessItem
 		_enchant = enchant;
 	}
 	
-	public boolean addToTradeList(TradeList list)
-	{
-		if ((Integer.MAX_VALUE / _count) < _price)
-			return false;
-		
-		list.addItemByItemId(_itemId, _count, _price, _enchant);
-		return true;
-	}
-	
 	public int getItemId()
 	{
 		return _itemId;
@@ -47,5 +38,10 @@ public class BuyProcessItem
 	public long getCost()
 	{
 		return _count * _price;
+	}
+	
+	public boolean addToTradeList(TradeList list)
+	{
+		return list.addItemByItemId(_itemId, _count, _price, _enchant) != null;
 	}
 }

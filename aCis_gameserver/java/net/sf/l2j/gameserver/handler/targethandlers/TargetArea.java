@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
+import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetArea implements ITargetHandler
@@ -26,16 +28,19 @@ public class TargetArea implements ITargetHandler
 		
 		for (Creature creature : target.getKnownTypeInRadius(Creature.class, skill.getSkillRadius()))
 		{
-			if (creature == target)
+			if (creature == caster || creature.isDead() || !GeoEngine.getInstance().canSeeTarget(target, creature))
 				continue;
 			
-			if (!(creature instanceof Attackable || creature instanceof Playable))
-				continue;
-			
-			if (!L2Skill.checkForAreaOffensiveSkills(caster, creature, skill, false, false))
-				continue;
-			
-			list.add(creature);
+			if (caster instanceof Playable && (creature instanceof Attackable || creature instanceof Playable))
+			{
+				if (creature.isAttackableWithoutForceBy((Playable) caster))
+					list.add(creature);
+			}
+			else if (caster instanceof Attackable && creature instanceof Playable)
+			{
+				if (creature.isAttackableBy(caster))
+					list.add(creature);
+			}
 		}
 		
 		if (list.isEmpty())
@@ -51,5 +56,19 @@ public class TargetArea implements ITargetHandler
 			return null;
 		
 		return target;
+	}
+	
+	@Override
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed)
+	{
+		if (skill.isOffensive())
+		{
+			if (!target.isAttackableBy(caster) || (!isCtrlPressed && !target.isAttackableWithoutForceBy(caster.getActingPlayer())))
+			{
+				caster.sendPacket(SystemMessageId.INVALID_TARGET);
+				return false;
+			}
+		}
+		return true;
 	}
 }

@@ -389,7 +389,7 @@
 		<set name="staticReuse" val="true" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13025" />
+		<set name="effectNpcId" val="13027" />
 		<set name="offensive" val="True" />
 		<set name="effectId" val="5130" />
 		<set name="element" val="FIRE" />
@@ -420,7 +420,7 @@
 		<set name="magicLvl" val="80" />
 		<set name="offensive" val="True" />
 		<set name="element" val="WIND" />
-		<set name="effectNpcId" val="13025" />
+		<set name="effectNpcId" val="13028" />
 		<set name="effectId" val="5132" />
 		<set name="power" val="500" />
 		<set name="itemConsumeId" val="8876" />
@@ -447,7 +447,7 @@
 		<set name="castRange" val="900" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13025" />
+		<set name="effectNpcId" val="13029" />
 		<set name="offensive" val="True" />
 		<set name="effectId" val="5131" />
 		<set name="element" val="WATER" />
@@ -503,8 +503,8 @@
 		<set name="castRange" val="900" />
 		<set name="skillRadius" val="180" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13025" />
 		<set name="offensive" val="True" />
+		<set name="effectNpcId" val="13030" />
 		<set name="effectId" val="5133" />
 		<set name="element" val="DARK" />
 		<set name="power" val="500" />
@@ -532,7 +532,7 @@
 		<set name="skillRadius" val="180" />
 		<set name="staticReuse" val="true" />
 		<set name="magicLvl" val="80" />
-		<set name="effectNpcId" val="13020" />
+		<set name="effectNpcId" val="13026" />
 		<set name="effectId" val="5134" />
 		<set name="offensive" val="True" />
 		<set name="power" val="200" />

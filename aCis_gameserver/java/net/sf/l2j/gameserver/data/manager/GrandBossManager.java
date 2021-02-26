@@ -6,9 +6,9 @@ import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
 import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
@@ -25,7 +25,7 @@ public class GrandBossManager
 	private static final String UPDATE_GRAND_BOSS_DATA2 = "UPDATE grandboss_data set status = ? where boss_id = ?";
 	
 	private final Map<Integer, GrandBoss> _bosses = new HashMap<>();
-	private final Map<Integer, StatsSet> _storedInfo = new HashMap<>();
+	private final Map<Integer, StatSet> _sets = new HashMap<>();
 	private final Map<Integer, Integer> _bossStatus = new HashMap<>();
 	
 	protected GrandBossManager()
@@ -38,24 +38,24 @@ public class GrandBossManager
 			{
 				final int bossId = rset.getInt("boss_id");
 				
-				final StatsSet info = new StatsSet();
-				info.set("loc_x", rset.getInt("loc_x"));
-				info.set("loc_y", rset.getInt("loc_y"));
-				info.set("loc_z", rset.getInt("loc_z"));
-				info.set("heading", rset.getInt("heading"));
-				info.set("respawn_time", rset.getLong("respawn_time"));
-				info.set("currentHP", rset.getDouble("currentHP"));
-				info.set("currentMP", rset.getDouble("currentMP"));
+				final StatSet set = new StatSet();
+				set.set("loc_x", rset.getInt("loc_x"));
+				set.set("loc_y", rset.getInt("loc_y"));
+				set.set("loc_z", rset.getInt("loc_z"));
+				set.set("heading", rset.getInt("heading"));
+				set.set("respawn_time", rset.getLong("respawn_time"));
+				set.set("currentHP", rset.getDouble("currentHP"));
+				set.set("currentMP", rset.getDouble("currentMP"));
 				
 				_bossStatus.put(bossId, rset.getInt("status"));
-				_storedInfo.put(bossId, info);
+				_sets.put(bossId, set);
 			}
 		}
 		catch (Exception e)
 		{
 			LOGGER.error("Couldn't load grandboss.", e);
 		}
-		LOGGER.info("Loaded {} GrandBosses instances.", _storedInfo.size());
+		LOGGER.info("Loaded {} GrandBosses instances.", _sets.size());
 	}
 	
 	public int getBossStatus(int bossId)
@@ -98,14 +98,14 @@ public class GrandBossManager
 		return _bosses.get(bossId);
 	}
 	
-	public StatsSet getStatsSet(int bossId)
+	public StatSet getStatSet(int bossId)
 	{
-		return _storedInfo.get(bossId);
+		return _sets.get(bossId);
 	}
 	
-	public void setStatsSet(int bossId, StatsSet info)
+	public void setStatSet(int bossId, StatSet info)
 	{
-		_storedInfo.put(bossId, info);
+		_sets.put(bossId, info);
 		
 		updateDb(bossId, false);
 	}
@@ -119,10 +119,10 @@ public class GrandBossManager
 	{
 		try (Connection con = ConnectionPool.getConnection())
 		{
-			final StatsSet info = _storedInfo.get(bossId);
+			final StatSet set = _sets.get(bossId);
 			final GrandBoss boss = _bosses.get(bossId);
 			
-			if (statusOnly || boss == null || info == null)
+			if (statusOnly || boss == null || set == null)
 			{
 				try (PreparedStatement ps = con.prepareStatement(UPDATE_GRAND_BOSS_DATA2))
 				{
@@ -139,7 +139,7 @@ public class GrandBossManager
 					ps.setInt(2, boss.getY());
 					ps.setInt(3, boss.getZ());
 					ps.setInt(4, boss.getHeading());
-					ps.setLong(5, info.getLong("respawn_time"));
+					ps.setLong(5, set.getLong("respawn_time"));
 					ps.setDouble(6, (boss.isDead()) ? boss.getStatus().getMaxHp() : boss.getStatus().getHp());
 					ps.setDouble(7, (boss.isDead()) ? boss.getStatus().getMaxMp() : boss.getStatus().getMp());
 					ps.setInt(8, _bossStatus.get(bossId));
@@ -164,13 +164,13 @@ public class GrandBossManager
 			PreparedStatement ps1 = con.prepareStatement(UPDATE_GRAND_BOSS_DATA2);
 			PreparedStatement ps2 = con.prepareStatement(UPDATE_GRAND_BOSS_DATA))
 		{
-			for (Map.Entry<Integer, StatsSet> infoEntry : _storedInfo.entrySet())
+			for (Map.Entry<Integer, StatSet> entry : _sets.entrySet())
 			{
-				final int bossId = infoEntry.getKey();
-				final StatsSet info = infoEntry.getValue();
+				final int bossId = entry.getKey();
+				final StatSet set = entry.getValue();
 				final GrandBoss boss = _bosses.get(bossId);
 				
-				if (boss == null || info == null)
+				if (boss == null || set == null)
 				{
 					ps1.setInt(1, _bossStatus.get(bossId));
 					ps1.setInt(2, bossId);
@@ -182,7 +182,7 @@ public class GrandBossManager
 					ps2.setInt(2, boss.getY());
 					ps2.setInt(3, boss.getZ());
 					ps2.setInt(4, boss.getHeading());
-					ps2.setLong(5, info.getLong("respawn_time"));
+					ps2.setLong(5, set.getLong("respawn_time"));
 					ps2.setDouble(6, (boss.isDead()) ? boss.getStatus().getMaxHp() : boss.getStatus().getHp());
 					ps2.setDouble(7, (boss.isDead()) ? boss.getStatus().getMaxMp() : boss.getStatus().getMp());
 					ps2.setInt(8, _bossStatus.get(bossId));
@@ -199,7 +199,7 @@ public class GrandBossManager
 		}
 		
 		_bosses.clear();
-		_storedInfo.clear();
+		_sets.clear();
 		_bossStatus.clear();
 	}
 	

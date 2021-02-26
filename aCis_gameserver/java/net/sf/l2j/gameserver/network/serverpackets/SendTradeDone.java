@@ -2,17 +2,20 @@ package net.sf.l2j.gameserver.network.serverpackets;
 
 public class SendTradeDone extends L2GameServerPacket
 {
-	private final int _num;
+	public static final SendTradeDone FAIL_STATIC_PACKET = new SendTradeDone(0);
+	public static final SendTradeDone SUCCESS_STATIC_PACKET = new SendTradeDone(1);
 	
-	public SendTradeDone(int num)
+	private final int _value;
+	
+	private SendTradeDone(int value)
 	{
-		_num = num;
+		_value = value;
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0x22);
-		writeD(_num);
+		writeD(_value);
 	}
 }

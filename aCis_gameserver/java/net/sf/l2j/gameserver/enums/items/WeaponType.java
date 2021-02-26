@@ -1,37 +1,39 @@
 package net.sf.l2j.gameserver.enums.items;
 
+import net.sf.l2j.gameserver.enums.skills.Stats;
+
 public enum WeaponType implements ItemType
 {
-	NONE(40),
-	SWORD(40),
-	BLUNT(40),
-	DAGGER(40),
-	BOW(500),
-	POLE(66),
-	ETC(40),
-	FIST(40),
-	DUAL(40),
-	DUALFIST(40),
-	BIGSWORD(40),
-	FISHINGROD(40),
-	BIGBLUNT(40),
-	PET(40);
+	NONE(40, null),
+	SWORD(40, Stats.SWORD_WPN_VULN),
+	BLUNT(40, Stats.BLUNT_WPN_VULN),
+	DAGGER(40, Stats.DAGGER_WPN_VULN),
+	BOW(500, Stats.BOW_WPN_VULN),
+	POLE(66, Stats.POLE_WPN_VULN),
+	ETC(40, null),
+	FIST(40, null),
+	DUAL(40, Stats.DUAL_WPN_VULN),
+	DUALFIST(40, Stats.DUALFIST_WPN_VULN),
+	BIGSWORD(40, Stats.BIGSWORD_WPN_VULN),
+	FISHINGROD(40, null),
+	BIGBLUNT(40, Stats.BIGBLUNT_WPN_VULN),
+	PET(40, null);
 	
 	public static final WeaponType[] VALUES = values();
 	
 	private final int _mask;
-	private final int _range;
 	
-	private WeaponType(int range)
+	private final int _range;
+	private final Stats _vulnStat;
+	
+	private WeaponType(int range, Stats stat)
 	{
 		_mask = 1 << ordinal();
+		
 		_range = range;
+		_vulnStat = stat;
 	}
 	
-	/**
-	 * Returns the ID of the item after applying the mask.
-	 * @return int : ID of the item
-	 */
 	@Override
 	public int mask()
 	{
@@ -41,5 +43,10 @@ public enum WeaponType implements ItemType
 	public int getRange()
 	{
 		return _range;
+	}
+	
+	public Stats getVulnStat()
+	{
+		return _vulnStat;
 	}
 }

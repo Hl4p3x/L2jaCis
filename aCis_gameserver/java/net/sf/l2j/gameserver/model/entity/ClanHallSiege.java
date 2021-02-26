@@ -6,8 +6,7 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 
 import net.sf.l2j.commons.logging.CLogger;
@@ -47,7 +46,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 	public static final int BEAST_FARM = 63;
 	public static final int FORTRESS_OF_DEAD = 64;
 	
-	private final Map<Integer, Clan> _attackers = new ConcurrentHashMap<>();
+	private final List<Clan> _attackers = new CopyOnWriteArrayList<>();
 	private List<Spawn> _guards;
 	
 	public SiegableHall _hall;
@@ -61,7 +60,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		_hall = ClanHallManager.getInstance().getSiegableHall(hallId);
 		_hall.setSiege(this);
 		
-		_siegeTask = ThreadPool.schedule(() -> prepareOwner(), _hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
+		_siegeTask = ThreadPool.schedule(this::prepareOwner, _hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
 		
 		loadAttackers();
 		
@@ -81,7 +80,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 					final int id = rset.getInt("attacker_id");
 					final Clan clan = ClanTable.getInstance().getClan(id);
 					if (clan != null)
-						_attackers.put(id, clan);
+						_attackers.add(clan);
 				}
 			}
 		}
@@ -99,11 +98,11 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 			ps.setInt(1, _hall.getId());
 			ps.execute();
 			
-			if (_attackers.size() > 0)
+			if (!_attackers.isEmpty())
 			{
 				try (PreparedStatement insert = con.prepareStatement(SQL_SAVE_ATTACKERS))
 				{
-					for (Clan clan : _attackers.values())
+					for (Clan clan : _attackers)
 					{
 						insert.setInt(1, _hall.getId());
 						insert.setInt(2, clan.getClanId());
@@ -182,7 +181,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 	@Override
 	public List<Clan> getAttackerClans()
 	{
-		return new ArrayList<>(_attackers.values());
+		return _attackers;
 	}
 	
 	@Override
@@ -209,7 +208,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		for (Player player : _hall.getSiegeZone().getKnownTypeInside(Player.class))
 		{
 			final Clan clan = player.getClan();
-			if (clan != null && _attackers.containsKey(clan.getClanId()))
+			if (clan != null && _attackers.contains(clan))
 				attackers.add(player);
 		}
 		return attackers;
@@ -227,7 +226,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		{
 			final Clan clan = ClanTable.getInstance().getClan(_hall.getOwnerId());
 			if (clan != null)
-				_attackers.put(clan.getClanId(), clan);
+				_attackers.add(clan);
 		}
 		
 		_hall.free();
@@ -237,21 +236,19 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		
 		_hall.updateSiegeStatus(SiegeStatus.REGISTRATION_OVER);
 		
-		_siegeTask = ThreadPool.schedule(() -> startSiege(), 3600000);
+		_siegeTask = ThreadPool.schedule(this::startSiege, 3600000);
 	}
 	
 	@Override
 	public void startSiege()
 	{
-		if (_attackers.size() < 1 && _hall.getId() != 21) // Fortress of resistance don't have attacker list
+		if (_attackers.isEmpty() && _hall.getId() != 21) // Fortress of resistance don't have attacker list
 		{
 			onSiegeEnds();
 			
-			_attackers.clear();
-			
 			_hall.updateNextSiege();
 			
-			_siegeTask = ThreadPool.schedule(() -> prepareOwner(), _hall.getSiegeDate().getTimeInMillis());
+			_siegeTask = ThreadPool.schedule(this::prepareOwner, _hall.getSiegeDate().getTimeInMillis());
 			
 			_hall.updateSiegeStatus(SiegeStatus.REGISTRATION_OVER);
 			
@@ -267,7 +264,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		_hall.getSiegeZone().setActive(true);
 		
 		final byte state = 1;
-		for (Clan clan : _attackers.values())
+		for (Clan clan : _attackers)
 		{
 			for (Player player : clan.getOnlineMembers())
 			{
@@ -309,7 +306,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		_hall.banishForeigners();
 		
 		final byte state = 0;
-		for (Clan clan : _attackers.values())
+		for (Clan clan : _attackers)
 		{
 			for (Player player : clan.getOnlineMembers())
 			{
@@ -327,7 +324,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		
 		onSiegeEnds();
 		
-		_siegeTask = ThreadPool.schedule(() -> prepareOwner(), _hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
+		_siegeTask = ThreadPool.schedule(this::prepareOwner, _hall.getNextSiegeTime() - System.currentTimeMillis() - 3600000);
 		LOGGER.info("Siege of {} scheduled for {}.", _hall.getName(), _hall.getSiegeDate().getTime());
 		
 		_hall.updateSiegeStatus(SiegeStatus.REGISTRATION_OPENED);
@@ -338,7 +335,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 	{
 		cancelSiegeTask();
 		
-		_siegeTask = ThreadPool.schedule(() -> prepareOwner(), _hall.getNextSiegeTime() - 3600000);
+		_siegeTask = ThreadPool.schedule(this::prepareOwner, _hall.getNextSiegeTime() - 3600000);
 		
 		LOGGER.info("{} siege scheduled for {}.", _hall.getName(), _hall.getSiegeDate().getTime());
 	}
@@ -357,7 +354,7 @@ public abstract class ClanHallSiege extends Quest implements Siegable
 		return _hall.getSiegeDate();
 	}
 	
-	public final static void broadcastNpcSay(final Npc npc, final SayType type, final String messageId)
+	public static final void broadcastNpcSay(final Npc npc, final SayType type, final String messageId)
 	{
 		final NpcSay npcSay = new NpcSay(npc, type, messageId);
 		final int region = MapRegionData.getInstance().getMapRegion(npc.getX(), npc.getY());

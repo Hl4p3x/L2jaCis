@@ -74,7 +74,7 @@ public class RecipeItemMaker implements Runnable
 		// Check if that customer can afford to pay for creation services. Also check manufacturer integrity.
 		if (_player != _target)
 		{
-			for (ManufactureItem temp : _player.getManufactureList().getList())
+			for (ManufactureItem temp : _player.getManufactureList())
 			{
 				// Find recipe for item we want manufactured.
 				if (temp.getId() == _recipe.getId())

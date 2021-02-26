@@ -4,8 +4,8 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.item.Recipe;
 
@@ -35,7 +35,7 @@ public class RecipeData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "recipe", recipeNode ->
 		{
-			final StatsSet set = parseAttributes(recipeNode);
+			final StatSet set = parseAttributes(recipeNode);
 			_recipes.put(set.getInteger("id"), new Recipe(set));
 		}));
 	}

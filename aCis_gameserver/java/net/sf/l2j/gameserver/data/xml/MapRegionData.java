@@ -6,7 +6,10 @@ import net.sf.l2j.commons.data.xml.IXmlReader;
 
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.ClanHallManager;
+import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
+import net.sf.l2j.gameserver.enums.CabalType;
+import net.sf.l2j.gameserver.enums.SealType;
 import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.enums.SpawnType;
 import net.sf.l2j.gameserver.enums.ZoneId;
@@ -31,7 +34,7 @@ import org.w3c.dom.NamedNodeMap;
  */
 public class MapRegionData implements IXmlReader
 {
-	public static enum TeleportType
+	public enum TeleportType
 	{
 		CASTLE,
 		CLAN_HALL,
@@ -116,7 +119,6 @@ public class MapRegionData implements IXmlReader
 			
 			case 10: // Town of Aden
 			case 11: // Hunters Village
-			default: // Town of Aden
 				return 5;
 			
 			case 13: // Heine
@@ -133,6 +135,9 @@ public class MapRegionData implements IXmlReader
 			case 4: // Dwarven Village
 			case 16: // Town of Schuttgart
 				return 9;
+				
+			default: // Town of Aden
+				return 5;
 		}
 	}
 	
@@ -267,10 +272,15 @@ public class MapRegionData implements IXmlReader
 			}
 		}
 		
-		// Check if the player needs to be teleported in second closest town, during an active siege.
+		// Returning to Town in a Siege - Seal of Strife.
+		// When owned by Dawn: Player restarts in the second nearest village.
+		// When owned by Dusk / not owned: A clan that has participated in a siege restarts in the first town at the time of escape or death.
 		final Castle castle = CastleManager.getInstance().getCastle(player);
 		if (castle != null && castle.getSiege().isInProgress())
-			return castle.getRndSpawn(SpawnType.OTHER);
+		{
+			if (SevenSignsManager.getInstance().isSealValidationPeriod() && SevenSignsManager.getInstance().getSealOwner(SealType.STRIFE) == CabalType.DAWN)
+				return castle.getRndSpawn((player.getKarma() > 0) ? SpawnType.CHAOTIC : SpawnType.OTHER);
+		}
 		
 		// Karma player lands out of city, otherwise retrieve a random spawn location of the nearest town.
 		return getClosestTown(player).getRndSpawn((player.getKarma() > 0) ? SpawnType.CHAOTIC : SpawnType.NORMAL);

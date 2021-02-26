@@ -6,6 +6,7 @@ import java.util.List;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
 import net.sf.l2j.gameserver.model.group.Party;
@@ -23,20 +24,13 @@ public class TargetParty implements ITargetHandler
 	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
 	{
 		final List<Creature> list = new ArrayList<>();
-		
 		list.add(caster);
 		
 		final Player player = caster.getActingPlayer();
-		if (caster instanceof Summon)
-		{
-			if (L2Skill.addCharacter(caster, player, skill.getSkillRadius(), false))
-				list.add(player);
-		}
-		else if (caster instanceof Player)
-		{
-			if (L2Skill.addSummon(caster, player, skill.getSkillRadius(), false))
-				list.add(player.getSummon());
-		}
+		if (caster instanceof Summon && skill.addCharacter(caster, player, false))
+			list.add(player);
+		else if (caster instanceof Player && skill.addSummon(caster, player, false))
+			list.add(player.getSummon());
 		
 		final Party party = caster.getParty();
 		if (party != null)
@@ -46,10 +40,10 @@ public class TargetParty implements ITargetHandler
 				if (member == player)
 					continue;
 				
-				if (L2Skill.addCharacter(caster, member, skill.getSkillRadius(), false))
+				if (skill.addCharacter(caster, member, false))
 					list.add(member);
 				
-				if (L2Skill.addSummon(caster, member, skill.getSkillRadius(), false))
+				if (skill.addSummon(caster, member, false))
 					list.add(member.getSummon());
 			}
 		}
@@ -61,5 +55,11 @@ public class TargetParty implements ITargetHandler
 	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
 		return caster;
+	}
+	
+	@Override
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed)
+	{
+		return true;
 	}
 }

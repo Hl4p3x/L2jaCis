@@ -79,7 +79,7 @@ public class FishingChampionshipManager
 			finishChamp();
 		}
 		else
-			ThreadPool.schedule(() -> finishChamp(), _endDate - System.currentTimeMillis());
+			ThreadPool.schedule(this::finishChamp, _endDate - System.currentTimeMillis());
 	}
 	
 	private void setEndOfChamp()
@@ -195,7 +195,7 @@ public class FishingChampionshipManager
 		shutdown();
 		
 		LOGGER.info("A new Fishing Championship event period has started.");
-		ThreadPool.schedule(() -> finishChamp(), _endDate - System.currentTimeMillis());
+		ThreadPool.schedule(this::finishChamp, _endDate - System.currentTimeMillis());
 	}
 	
 	private void recalculateMinLength()
@@ -323,50 +323,47 @@ public class FishingChampionshipManager
 	{
 		for (Fisher fisher : _winPlayers)
 		{
-			if (fisher.getName().equalsIgnoreCase(player.getName()))
+			if (fisher.getRewardType() != 2 && fisher.getName().equalsIgnoreCase(player.getName()))
 			{
-				if (fisher.getRewardType() != 2)
+				int rewardCnt = 0;
+				for (int x = 0; x < _winPlayersName.size(); x++)
 				{
-					int rewardCnt = 0;
-					for (int x = 0; x < _winPlayersName.size(); x++)
+					if (_winPlayersName.get(x).equalsIgnoreCase(player.getName()))
 					{
-						if (_winPlayersName.get(x).equalsIgnoreCase(player.getName()))
+						switch (x)
 						{
-							switch (x)
-							{
-								case 0:
-									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_1;
-									break;
-								
-								case 1:
-									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_2;
-									break;
-								
-								case 2:
-									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_3;
-									break;
-								
-								case 3:
-									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_4;
-									break;
-								
-								case 4:
-									rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_5;
-									break;
-							}
+							case 0:
+								rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_1;
+								break;
+							
+							case 1:
+								rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_2;
+								break;
+							
+							case 2:
+								rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_3;
+								break;
+							
+							case 3:
+								rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_4;
+								break;
+							
+							case 4:
+								rewardCnt = Config.FISH_CHAMPIONSHIP_REWARD_5;
+								break;
 						}
 					}
+				}
+				
+				fisher.setRewardType(2);
+				
+				if (rewardCnt > 0)
+				{
+					player.addItem("fishing_reward", Config.FISH_CHAMPIONSHIP_REWARD_ITEM, rewardCnt, null, true);
 					
-					fisher.setRewardType(2);
-					
-					if (rewardCnt > 0)
-					{
-						player.addItem("fishing_reward", Config.FISH_CHAMPIONSHIP_REWARD_ITEM, rewardCnt, null, true);
-						
-						final NpcHtmlMessage html = new NpcHtmlMessage(0);
-						html.setFile("data/html/fisherman/championship/fish_event_reward001.htm");
-						player.sendPacket(html);
-					}
+					final NpcHtmlMessage html = new NpcHtmlMessage(0);
+					html.setFile("data/html/fisherman/championship/fish_event_reward001.htm");
+					player.sendPacket(html);
 				}
 			}
 		}
@@ -438,7 +435,6 @@ public class FishingChampionshipManager
 			PreparedStatement ps2 = con.prepareStatement(INSERT))
 		{
 			ps.execute();
-			ps.close();
 			
 			for (Fisher fisher : _winPlayers)
 			{

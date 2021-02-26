@@ -22,6 +22,6 @@ public final class RequestPledgePowerGradeList extends L2GameClientPacket
 		if (clan == null)
 			return;
 		
-		player.sendPacket(new PledgePowerGradeList(clan.getPriviledges().keySet(), clan.getMembers()));
+		player.sendPacket(new PledgePowerGradeList(clan.getPrivileges().keySet(), clan.getMembers()));
 	}
 }

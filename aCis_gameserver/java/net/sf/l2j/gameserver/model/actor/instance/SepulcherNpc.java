@@ -1,14 +1,12 @@
 package net.sf.l2j.gameserver.model.actor.instance;
 
 import java.util.Calendar;
-import java.util.List;
 
 import net.sf.l2j.commons.pool.ThreadPool;
 
 import net.sf.l2j.gameserver.data.manager.FourSepulchersManager;
 import net.sf.l2j.gameserver.data.xml.DoorData;
 import net.sf.l2j.gameserver.enums.SayType;
-import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.group.Party;
@@ -16,7 +14,6 @@ import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
 import net.sf.l2j.gameserver.network.serverpackets.NpcSay;
-import net.sf.l2j.gameserver.scripting.Quest;
 
 public class SepulcherNpc extends Folk
 {
@@ -30,11 +27,6 @@ public class SepulcherNpc extends Folk
 	
 	@Override
 	public void onInteract(Player player)
-	{
-		doAction(player);
-	}
-	
-	private void doAction(Player player)
 	{
 		if (isDead())
 		{
@@ -96,17 +88,7 @@ public class SepulcherNpc extends Folk
 				break;
 			
 			default:
-			{
-				List<Quest> scripts = getTemplate().getEventQuests(ScriptEventType.QUEST_START);
-				if (scripts != null && !scripts.isEmpty())
-					player.setLastQuestNpcObject(getObjectId());
-				
-				scripts = getTemplate().getEventQuests(ScriptEventType.ON_FIRST_TALK);
-				if (scripts != null && scripts.size() == 1)
-					scripts.get(0).notifyFirstTalk(this, player);
-				else
-					showChatWindow(player);
-			}
+				super.onInteract(player);
 		}
 		player.sendPacket(ActionFailed.STATIC_PACKET);
 	}

@@ -59,9 +59,9 @@ public abstract class L2GameClientPacket extends ReceivablePacket<GameClient>
 					player.onActionRequest();
 			}
 		}
-		catch (Throwable t)
+		catch (Exception e)
 		{
-			LOGGER.error("Failed reading {} for {}. ", t, getType(), getClient().toString());
+			LOGGER.error("Failed reading {} for {}. ", e, getType(), getClient().toString());
 			
 			if (this instanceof EnterWorld)
 				getClient().closeNow();

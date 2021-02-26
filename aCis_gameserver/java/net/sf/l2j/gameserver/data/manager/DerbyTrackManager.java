@@ -39,7 +39,7 @@ public class DerbyTrackManager
 	private static final String SAVE_BETS = "REPLACE INTO mdt_bets (lane_id, bet) VALUES (?,?)";
 	private static final String CLEAR_BETS = "UPDATE mdt_bets SET bet = 0";
 	
-	public static enum RaceState
+	public enum RaceState
 	{
 		ACCEPTING_BETS,
 		WAITING,
@@ -99,9 +99,9 @@ public class DerbyTrackManager
 				if (template == null)
 					continue;
 				
-				final Constructor<?> _constructor = Class.forName("net.sf.l2j.gameserver.model.actor.instance." + template.getType()).getConstructors()[0];
+				final Constructor<?> constructor = Class.forName("net.sf.l2j.gameserver.model.actor.instance." + template.getType()).getConstructors()[0];
 				
-				_runners.add((Npc) _constructor.newInstance(IdFactory.getInstance().getNextId(), template));
+				_runners.add((Npc) constructor.newInstance(IdFactory.getInstance().getNextId(), template));
 			}
 		}
 		catch (Exception e)

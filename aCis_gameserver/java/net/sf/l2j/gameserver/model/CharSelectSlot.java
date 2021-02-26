@@ -296,19 +296,19 @@ public class CharSelectSlot
 		return _pkKills;
 	}
 	
-	public void setPkKills(int PkKills)
+	public void setPkKills(int pkKills)
 	{
-		_pkKills = PkKills;
+		_pkKills = pkKills;
 	}
 	
-	public int getPvPKills()
+	public int getPvpKills()
 	{
 		return _pvpKills;
 	}
 	
-	public void setPvPKills(int PvPKills)
+	public void setPvpKills(int pvpKills)
 	{
-		_pvpKills = PvPKills;
+		_pvpKills = pvpKills;
 	}
 	
 	public int getX()

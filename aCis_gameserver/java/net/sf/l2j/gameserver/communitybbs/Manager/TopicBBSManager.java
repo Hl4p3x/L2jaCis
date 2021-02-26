@@ -1,28 +1,20 @@
-package net.sf.l2j.gameserver.communitybbs.Manager;
+package net.sf.l2j.gameserver.communitybbs.manager;
 
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
-import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.l2j.commons.lang.StringUtil;
 
-import net.sf.l2j.gameserver.communitybbs.BB.Forum;
-import net.sf.l2j.gameserver.communitybbs.BB.Post;
-import net.sf.l2j.gameserver.communitybbs.BB.Topic;
+import net.sf.l2j.gameserver.communitybbs.CommunityBoard;
+import net.sf.l2j.gameserver.communitybbs.model.Forum;
+import net.sf.l2j.gameserver.communitybbs.model.Topic;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
-import net.sf.l2j.gameserver.enums.TopicType;
+import net.sf.l2j.gameserver.enums.bbs.ForumType;
 import net.sf.l2j.gameserver.model.actor.Player;
 
 public class TopicBBSManager extends BaseBBSManager
 {
-	private final List<Topic> _topics = new ArrayList<>();
-	private final Map<Forum, Integer> _maxId = new ConcurrentHashMap<>();
-	
 	protected TopicBBSManager()
 	{
 	}
@@ -32,26 +24,20 @@ public class TopicBBSManager extends BaseBBSManager
 	{
 		if (ar1.equals("crea"))
 		{
-			final Forum forum = ForumsBBSManager.getInstance().getForumByID(Integer.parseInt(ar2));
+			final Forum forum = CommunityBoard.getInstance().getForumByID(Integer.parseInt(ar2));
 			if (forum == null)
 			{
 				separateAndSend("<html><body><br><br><center>The forum named '" + ar2 + "' doesn't exist.</center></body></html>", player);
 				return;
 			}
 			
-			forum.vload();
-			final Topic topic = new Topic(TopicType.CREATE, TopicBBSManager.getInstance().getMaxID(forum) + 1, Integer.parseInt(ar2), ar5, Calendar.getInstance().getTimeInMillis(), player.getName(), player.getObjectId(), Topic.MEMO, 0);
-			forum.addTopic(topic);
-			TopicBBSManager.getInstance().setMaxID(topic.getID(), forum);
-			
-			final Post post = new Post(player.getName(), player.getObjectId(), Calendar.getInstance().getTimeInMillis(), topic.getID(), forum.getId(), ar4);
-			PostBBSManager.getInstance().addPostByTopic(post, topic);
+			forum.addTopic(new Topic(forum, ar5, player.getName(), player.getObjectId(), ar4));
 			
 			parseCmd("_bbsmemo", player);
 		}
 		else if (ar1.equals("del"))
 		{
-			final Forum forum = ForumsBBSManager.getInstance().getForumByID(Integer.parseInt(ar2));
+			final Forum forum = CommunityBoard.getInstance().getForumByID(Integer.parseInt(ar2));
 			if (forum == null)
 			{
 				separateAndSend("<html><body><br><br><center>The forum named '" + ar2 + "' doesn't exist.</center></body></html>", player);
@@ -65,11 +51,8 @@ public class TopicBBSManager extends BaseBBSManager
 				return;
 			}
 			
-			final Post post = PostBBSManager.getInstance().getPostByTopic(topic);
-			if (post != null)
-				post.deleteMe(topic);
-			
 			topic.deleteMe(forum);
+			
 			parseCmd("_bbsmemo", player);
 		}
 		else
@@ -95,7 +78,7 @@ public class TopicBBSManager extends BaseBBSManager
 			final String index = (st.hasMoreTokens()) ? st.nextToken() : null;
 			final int ind = (index == null) ? 1 : Integer.parseInt(index);
 			
-			showTopics(ForumsBBSManager.getInstance().getForumByID(forumId), player, ind, forumId);
+			showTopics(CommunityBoard.getInstance().getForumByID(forumId), player, ind, forumId);
 		}
 		else if (command.startsWith("_bbstopics;crea"))
 		{
@@ -105,7 +88,7 @@ public class TopicBBSManager extends BaseBBSManager
 			
 			final int forumId = Integer.parseInt(st.nextToken());
 			
-			showNewTopic(ForumsBBSManager.getInstance().getForumByID(forumId), player, forumId);
+			showNewTopic(CommunityBoard.getInstance().getForumByID(forumId), player, forumId);
 		}
 		else if (command.startsWith("_bbstopics;del"))
 		{
@@ -116,68 +99,40 @@ public class TopicBBSManager extends BaseBBSManager
 			final int forumId = Integer.parseInt(st.nextToken());
 			final int topicId = Integer.parseInt(st.nextToken());
 			
-			final Forum forum = ForumsBBSManager.getInstance().getForumByID(forumId);
+			final Forum forum = CommunityBoard.getInstance().getForumByID(forumId);
 			if (forum == null)
 			{
-				separateAndSend("<html><body><br><br><center>The forum named '" + forumId + "' doesn't exist.</center></body></html>", player);
+				separateAndSend("<html><body><br><br><center>The forum #" + forumId + " doesn't exist.</center></body></html>", player);
 				return;
 			}
 			
 			final Topic topic = forum.getTopic(topicId);
 			if (topic == null)
 			{
-				separateAndSend("<html><body><br><br><center>The topic named '" + topicId + "' doesn't exist.</center></body></html>", player);
+				separateAndSend("<html><body><br><br><center>The topic #" + topicId + " doesn't exist.</center></body></html>", player);
 				return;
 			}
 			
-			final Post post = PostBBSManager.getInstance().getPostByTopic(topic);
-			if (post != null)
-				post.deleteMe(topic);
-			
 			topic.deleteMe(forum);
+			
 			parseCmd("_bbsmemo", player);
 		}
 		else
 			super.parseCmd(command, player);
 	}
 	
-	public void addTopic(Topic topic)
-	{
-		_topics.add(topic);
-	}
-	
-	public void deleteTopic(Topic topic)
-	{
-		_topics.remove(topic);
-	}
-	
-	public void setMaxID(int id, Forum forum)
-	{
-		_maxId.put(forum, id);
-	}
-	
-	public int getMaxID(Forum forum)
-	{
-		return _maxId.getOrDefault(forum, 0);
-	}
-	
-	public Topic getTopicById(int forumId)
-	{
-		return _topics.stream().filter(t -> t.getID() == forumId).findFirst().orElse(null);
-	}
-	
 	private static void showNewTopic(Forum forum, Player player, int forumId)
 	{
 		if (forum == null)
 		{
-			separateAndSend("<html><body><br><br><center>The forum named '" + forumId + "' doesn't exist.</center></body></html>", player);
+			separateAndSend("<html><body><br><br><center>The forum #" + forumId + " doesn't exist.</center></body></html>", player);
 			return;
 		}
 		
-		if (forum.getType() == Forum.MEMO)
+		if (forum.getType() == ForumType.MEMO)
 			showMemoNewTopics(forum, player);
 		else
-			separateAndSend("<html><body><br><br><center>The forum named '" + forum.getName() + "' doesn't exist.</center></body></html>", player);
+			separateAndSend("<html><body><br><br><center>The forum #" + forumId + " doesn't exist.</center></body></html>", player);
 	}
 	
 	private static void showMemoNewTopics(Forum forum, Player player)
@@ -187,27 +142,26 @@ public class TopicBBSManager extends BaseBBSManager
 		send1002(player);
 	}
 	
-	private void showTopics(Forum forum, Player player, int index, int forumId)
+	private static void showTopics(Forum forum, Player player, int index, int forumId)
 	{
 		if (forum == null)
 		{
-			separateAndSend("<html><body><br><br><center>The forum named '" + forumId + "' doesn't exist.</center></body></html>", player);
+			separateAndSend("<html><body><br><br><center>The forum #" + forumId + " doesn't exist.</center></body></html>", player);
 			return;
 		}
 		
-		if (forum.getType() == Forum.MEMO)
+		if (forum.getType() == ForumType.MEMO)
 			showMemoTopics(forum, player, index);
 		else
-			separateAndSend("<html><body><br><br><center>The forum named '" + forum.getName() + "' doesn't exist.</center></body></html>", player);
+			separateAndSend("<html><body><br><br><center>The forum #" + forumId + " doesn't exist.</center></body></html>", player);
 	}
 	
-	private void showMemoTopics(Forum forum, Player player, int index)
+	private static void showMemoTopics(Forum forum, Player player, int index)
 	{
-		forum.vload();
 		final StringBuilder sb = new StringBuilder("<html><body><br><br><table border=0 width=610><tr><td width=10></td><td width=600 align=left><a action=\"bypass _bbshome\">HOME</a>&nbsp;>&nbsp;<a action=\"bypass _bbsmemo\">Memo Form</a></td></tr></table><img src=\"L2UI.squareblank\" width=\"1\" height=\"10\"><center><table border=0 cellspacing=0 cellpadding=2 bgcolor=888888 width=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415 align=center>&$413;</td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>&$418;</td></tr></table>");
 		
 		final DateFormat dateFormat = DateFormat.getInstance();
-		for (int i = 0, j = getMaxID(forum) + 1; i < 12 * index; j--)
+		for (int i = 0, j = forum.getCurrentTopicId() + 1; i < 12 * index; j--)
 		{
 			if (j < 0)
 				break;
@@ -216,7 +170,7 @@ public class TopicBBSManager extends BaseBBSManager
 			if (topic != null)
 			{
 				if (i++ >= 12 * (index - 1))
-					StringUtil.append(sb, "<table border=0 cellspacing=0 cellpadding=5 WIDTH=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415><a action=\"bypass _bbsposts;read;", forum.getId(), ";", topic.getID(), "\">", topic.getName(), "</a></td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>", dateFormat.format(new Date(topic.getDate())), "</td></tr></table><img src=\"L2UI.Squaregray\" width=\"610\" height=\"1\">");
+					StringUtil.append(sb, "<table border=0 cellspacing=0 cellpadding=5 WIDTH=610><tr><td FIXWIDTH=5></td><td FIXWIDTH=415><a action=\"bypass _bbsposts;read;", forum.getId(), ";", topic.getId(), "\">", topic.getName(), "</a></td><td FIXWIDTH=120 align=center></td><td FIXWIDTH=70 align=center>", dateFormat.format(new Date(topic.getDate())), "</td></tr></table><img src=\"L2UI.Squaregray\" width=\"610\" height=\"1\">");
 			}
 		}
 		

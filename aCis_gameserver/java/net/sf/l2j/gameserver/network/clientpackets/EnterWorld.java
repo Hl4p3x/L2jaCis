@@ -1,14 +1,9 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.util.Map.Entry;
 
-import net.sf.l2j.commons.pool.ConnectionPool;
-
 import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.communitybbs.Manager.MailBBSManager;
+import net.sf.l2j.gameserver.communitybbs.manager.MailBBSManager;
 import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.ClanHallManager;
@@ -19,7 +14,6 @@ import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.data.xml.AdminData;
 import net.sf.l2j.gameserver.data.xml.AnnouncementData;
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
-import net.sf.l2j.gameserver.data.xml.ScriptData;
 import net.sf.l2j.gameserver.enums.CabalType;
 import net.sf.l2j.gameserver.enums.SealType;
 import net.sf.l2j.gameserver.enums.SiegeSide;
@@ -62,8 +56,6 @@ import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
 
 public class EnterWorld extends L2GameClientPacket
 {
-	private static final String LOAD_PLAYER_QUESTS = "SELECT name,var,value FROM character_quests WHERE charId=?";
-	
 	@Override
 	protected void readImpl()
 	{
@@ -119,8 +111,8 @@ public class EnterWorld extends L2GameClientPacket
 			// Refresh player instance.
 			clan.getClanMember(objectId).setPlayerInstance(player);
 			
-			final SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.CLAN_MEMBER_S1_LOGGED_IN).addCharName(player);
-			final PledgeShowMemberListUpdate update = new PledgeShowMemberListUpdate(player);
+			final SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.CLAN_MEMBER_S1_LOGGED_IN).addCharName(player);
+			final PledgeShowMemberListUpdate psmlu = new PledgeShowMemberListUpdate(player);
 			
 			// Send packets to others members.
 			for (Player member : clan.getOnlineMembers())
@@ -128,8 +120,8 @@ public class EnterWorld extends L2GameClientPacket
 				if (member == player)
 					continue;
 				
-				member.sendPacket(msg);
-				member.sendPacket(update);
+				member.sendPacket(sm);
+				member.sendPacket(psmlu);
 			}
 			
 			// Send a login notification to sponsor or apprentice, if logged.
@@ -147,8 +139,8 @@ public class EnterWorld extends L2GameClientPacket
 			}
 			
 			// Add message at connexion if clanHall not paid.
-			final ClanHall clanHall = ClanHallManager.getInstance().getClanHallByOwner(clan);
-			if (clanHall != null && !clanHall.getPaid())
+			final ClanHall ch = ClanHallManager.getInstance().getClanHallByOwner(clan);
+			if (ch != null && !ch.getPaid())
 				player.sendPacket(SystemMessageId.PAYMENT_FOR_YOUR_CLAN_HALL_HAS_NOT_BEEN_MADE_PLEASE_MAKE_PAYMENT_TO_YOUR_CLAN_WAREHOUSE_BY_S1_TOMORROW);
 			
 			for (Castle castle : CastleManager.getInstance().getCastles())
@@ -225,74 +217,26 @@ public class EnterWorld extends L2GameClientPacket
 			}
 		}
 		
-		// Announcements, welcome & Seven signs period messages
+		// Announcements, welcome & Seven signs period messages.
 		player.sendPacket(SystemMessageId.WELCOME_TO_LINEAGE);
 		player.sendPacket(SevenSignsManager.getInstance().getCurrentPeriod().getMessageId());
 		AnnouncementData.getInstance().showAnnouncements(player, false);
 		
-		// if player is DE, check for shadow sense skill at night
+		// If the Player is a Dark Elf, check for Shadow Sense at night.
 		if (player.getRace() == ClassRace.DARK_ELF && player.hasSkill(L2Skill.SKILL_SHADOW_SENSE))
 			player.sendPacket(SystemMessage.getSystemMessage((GameTimeTaskManager.getInstance().isNight()) ? SystemMessageId.NIGHT_S1_EFFECT_APPLIES : SystemMessageId.DAY_S1_EFFECT_DISAPPEARS).addSkillName(L2Skill.SKILL_SHADOW_SENSE));
 		
-		// Load quests.
-		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(LOAD_PLAYER_QUESTS))
-		{
-			ps.setInt(1, objectId);
-			
-			try (ResultSet rs = ps.executeQuery())
-			{
-				while (rs.next())
-				{
-					final String questName = rs.getString("name");
-					
-					// Test quest existence.
-					final Quest quest = ScriptData.getInstance().getQuest(questName);
-					if (quest == null)
-					{
-						LOGGER.warn("Unknown quest {} for player {}.", questName, player.getName());
-						continue;
-					}
-					
-					// Each quest get a single state ; create one QuestState per found <state> variable.
-					final String var = rs.getString("var");
-					if (var.equals("<state>"))
-					{
-						new QuestState(player, quest, rs.getByte("value"));
-						
-						// Notify quest for enterworld event, if quest allows it.
-						if (quest.isTriggeredOnEnterWorld())
-							quest.notifyEnterWorld(player);
-					}
-					// Feed an existing quest state.
-					else
-					{
-						final QuestState qs = player.getQuestState(questName);
-						if (qs == null)
-						{
-							LOGGER.warn("Unknown quest state {} for player {}.", questName, player.getName());
-							continue;
-						}
-						
-						qs.setInternal(var, rs.getString("value"));
-					}
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Couldn't load quests for player {}.", e, player.getName());
-		}
+		// Notify quest for enterworld event, if quest allows it.
+		player.getQuestList().getQuests(Quest::isTriggeredOnEnterWorld).forEach(q -> q.notifyEnterWorld(player));
 		
 		player.sendPacket(new QuestList(player));
-		
 		player.sendSkillList();
 		player.sendPacket(new FriendList(player));
 		player.sendPacket(new UserInfo(player));
 		player.sendPacket(new ItemList(player, false));
 		player.sendPacket(new ShortCutInit(player));
 		
-		// no broadcast needed since the player will already spawn dead to others
+		// No broadcast needed since the player will already spawn dead to others.
 		if (player.isAlikeDead())
 			player.sendPacket(new Die(player));
 		
@@ -320,7 +264,7 @@ public class EnterWorld extends L2GameClientPacket
 			sendPacket(html);
 		}
 		
-		PetitionManager.getInstance().checkPetitionMessages(player);
+		PetitionManager.getInstance().checkActivePetition(player);
 		
 		player.onPlayerEnter();
 		
@@ -341,7 +285,7 @@ public class EnterWorld extends L2GameClientPacket
 			player.teleportTo(TeleportType.TOWN);
 		
 		// Tutorial
-		final QuestState qs = player.getQuestState("Tutorial");
+		final QuestState qs = player.getQuestList().getQuestState("Tutorial");
 		if (qs != null)
 			qs.getQuest().notifyEvent("UC", null, player);
 		

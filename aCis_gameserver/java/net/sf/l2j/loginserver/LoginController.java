@@ -115,7 +115,7 @@ public class LoginController
 		if (attempts >= Config.LOGIN_TRY_BEFORE_BAN)
 		{
 			// Add a ban for the given InetAddress.
-			IpBanManager.getInstance().addBanForAddress(address, Config.LOGIN_BLOCK_AFTER_BAN * 1000);
+			IpBanManager.getInstance().addBanForAddress(address, Config.LOGIN_BLOCK_AFTER_BAN * 1000L);
 			
 			// Clear all failed login attempts.
 			_failedAttempts.remove(address);

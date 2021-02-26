@@ -1,8 +1,5 @@
 package net.sf.l2j.gameserver.geoengine.geodata;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-
 public abstract class ABlock
 {
 	/**
@@ -83,18 +80,4 @@ public abstract class ABlock
 	 * @return short : Cell geodata Z coordinate, below given coordinates.
 	 */
 	public abstract byte getNswe(int index, IGeoObject ignore);
-	
-	/**
-	 * Sets the NSWE flag byte of cell given by cell index.
-	 * @param index : Index of the cell.
-	 * @param nswe : New NSWE flag byte.
-	 */
-	public abstract void setNswe(int index, byte nswe);
-	
-	/**
-	 * Saves the block in L2D format to {@link BufferedOutputStream}. Used only for L2D geodata conversion.
-	 * @param stream : The stream.
-	 * @throws IOException : Can't save the block to steam.
-	 */
-	public abstract void saveBlock(BufferedOutputStream stream) throws IOException;
 }

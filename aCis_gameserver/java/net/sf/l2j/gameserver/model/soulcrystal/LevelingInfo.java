@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.soulcrystal;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.AbsorbCrystalType;
 
@@ -22,7 +22,7 @@ public final class LevelingInfo
 	private final int _chanceBreak;
 	private final int[] _levelList;
 	
-	public LevelingInfo(StatsSet set)
+	public LevelingInfo(StatSet set)
 	{
 		_absorbCrystalType = set.getEnum("absorbType", AbsorbCrystalType.class);
 		_skillRequired = set.getBool("skill");

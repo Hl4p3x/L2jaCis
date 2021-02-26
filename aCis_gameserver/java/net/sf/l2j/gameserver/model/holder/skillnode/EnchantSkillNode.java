@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.holder.skillnode;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 
@@ -16,7 +16,7 @@ public class EnchantSkillNode extends IntIntHolder
 	
 	private IntIntHolder _item;
 	
-	public EnchantSkillNode(StatsSet set)
+	public EnchantSkillNode(StatSet set)
 	{
 		super(set.getInteger("id"), set.getInteger("lvl"));
 		

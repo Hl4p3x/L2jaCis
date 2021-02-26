@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -14,7 +14,7 @@ public class L2SkillElemental extends L2Skill
 	private final int[] _seeds;
 	private final boolean _seedAny;
 	
-	public L2SkillElemental(StatsSet set)
+	public L2SkillElemental(StatSet set)
 	{
 		super(set);
 		

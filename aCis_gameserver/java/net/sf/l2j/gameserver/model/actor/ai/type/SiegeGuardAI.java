@@ -14,8 +14,8 @@ import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
-import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
 import net.sf.l2j.gameserver.model.actor.instance.SiegeGuard;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -27,80 +27,26 @@ public class SiegeGuardAI extends AttackableAI
 		super(guard);
 	}
 	
-	/**
-	 * Following conditions are checked for a siege defender :
-	 * <ul>
-	 * <li>if target isn't a player or a summon.</li>
-	 * <li>if target is dead.</li>
-	 * <li>if target is a GM in hide mode.</li>
-	 * <li>if player is silent moving.</li>
-	 * <li>if the target can't be seen and is a defender.</li>
-	 * </ul>
-	 * @param target The targeted Creature.
-	 * @return True if the target is autoattackable (depends on the actor type).
-	 */
-	@Override
-	protected boolean autoAttackCondition(Creature target)
-	{
-		if (!(target instanceof Playable) || target.isAlikeDead())
-			return false;
-		
-		final Player player = target.getActingPlayer();
-		if (player == null)
-			return false;
-		
-		// Check if the target isn't GM on hide mode.
-		if (player.isGM() && !player.getAppearance().isVisible())
-			return false;
-		
-		// Check if the target isn't in silent move mode AND too far
-		if (player.isSilentMoving() && !_actor.isIn3DRadius(player, 250))
-			return false;
-		
-		return (target.isAttackableBy(_actor) && GeoEngine.getInstance().canSeeTarget(_actor, target));
-	}
-	
-	/**
-	 * Manage AI when not engaged in combat.
-	 * <ul>
-	 * <li>Update every 1s the _globalAggro counter to come close to 0</li>
-	 * <li>If the actor is Aggressive and can attack, add all autoAttackable Creature in its Aggro Range to its _aggroList, chose a target and order to attack it</li>
-	 * <li>If the actor can't attack, order to it to return to its home location</li>
-	 * </ul>
-	 */
 	@Override
 	protected void peaceMode()
 	{
-		// Update every 1s the _globalAggro counter to come close to 0
-		if (_globalAggro != 0)
-		{
-			if (_globalAggro < 0)
-				_globalAggro++;
-			else
-				_globalAggro--;
-		}
-		
-		// Add all autoAttackable Creature in L2Attackable Aggro Range to its _aggroList with 0 damage and 1 hate
-		// A L2Attackable isn't aggressive during 10s after its spawn because _globalAggro is set to -10
-		if (_globalAggro >= 0)
+		// An Attackable isn't aggressive during 10s after its spawn because _globalAggro is set to -10.
+		if (updateGlobalAggro() >= 0)
 		{
 			final Attackable npc = (Attackable) _actor;
 			for (Creature obj : npc.getKnownTypeInRadius(Creature.class, npc.getTemplate().getClanRange()))
 			{
-				if (autoAttackCondition(obj)) // check aggression
-				{
-					// Get the hate level of the L2Attackable against this target, and add the attacker to the L2Attackable _aggroList
-					if (npc.getHating(obj) == 0)
-						npc.addDamageHate(obj, 0, 1);
-				}
+				// Check if the obj is autoattackable and if not already hating it, add it.
+				if (npc.canAutoAttack(obj) && npc.getAggroList().getHate(obj) == 0)
+					npc.getAggroList().addDamageHate(obj, 0, 1);
 			}
 			
-			// Chose a target from its aggroList
-			final Creature target = (_actor.isConfused()) ? getCurrentIntention().getFinalTarget() : npc.getMostHated();
+			// Choose a target from its aggroList.
+			final Creature target = (npc.isConfused()) ? getCurrentIntention().getFinalTarget() : npc.getAggroList().getMostHatedCreature();
 			if (target != null)
 			{
-				// Get the hate level of the L2Attackable against this Creature target contained in _aggroList
-				if (npc.getHating(target) + _globalAggro > 0)
+				// Get the hate level against this Creature target contained in _aggroList
+				if (npc.getAggroList().getHate(target) + _globalAggro > 0)
 				{
 					// Set the Creature movement type to run and send Server->Client packet ChangeMoveType to all others Player
 					_actor.forceRunStance();
@@ -115,15 +61,6 @@ public class SiegeGuardAI extends AttackableAI
 		getActor().returnHome();
 	}
 	
-	/**
-	 * Manage AI when engaged in combat.
-	 * <ul>
-	 * <li>Update the attack timeout if actor is running</li>
-	 * <li>If target is dead or timeout is expired, stop this attack and set the Intention to ACTIVE</li>
-	 * <li>Call all WorldObject of its Faction inside the Faction Range</li>
-	 * <li>Chose a target and order to attack it with magic skill or physical attack</li>
-	 * </ul>
-	 */
 	@Override
 	protected void combatMode()
 	{
@@ -135,26 +72,35 @@ public class SiegeGuardAI extends AttackableAI
 		 */
 		if (!actor.isInsideZone(ZoneId.SIEGE))
 		{
-			actor.returnHome();
+			setBackToPeace(-10);
 			return;
 		}
 		
-		// Pickup attack target.
-		Creature target = actor.getMostHated();
-		
-		// If target doesn't exist, is too far or if timeout is expired.
-		if (target == null || _attackTimeout < System.currentTimeMillis() || !actor.isIn3DRadius(target, 2000))
+		// If timeout is expired or AggroList is empty, set back to peace immediately.
+		if (_attackTimeout < System.currentTimeMillis() || actor.getAggroList().isEmpty())
 		{
-			// Stop hating this target after the attack timeout or if target is dead
-			actor.stopHating(target);
-			
-			// Search the nearest target. If a target is found, continue regular process, else drop angry behavior.
-			target = targetReconsider(actor.getTemplate().getClanRange(), false);
-			if (target == null)
-			{
-				doActiveIntention();
-				return;
-			}
+			setBackToPeace(-10);
+			return;
+		}
+		
+		// Cleanup aggro list of bad entries.
+		actor.getAggroList().refresh();
+		
+		// Pickup most hated target.
+		final AggroInfo ai = actor.getAggroList().getMostHated();
+		if (ai == null)
+		{
+			setBackToPeace(-10);
+			return;
+		}
+		
+		Creature target = ai.getAttacker();
+		
+		// If target is too far, stop hating the current target. Do nothing for this round.
+		if (!actor.isIn3DRadius(target, 2000))
+		{
+			actor.getAggroList().stopHate(target);
+			return;
 		}
 		
 		/**
@@ -271,7 +217,7 @@ public class SiegeGuardAI extends AttackableAI
 		{
 			// If distance is too big, choose another target.
 			if (dist > range)
-				target = targetReconsider(range, true);
+				target = actor.getAggroList().reconsiderTarget(range);
 			
 			// Any AI type, even healer or mage, will try to melee attack if it can't do anything else (desesperate situation).
 			if (target != null)
@@ -327,58 +273,6 @@ public class SiegeGuardAI extends AttackableAI
 		 */
 		
 		tryToAttack(target);
-	}
-	
-	/**
-	 * Method used when the actor can't attack his current target (immobilize state, for exemple).
-	 * <ul>
-	 * <li>If the actor got an hate list, pickup a new target from it.</li>
-	 * <li>If the selected target is a defenser, drop from the list and pickup another.</li>
-	 * </ul>
-	 * @param range The range to check (skill range for skill ; physical range for melee).
-	 * @param rangeCheck That boolean is used to see if a check based on the distance must be made (skill check).
-	 * @return The new Creature victim.
-	 */
-	@Override
-	protected Creature targetReconsider(int range, boolean rangeCheck)
-	{
-		final Attackable actor = getActor();
-		
-		// Verify first if aggro list is empty, if not search a victim following his aggro position.
-		if (!actor.getAggroList().isEmpty())
-		{
-			// Store aggro value && most hated, in order to add it to the random target we will choose.
-			final Creature previousMostHated = actor.getMostHated();
-			final int aggroMostHated = actor.getHating(previousMostHated);
-			
-			for (Creature obj : actor.getHateList())
-			{
-				if (!autoAttackCondition(obj))
-					continue;
-				
-				if (rangeCheck)
-				{
-					// Verify the distance, -15 if the victim is moving, -15 if the npc is moving.
-					double dist = actor.distance2D(obj) - obj.getCollisionRadius();
-					if (actor.isMoving())
-						dist -= 15;
-					
-					if (obj.isMoving())
-						dist -= 15;
-					
-					if (dist > range)
-						continue;
-				}
-				
-				// Stop to hate the most hated.
-				actor.stopHating(previousMostHated);
-				
-				// Add previous most hated aggro to that new victim.
-				actor.addDamageHate(obj, 0, (aggroMostHated > 0) ? aggroMostHated : 2000);
-				return obj;
-			}
-		}
-		return null;
 	}
 	
 	@Override

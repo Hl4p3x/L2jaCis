@@ -1,4 +1,4 @@
-package net.sf.l2j.gameserver.communitybbs.Manager;
+package net.sf.l2j.gameserver.communitybbs.manager;
 
 import java.util.StringTokenizer;
 
@@ -146,6 +146,11 @@ public class ClanBBSManager extends BaseBBSManager
 		
 		String content = HtmCache.getInstance().getHtm(CB_PATH + "clan/clanhome-management.htm");
 		content = content.replaceAll("%clanid%", Integer.toString(clan.getClanId()));
+		content = content.replaceAll("%curAnnNonPer%", clan.getAnnBoard().getAccess().getDesc());
+		content = content.replaceAll("%curAnnMemPer%", clan.getAnnBoard().getAccess().getDesc());
+		content = content.replaceAll("%curCbbNonPer%", clan.getCbbBoard().getAccess().getDesc());
+		content = content.replaceAll("%curCbbMemPer%", clan.getCbbBoard().getAccess().getDesc());
+		
 		send1001(content, player);
 		send1002(player, clan.getIntroduction(), "", "");
 	}
@@ -165,7 +170,7 @@ public class ClanBBSManager extends BaseBBSManager
 		
 		String content = HtmCache.getInstance().getHtm(CB_PATH + "clan/clanhome-notice.htm");
 		content = content.replaceAll("%clanid%", Integer.toString(clan.getClanId()));
-		content = content.replace("%enabled%", "[" + String.valueOf(clan.isNoticeEnabled()) + "]");
+		content = content.replace("%enabled%", "[" + clan.isNoticeEnabled() + "]");
 		content = content.replace("%flag%", String.valueOf(!clan.isNoticeEnabled()));
 		send1001(content, player);
 		send1002(player, clan.getNotice(), "", "");

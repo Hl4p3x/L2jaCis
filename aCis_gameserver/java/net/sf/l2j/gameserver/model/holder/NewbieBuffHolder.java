@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.holder;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 /**
  * A container used by Newbie Buffers. Those are beneficial magic effects launched on newbie players in order to help them in their Lineage 2 adventures.<br>
@@ -13,7 +13,7 @@ public class NewbieBuffHolder extends IntIntHolder
 	private int _upperLevel;
 	private boolean _isMagicClass;
 	
-	public NewbieBuffHolder(StatsSet set)
+	public NewbieBuffHolder(StatSet set)
 	{
 		super(set.getInteger("skillId"), set.getInteger("skillLevel"));
 		

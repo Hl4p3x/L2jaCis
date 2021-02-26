@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.model.actor.Attackable;
@@ -60,7 +60,7 @@ public class CursedWeaponManager implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "item", itemNode ->
 		{
-			final StatsSet set = parseAttributes(itemNode);
+			final StatSet set = parseAttributes(itemNode);
 			_cursedWeapons.put(set.getInteger("id"), new CursedWeapon(set));
 		}));
 	}

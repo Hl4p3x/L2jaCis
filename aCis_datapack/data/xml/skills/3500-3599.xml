@@ -910,10 +910,10 @@
 		<set name="skillType" val="CONFUSION" />
 		<set name="operateType" val="ACTIVE" />
 		<set name="magicLvl" val="80" />
-		<set name="power" val="80" />
+		<set name="power" val="20" />
 		<set name="isDebuff" val="true" />
 		<for>
-			<effect count="5" name="ConfuseMob" time="6" val="0"/>
+			<effect name="Distrust" val="0"/>
 		</for>
 	</skill>
 	<skill id="3582" levels="1" name="Special Ability: Infinity Cleaver">

@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.model.actor.container.monster;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
@@ -16,11 +15,11 @@ import net.sf.l2j.gameserver.skills.L2Skill;
  * <br>
  * A seed occurs when a {@link Player} uses a seed over a Monster.
  */
-public class SeedState
+public class SeedState extends ArrayList<IntIntHolder>
 {
-	private final Monster _owner;
+	private static final long serialVersionUID = 1L;
 	
-	private final List<IntIntHolder> _harvestItems = new ArrayList<>();
+	private final Monster _owner;
 	
 	private Seed _seed;
 	private int _seederId;
@@ -52,14 +51,6 @@ public class SeedState
 	public boolean isActualSeeder(Player player)
 	{
 		return player != null && player.getObjectId() == _seederId;
-	}
-	
-	/**
-	 * @return a {@link List} containing all {@link IntIntHolder}s that can be harvested.
-	 */
-	public List<IntIntHolder> getHarvestItems()
-	{
-		return _harvestItems;
 	}
 	
 	/**
@@ -107,7 +98,7 @@ public class SeedState
 			if (diff > 0)
 				count += diff;
 			
-			_harvestItems.add(new IntIntHolder(_seed.getCropId(), count * Config.RATE_DROP_MANOR));
+			add(new IntIntHolder(_seed.getCropId(), count * Config.RATE_DROP_MANOR));
 		}
 	}
 	
@@ -125,10 +116,12 @@ public class SeedState
 	/**
 	 * Clear all seed related variables.
 	 */
+	@Override
 	public void clear()
 	{
 		_seed = null;
 		_seederId = 0;
-		_harvestItems.clear();
+		
+		super.clear();
 	}
 }

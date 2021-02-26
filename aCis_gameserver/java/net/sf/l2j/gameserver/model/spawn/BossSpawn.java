@@ -141,7 +141,7 @@ public class BossSpawn
 		cancelTask();
 		
 		// Register the task.
-		_task = ThreadPool.schedule(() -> onSpawn(), respawnDelay * 3600000);
+		_task = ThreadPool.schedule(this::onSpawn, respawnDelay * 3600000L);
 		
 		// Refresh the database for this particular boss entry.
 		updateOnDb();

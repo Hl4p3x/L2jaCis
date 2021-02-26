@@ -3,61 +3,20 @@ package net.sf.l2j.gameserver.model.actor.container.npc;
 import net.sf.l2j.gameserver.model.actor.Creature;
 
 /**
- * This class contains all AggroInfo of the L2Attackable against the attacker Creature.
- * <ul>
- * <li>attacker : The attacker Creature concerned by this AggroInfo of this L2Attackable</li>
- * <li>hate : Hate level of this L2Attackable against the attacker Creature (hate = damage)</li>
- * <li>damage : Number of damages that the attacker Creature gave to this L2Attackable</li>
- * </ul>
+ * This class contains all aggro informations (damage and hate) against a {@link Creature}.<br>
+ * <br>
+ * Values are limited to 999999999.
  */
 public final class AggroInfo
 {
 	private final Creature _attacker;
 	
-	private int _hate;
 	private int _damage;
+	private int _hate;
 	
 	public AggroInfo(Creature attacker)
 	{
 		_attacker = attacker;
-	}
-	
-	public Creature getAttacker()
-	{
-		return _attacker;
-	}
-	
-	public int getHate()
-	{
-		return _hate;
-	}
-	
-	public int checkHate(Creature owner)
-	{
-		if (_attacker.isAlikeDead() || !_attacker.isVisible() || !owner.knows(_attacker))
-			_hate = 0;
-		
-		return _hate;
-	}
-	
-	public void addHate(int value)
-	{
-		_hate = (int) Math.min(_hate + (long) value, 999999999);
-	}
-	
-	public void stopHate()
-	{
-		_hate = 0;
-	}
-	
-	public int getDamage()
-	{
-		return _damage;
-	}
-	
-	public void addDamage(int value)
-	{
-		_damage = (int) Math.min(_damage + (long) value, 999999999);
 	}
 	
 	@Override
@@ -76,5 +35,41 @@ public final class AggroInfo
 	public final int hashCode()
 	{
 		return _attacker.getObjectId();
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "AggroInfo [attacker=" + _attacker + ", damage=" + _damage + ", hate=" + _hate + "]";
+	}
+	
+	public Creature getAttacker()
+	{
+		return _attacker;
+	}
+	
+	public int getDamage()
+	{
+		return _damage;
+	}
+	
+	public void addDamage(int value)
+	{
+		_damage = (int) Math.min(_damage + (long) value, 999999999);
+	}
+	
+	public int getHate()
+	{
+		return _hate;
+	}
+	
+	public void addHate(int value)
+	{
+		_hate = (int) Math.min(_hate + (long) value, 999999999);
+	}
+	
+	public void stopHate()
+	{
+		_hate = 0;
 	}
 }

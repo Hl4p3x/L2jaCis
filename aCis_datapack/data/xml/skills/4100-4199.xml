@@ -1096,11 +1096,11 @@
 		<table name="#power"> 181 487 1339 3507 8825 17057 26195 30391 34864 39544 44350 49193 </table>
 		<table name="#magicLvl"> 14 24 34 44 54 64 74 79 84 89 94 99 </table>
 		<table name="#mpConsume"> 16 23 32 42 53 65 75 79 82 84 85 87 </table>
-		<set name="mpConsume" val="#mpConsume" />		
-		<set name="condition" val="16" /> <!-- Crit -->
+		<set name="mpConsume" val="#mpConsume" />
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="power" val="#power" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
 		<set name="hitTime" val="830" />
 		<set name="lvlDepend" val="1"/>
 		<set name="coolTime" val="660" />
@@ -1285,12 +1285,12 @@
 		<table name="#power"> 301 812 2231 5844 14708 28428 43658 50651 58107 65907 73917 81989 </table>
 		<table name="#magicLvl"> 14 24 34 44 54 64 74 79 84 89 94 99 </table>
 		<table name="#mpConsume"> 16 23 32 42 53 65 75 79 82 84 85 87 </table>
-		<set name="mpConsume" val="#mpConsume" />		
-		<set name="condition" val="16" /> <!-- Crit -->
+		<set name="mpConsume" val="#mpConsume" />
 		<set name="magicLvl" val="#magicLvl" />
 		<set name="lvlDepend" val="1"/>
 		<set name="power" val="#power" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="670" />
 		<set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
 		<set name="skillType" val="BLOW" />

@@ -140,7 +140,7 @@ public class RaidBossManager
 		// Add the spawn.
 		SpawnTable.getInstance().addSpawn(spawn, false);
 		
-		// We generate the StatsSet.
+		// We generate the BossSpawn.
 		final BossSpawn bs = new BossSpawn();
 		bs.setSpawn(spawn);
 		

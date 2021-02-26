@@ -3,21 +3,21 @@ package net.sf.l2j.gameserver.model.actor.move;
 import java.awt.Color;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.LinkedList;
+import java.util.List;
 
 import net.sf.l2j.commons.math.MathUtil;
 
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.enums.actors.MoveType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.zone.type.WaterZone;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
 import net.sf.l2j.gameserver.network.serverpackets.MoveToLocation;
@@ -49,7 +49,7 @@ public class PlayerMove extends CreatureMove<Player>
 	
 	private void moveToPawn(WorldObject pawn, int offset)
 	{
-		if (!FloodProtectors.performAction(_actor.getClient(), Action.MOVE))
+		if (!_actor.getClient().performAction(FloodProtector.MOVE))
 		{
 			_actor.sendPacket(ActionFailed.STATIC_PACKET);
 			return;
@@ -115,9 +115,9 @@ public class PlayerMove extends CreatureMove<Player>
 	}
 	
 	@Override
-	protected void moveToLocation(Location dLoc, boolean pathfinding)
+	protected void moveToLocation(Location destination, boolean pathfinding)
 	{
-		if (!FloodProtectors.performAction(_actor.getClient(), Action.MOVE))
+		if (!_actor.getClient().performAction(FloodProtector.MOVE))
 		{
 			_actor.sendPacket(ActionFailed.STATIC_PACKET);
 			return;
@@ -139,19 +139,12 @@ public class PlayerMove extends CreatureMove<Player>
 		// Initialize variables.
 		_geoPath.clear();
 		
-		// Visual destination isn't the same than computed destination. Remove collision radius out of it.
-		final Location destination = new Location(position);
-		destination.setLocationMinusOffset(dLoc, _actor.getCollisionRadius());
-		
 		if (pathfinding)
 		{
 			// Calculate the path.
 			final Location loc = calculatePath(position.getX(), position.getY(), position.getZ(), destination.getX(), destination.getY(), destination.getZ());
 			if (loc != null)
-			{
 				destination.set(loc);
-				dLoc.set(loc);
-			}
 		}
 		
 		// Draw a debug of this movement if activated.
@@ -208,7 +201,7 @@ public class PlayerMove extends CreatureMove<Player>
 		
 		registerMoveTask();
 		
-		_actor.broadcastPacket(new MoveToLocation(_actor, dLoc));
+		_actor.broadcastPacket(new MoveToLocation(_actor, destination));
 	}
 	
 	@Override
@@ -255,11 +248,6 @@ public class PlayerMove extends CreatureMove<Player>
 		final double leftDistance = (type == MoveType.GROUND) ? Math.sqrt(dx * dx + dy * dy) : Math.sqrt(dx * dx + dy * dy + dz * dz);
 		final double passedDistance = _actor.getStatus().getRealMoveSpeed(type != MoveType.FLY && _moveTimeStamp <= 5) / (1000d / timePassed);
 		
-		// Calculate the current distance fraction based on the delta.
-		double fraction = 1;
-		if (passedDistance < leftDistance)
-			fraction = passedDistance / leftDistance;
-		
 		// Calculate the maximum Z. Only FLY is allowed to bypass Z check.
 		int maxZ = World.WORLD_Z_MAX;
 		if (canBypassZCheck)
@@ -276,13 +264,17 @@ public class PlayerMove extends CreatureMove<Player>
 		// Set the position only
 		if (passedDistance < leftDistance)
 		{
+			// Calculate the current distance fraction based on the delta.
+			final double fraction = passedDistance / leftDistance;
+			
 			_xAccurate += dx * fraction;
 			_yAccurate += dy * fraction;
 			_zAccurate += dz * fraction;
 			
+			// Note: Z coord shifted up to avoid dual-layer issues.
 			nextX = (int) Math.round(_xAccurate);
 			nextY = (int) Math.round(_yAccurate);
-			nextZ = Math.min((type == MoveType.GROUND) ? GeoEngine.getInstance().getHeight(nextX, nextY, curZ) : (int) Math.round(_zAccurate), maxZ);
+			nextZ = Math.min((type == MoveType.GROUND) ? GeoEngine.getInstance().getHeight(nextX, nextY, curZ + 2 * GeoStructure.CELL_HEIGHT) : (int) Math.round(_zAccurate), maxZ);
 		}
 		// Already there : set the position to the destination.
 		else
@@ -331,12 +323,8 @@ public class PlayerMove extends CreatureMove<Player>
 		
 		_actor.revalidateZone(false);
 		
-		if (isOnLastPawnMoveGeoPath())
-		{
-			final boolean stopMovementPrematurely = (type == MoveType.GROUND) ? _actor.isIn2DRadius(_pawn, _offset) : _actor.isIn3DRadius(_pawn, _offset);
-			if (stopMovementPrematurely)
-				return true;
-		}
+		if (isOnLastPawnMoveGeoPath() && ((type == MoveType.GROUND) ? _actor.isIn2DRadius(_pawn, _offset) : _actor.isIn3DRadius(_pawn, _offset)))
+			return true;
 		
 		return (passedDistance >= leftDistance);
 	}
@@ -347,34 +335,29 @@ public class PlayerMove extends CreatureMove<Player>
 	 * @param isShiftPressed : If movement is necessary, it disallows it.
 	 * @return true if a movement must be done to reach the {@link WorldObject}, based on an offset.
 	 */
-	@Override
 	public boolean maybeMoveToPawn(WorldObject target, int offset, boolean isShiftPressed)
 	{
 		if (offset < 0 || _actor == target)
 			return false;
 		
-		double collisionOffset = _actor.getCollisionRadius();
-		if (target instanceof Creature)
-			collisionOffset += ((Creature) target).getCollisionRadius();
+		if (_actor.isIn3DRadius(target, (int) (offset + _actor.getCollisionRadius() + ((target instanceof Creature) ? ((Creature) target).getCollisionRadius() : 0))))
+			return false;
 		
-		if (!_actor.isIn3DRadius(target, offset + (int) collisionOffset))
+		if (!_actor.isMovementDisabled() && !isShiftPressed)
 		{
-			if (!_actor.isMovementDisabled() && !isShiftPressed)
-			{
-				_pawn = target;
-				_offset = offset;
-				moveToPawn(target, offset);
-			}
+			_pawn = target;
+			_offset = offset;
 			
-			return true;
+			moveToPawn(target, offset);
 		}
 		
-		return false;
+		return true;
 	}
 	
 	@Override
 	protected void offensiveFollowTask(Creature target, int offset)
 	{
+		// No follow task, return.
 		if (_followTask == null)
 			return;
 		
@@ -386,7 +369,7 @@ public class PlayerMove extends CreatureMove<Player>
 		}
 		
 		final int realOffset = (int) (offset + _actor.getCollisionRadius() + target.getCollisionRadius());
-		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(target, realOffset) : _actor.isIn3DRadius(target, realOffset))
+		if ((getMoveType() == MoveType.GROUND) ? _actor.isIn2DRadius(target, realOffset) : _actor.isIn3DRadius(target, realOffset))
 			return;
 		
 		// If an obstacle is/appears while the _followTask is running (ex: door closing) between the Player and the pawn, move to latest good location.
@@ -396,12 +379,14 @@ public class PlayerMove extends CreatureMove<Player>
 		{
 			_pawn = target;
 			_offset = offset;
+			
 			moveToPawn(target, offset);
 		}
 		else
 		{
 			_pawn = null;
 			_offset = 0;
+			
 			moveToLocation(moveOk, false);
 		}
 	}
@@ -409,6 +394,7 @@ public class PlayerMove extends CreatureMove<Player>
 	@Override
 	protected void friendlyFollowTask(Creature target, int offset)
 	{
+		// No follow task, return.
 		if (_followTask == null)
 			return;
 		
@@ -420,13 +406,14 @@ public class PlayerMove extends CreatureMove<Player>
 		}
 		
 		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(target, offset) : _actor.isIn3DRadius(target, offset))
+		if ((getMoveType() == MoveType.GROUND) ? _actor.isIn2DRadius(target, offset) : _actor.isIn3DRadius(target, offset))
 			return;
 		
 		if (_task == null)
 		{
 			_pawn = target;
 			_offset = offset;
+			
 			moveToPawn(target, offset);
 		}
 	}
@@ -438,9 +425,9 @@ public class PlayerMove extends CreatureMove<Player>
 		final MoveType moveType = getMoveType();
 		
 		// We can process to next point without extra help ; return directly.
-		if (moveType != MoveType.GROUND)
+		if (moveType == MoveType.FLY)
 		{
-			if (GeoEngine.getInstance().canFloatToTarget(ox, oy, oz, 32, tx, ty, tz))
+			if (GeoEngine.getInstance().canFlyToTarget(ox, oy, oz, 32, tx, ty, tz))
 				return null;
 		}
 		else if (GeoEngine.getInstance().canMoveToTarget(ox, oy, oz, tx, ty, tz))
@@ -450,11 +437,11 @@ public class PlayerMove extends CreatureMove<Player>
 		final ExServerPrimitive dummy = _isDebugPath ? new ExServerPrimitive() : null;
 		
 		if (moveType != MoveType.GROUND)
-			return GeoEngine.getInstance().getValidFloatLocation(ox, oy, oz, 32, tx, ty, tz, dummy);
+			return GeoEngine.getInstance().getValidFlyLocation(ox, oy, oz, 32, tx, ty, tz, dummy);
 		
 		// Calculate the path. If no path or too short, calculate the first valid location.
-		final LinkedList<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, true, dummy);
-		if (path == null || path.size() < 2)
+		final List<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, true, dummy);
+		if (path.size() < 2)
 			return GeoEngine.getInstance().getValidLocation(ox, oy, oz, tx, ty, tz, null);
 		
 		// Draw a debug of this movement if activated.

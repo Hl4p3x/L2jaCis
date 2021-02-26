@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 public class PlayerLevel
 {
@@ -8,7 +8,7 @@ public class PlayerLevel
 	private final double _karmaModifier;
 	private final double _expLossAtDeath;
 	
-	public PlayerLevel(StatsSet set)
+	public PlayerLevel(StatSet set)
 	{
 		_requiredExpToLevelUp = set.getLong("requiredExpToLevelUp");
 		_karmaModifier = set.getDouble("karmaModifier", 0.);

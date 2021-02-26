@@ -2,7 +2,10 @@ package net.sf.l2j.gameserver.network.clientpackets;
 
 import java.awt.Color;
 
+import net.sf.l2j.gameserver.enums.TeleportMode;
 import net.sf.l2j.gameserver.enums.actors.MoveType;
+import net.sf.l2j.gameserver.model.World;
+import net.sf.l2j.gameserver.model.WorldRegion;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
 import net.sf.l2j.gameserver.network.serverpackets.GetOnVehicle;
@@ -33,6 +36,18 @@ public class ValidatePosition extends L2GameClientPacket
 		final Player player = getClient().getPlayer();
 		if (player == null || player.isTeleporting() || player.isInObserverMode())
 			return;
+		
+		// Disable validation for CameraMode.
+		if (player.getTeleportMode() == TeleportMode.CAMERA_MODE)
+		{
+			// Retrieve the current WorldRegion passed by the client location, and set it. It allows knownlist to be properly refreshed.
+			final WorldRegion region = World.getInstance().getRegion(_x, _y);
+			if (region != null)
+				player.setRegion(region);
+			
+			player.setXYZ(_x, _y, _z);
+			return;
+		}
 		
 		// Disable validation during fall to avoid "jumping".
 		if (player.isFalling(_z))

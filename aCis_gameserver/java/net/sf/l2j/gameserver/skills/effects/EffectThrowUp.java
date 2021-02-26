@@ -15,7 +15,9 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class EffectThrowUp extends AbstractEffect
 {
-	private int _x, _y, _z;
+	private int _x;
+	private int _y;
+	private int _z;
 	
 	public EffectThrowUp(EffectTemplate template, L2Skill skill, Creature effected, Creature effector)
 	{
@@ -47,7 +49,6 @@ public class EffectThrowUp extends AbstractEffect
 			return false;
 		
 		int offset = Math.min((int) distance + getSkill().getFlyRadius(), 1400);
-		double cos, sin;
 		
 		// approximation for moving futher when z coordinates are different
 		// TODO: handle Z axis movement better
@@ -56,17 +57,17 @@ public class EffectThrowUp extends AbstractEffect
 			offset = 5;
 		
 		// Calculate movement angles needed
-		sin = dy / distance;
-		cos = dx / distance;
+		double sin = dy / distance;
+		double cos = dx / distance;
 		
 		// Calculate the new destination with offset included
 		_x = getEffector().getX() - (int) (offset * cos);
 		_y = getEffector().getY() - (int) (offset * sin);
 		_z = getEffected().getZ();
 		
-		final Location destiny = GeoEngine.getInstance().getValidLocation(getEffected(), _x, _y, _z);
-		_x = destiny.getX();
-		_y = destiny.getY();
+		final Location loc = GeoEngine.getInstance().getValidLocation(getEffected(), _x, _y, _z);
+		_x = loc.getX();
+		_y = loc.getY();
 		
 		// Abort attack, cast and move.
 		getEffected().abortAll(false);

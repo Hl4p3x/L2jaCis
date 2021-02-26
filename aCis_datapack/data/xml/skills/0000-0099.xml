@@ -45,7 +45,7 @@
 		<set name="castRange" val="600"/>
 		<set name="effectRange" val="1100"/>
 		<for>
-			<effect count="5" name="Confusion" time="6" val="0"/>
+			<effect name="RandomizeHate" noicon="1" val="80"/>
 		</for>
 	</skill>
 	<skill id="3" levels="9" name="Power Strike">
@@ -290,6 +290,7 @@
 		<set name="effectRange" val="1100"/>
 		<for>
 			<effect name="RemoveTarget" noicon="1" val="0"/>
+			<effect name="RandomizeHate" noicon="1" val="80"/>
 		</for>
 	</skill>
 	<skill id="13" levels="1" name="Summon Siege Golem" enchantLevels1="30">
@@ -341,7 +342,7 @@
 		<set name="nextActionAttack" val="true" />
 		<set name="power" val="#power"/>
 		<set name="target" val="ONE"/>
-		<set name="condition" val="16"/>
+		<set name="baseLandRate" val="200"/>
 		<set name="reuseDelay" val="11000"/>
 	  	<set name="skillRadius" val="40"/>
 	  	<set name="hitTime" val="1080"/>
@@ -610,7 +611,7 @@
 		<set name="nextActionAttack" val="true" />
 		<set name="power" val="#power"/>
 		<set name="target" val="ONE"/>
-		<set name="condition" val="24" />
+		<set name="baseLandRate" val="300" />
 		<set name="reuseDelay" val="11000"/>
 		<set name="hitTime" val="1080"/>
 		<set name="coolTime" val="720" />

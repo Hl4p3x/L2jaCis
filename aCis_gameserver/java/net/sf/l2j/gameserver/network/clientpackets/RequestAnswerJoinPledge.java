@@ -75,7 +75,7 @@ public final class RequestAnswerJoinPledge extends L2GameClientPacket
 				}
 				
 				clan.addClanMember(player);
-				player.setClanPrivileges(clan.getPriviledgesByRank(player.getPowerGrade()));
+				player.setClanPrivileges(clan.getPrivilegesByRank(player.getPowerGrade()));
 				
 				player.sendPacket(SystemMessageId.ENTERED_THE_CLAN);
 				

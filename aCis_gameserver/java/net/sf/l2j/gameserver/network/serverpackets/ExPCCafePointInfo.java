@@ -2,16 +2,19 @@ package net.sf.l2j.gameserver.network.serverpackets;
 
 public class ExPCCafePointInfo extends L2GameServerPacket
 {
-	private final int _score, _modify, _periodType, _remainingTime;
-	private int _pointType = 0;
+	private final int _score;
+	private final int _modify;
+	private final int _remainingTime;
+	private final int _pointType;
+	private final int _periodType;
 	
 	public ExPCCafePointInfo(int score, int modify, boolean addPoint, boolean pointType, int remainingTime)
 	{
 		_score = score;
-		_modify = addPoint ? modify : modify * -1;
+		_modify = (addPoint) ? modify : modify * -1;
 		_remainingTime = remainingTime;
-		_pointType = addPoint ? (pointType ? 0 : 1) : 2;
-		_periodType = 1; // get point time
+		_pointType = (addPoint) ? (pointType ? 0 : 1) : 2;
+		_periodType = 1;
 	}
 	
 	@Override

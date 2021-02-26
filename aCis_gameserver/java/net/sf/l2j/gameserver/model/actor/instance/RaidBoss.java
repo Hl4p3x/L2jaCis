@@ -11,7 +11,6 @@ import net.sf.l2j.gameserver.data.manager.RaidBossManager;
 import net.sf.l2j.gameserver.data.manager.RaidPointManager;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.ai.type.AttackableAI;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.group.CommandChannel;
 import net.sf.l2j.gameserver.model.group.Party;
@@ -73,7 +72,7 @@ public class RaidBoss extends Monster
 				}
 				// Randomized attack if the boss is already attacking.
 				else if (Rnd.get(5) == 0)
-					((AttackableAI) getAI()).aggroReconsider();
+					getAggroList().randomizeAttack();
 			}
 			
 			// For each minion (if any), randomize the attack.
@@ -87,7 +86,7 @@ public class RaidBoss extends Monster
 					
 					// Randomized attack if the boss is already attacking.
 					if (Rnd.get(3) == 0)
-						((AttackableAI) minion.getAI()).aggroReconsider();
+						minion.getAggroList().randomizeAttack();
 				}
 			}
 		}, 1000, 60000);

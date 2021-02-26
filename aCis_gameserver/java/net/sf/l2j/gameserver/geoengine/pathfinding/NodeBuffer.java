@@ -1,48 +1,58 @@
 package net.sf.l2j.gameserver.geoengine.pathfinding;
 
+import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.geoengine.geodata.ABlock;
 import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
+import net.sf.l2j.gameserver.model.location.Location;
+import net.sf.l2j.gameserver.network.serverpackets.ExServerPrimitive;
 
 public class NodeBuffer
 {
+	// Locking NodeBuffer to ensure thread-safe operations.
 	private final ReentrantLock _lock = new ReentrantLock();
-	private final int _size;
-	private final Node[][] _buffer;
 	
-	// center coordinates
-	private int _cx = 0;
-	private int _cy = 0;
+	// Container holding all available Nodes to be used.
+	private final Node[] _buffer;
+	private int _bufferIndex;
+	// Container (binary-heap) holding Nodes to be explored.
+	private PriorityQueue<Node> _opened;
+	// Container holding Nodes already explored.
+	private final List<Node> _closed;
 	
-	// target coordinates
-	private int _gtx = 0;
-	private int _gty = 0;
-	private short _gtz = 0;
+	// Target coordinates.
+	private int _gtx;
+	private int _gty;
+	private int _gtz;
 	
-	// pathfinding statistics
-	private long _timeStamp = 0;
-	private long _lastElapsedTime = 0;
+	// Pathfinding statistics.
+	private long _timeStamp;
+	private long _lastElapsedTime;
 	
-	private Node _current = null;
+	private Node _current;
 	
 	/**
 	 * Constructor of NodeBuffer.
-	 * @param size : one dimension size of buffer
+	 * @param size : The total size buffer. Determines the amount of {@link Node}s to be used for pathfinding.
 	 */
 	public NodeBuffer(int size)
 	{
-		// set size
-		_size = size;
+		// Create buffers based on given size.
+		_buffer = new Node[size];
+		_opened = new PriorityQueue<>(size);
+		_closed = new ArrayList<>(size);
 		
-		// initialize buffer
-		_buffer = new Node[size][size];
-		for (int x = 0; x < size; x++)
-			for (int y = 0; y < size; y++)
-				_buffer[x][y] = new Node();
+		// Create Nodes.
+		for (int i = 0; i < size; i++)
+			_buffer[i] = new Node();
 	}
 	
 	/**
@@ -53,68 +63,102 @@ public class NodeBuffer
 	 * @param gtx : target point x
 	 * @param gty : target point y
 	 * @param gtz : target point z
-	 * @return Node : first node of path
+	 * @return The list of {@link Location} for the path. Empty, if path not found.
 	 */
-	public final Node findPath(int gox, int goy, short goz, int gtx, int gty, short gtz)
+	public final List<Location> findPath(int gox, int goy, int goz, int gtx, int gty, int gtz)
 	{
-		// load timestamp
+		// Set start timestamp.
 		_timeStamp = System.currentTimeMillis();
 		
-		// set coordinates (middle of the line (gox,goy) - (gtx,gty), will be in the center of the buffer)
-		_cx = gox + (gtx - gox - _size) / 2;
-		_cy = goy + (gty - goy - _size) / 2;
-		
+		// Set target coordinates.
 		_gtx = gtx;
 		_gty = gty;
 		_gtz = gtz;
 		
-		_current = getNode(gox, goy, goz);
-		_current.setCost(getCostH(gox, goy, goz));
+		// Get node from buffer.
+		_current = _buffer[_bufferIndex++];
+		
+		// Set node geodata coordinates and movement cost.
+		_current.setGeo(gox, goy, goz, GeoEngine.getInstance().getNsweNearest(gox, goy, goz));
+		_current.setCost(null, 0, getCostH(gox, goy, goz));
 		
 		int count = 0;
 		do
 		{
-			// reached target?
-			if (_current.getLoc().getGeoX() == _gtx && _current.getLoc().getGeoY() == _gty && Math.abs(_current.getLoc().getZ() - _gtz) < 8)
-				return _current;
+			// Move node to closed list.
+			_closed.add(_current);
 			
-			// expand current node
+			// Target reached, calculate path and return.
+			if (_current.getGeoX() == _gtx && _current.getGeoY() == _gty && _current.getZ() == _gtz)
+				return constructPath();
+			
+			// Expand current node.
 			expand();
 			
-			// move pointer
-			_current = _current.getChild();
+			// Get next node to expand.
+			_current = _opened.poll();
 		}
-		while (_current != null && ++count < Config.MAX_ITERATIONS);
+		while (_current != null && _bufferIndex < _buffer.length && ++count < Config.MAX_ITERATIONS);
 		
-		return null;
+		// Iteration failed, return empty path.
+		return Collections.emptyList();
+	}
+	
+	/**
+	 * Build the path from subsequent nodes. Skip nodes in straight directions, keep only corner nodes.
+	 * @return List of {@link Node}s representing the path.
+	 */
+	private List<Location> constructPath()
+	{
+		// Create result.
+		LinkedList<Location> path = new LinkedList<>();
+		
+		// Clear X/Y direction.
+		int dx = 0;
+		int dy = 0;
+		
+		// Get parent node.
+		Node parent = _current.getParent();
+		
+		// While parent exists.
+		while (parent != null)
+		{
+			// Get parent node to current node X/Y direction.
+			final int nx = parent.getGeoX() - _current.getGeoX();
+			final int ny = parent.getGeoY() - _current.getGeoY();
+			
+			// Direction has changed?
+			if (dx != nx || dy != ny)
+			{
+				// Add current node to the beginning of the path (Node must be cloned, as NodeBuffer reuses them).
+				path.addFirst(_current.clone());
+				
+				// Update X/Y direction.
+				dx = nx;
+				dy = ny;
+			}
+			
+			// Move current node and update its parent.
+			_current = parent;
+			parent = _current.getParent();
+		}
+		
+		return path;
 	}
 	
 	/**
 	 * Creates list of Nodes to show debug path.
-	 * @return List<Node> : nodes
+	 * @param debug : The debug packet to add debug informations in.
 	 */
-	public final List<Node> debugPath()
+	public final void debugPath(ExServerPrimitive debug)
 	{
-		List<Node> result = new ArrayList<>();
+		// Add all opened node as yellow points.
+		for (Node n : _opened)
+			debug.addPoint(String.valueOf(n.getCostF()), Color.YELLOW, true, n.getX(), n.getY(), n.getZ() - 16);
 		
-		for (Node n = _current; n.getParent() != null; n = n.getParent())
-		{
-			result.add(n);
-			n.setCost(-n.getCost());
-		}
-		
-		for (Node[] nodes : _buffer)
-		{
-			for (Node node : nodes)
-			{
-				if (node.getLoc() == null || node.getCost() <= 0)
-					continue;
-				
-				result.add(node);
-			}
-		}
-		
-		return result;
+		// Add all opened node as blue points.
+		for (Node n : _closed)
+			debug.addPoint(String.valueOf(n.getCostF()), Color.BLUE, true, n.getX(), n.getY(), n.getZ() - 16);
 	}
 	
 	public final boolean isLocked()
@@ -124,15 +168,17 @@ public class NodeBuffer
 	
 	public final void free()
 	{
+		_opened.clear();
+		_closed.clear();
+		
+		for (int i = 0; i < _bufferIndex - 1; i++)
+			_buffer[i].clean();
+		_bufferIndex = 0;
+		
 		_current = null;
 		
-		for (Node[] nodes : _buffer)
-			for (Node node : nodes)
-				if (node.getLoc() != null)
-					node.free();
-				
-		_lock.unlock();
 		_lastElapsedTime = System.currentTimeMillis() - _timeStamp;
+		_lock.unlock();
 	}
 	
 	public final long getElapsedTime()
@@ -141,151 +187,132 @@ public class NodeBuffer
 	}
 	
 	/**
-	 * Check _current Node and add its neighbors to the buffer.
+	 * Expand the current {@link Node} by exploring its neighbors (axially and diagonally).
 	 */
-	private final void expand()
+	private void expand()
 	{
-		// can't move anywhere, don't expand
-		byte nswe = _current.getLoc().getNSWE();
-		if (nswe == 0)
+		// Movement is blocked, skip.
+		byte nswe = _current.getNSWE();
+		if (nswe == GeoStructure.CELL_FLAG_NONE)
 			return;
-		
-		// get geo coords of the node to be expanded
-		final int x = _current.getLoc().getGeoX();
-		final int y = _current.getLoc().getGeoY();
-		final short z = (short) _current.getLoc().getZ();
-		
-		// can move north, expand
-		if ((nswe & GeoStructure.CELL_FLAG_N) != 0)
-			addNode(x, y - 1, z, Config.BASE_WEIGHT);
-		
-		// can move south, expand
-		if ((nswe & GeoStructure.CELL_FLAG_S) != 0)
-			addNode(x, y + 1, z, Config.BASE_WEIGHT);
-		
-		// can move west, expand
-		if ((nswe & GeoStructure.CELL_FLAG_W) != 0)
-			addNode(x - 1, y, z, Config.BASE_WEIGHT);
-		
-		// can move east, expand
-		if ((nswe & GeoStructure.CELL_FLAG_E) != 0)
-			addNode(x + 1, y, z, Config.BASE_WEIGHT);
-		
-		// can move north-west, expand
-		if ((nswe & GeoStructure.CELL_FLAG_NW) != 0)
-			addNode(x - 1, y - 1, z, Config.DIAGONAL_WEIGHT);
-		
-		// can move north-east, expand
-		if ((nswe & GeoStructure.CELL_FLAG_NE) != 0)
-			addNode(x + 1, y - 1, z, Config.DIAGONAL_WEIGHT);
-		
-		// can move south-west, expand
-		if ((nswe & GeoStructure.CELL_FLAG_SW) != 0)
-			addNode(x - 1, y + 1, z, Config.DIAGONAL_WEIGHT);
-		
-		// can move south-east, expand
-		if ((nswe & GeoStructure.CELL_FLAG_SE) != 0)
-			addNode(x + 1, y + 1, z, Config.DIAGONAL_WEIGHT);
-	}
-	
-	/**
-	 * @param x : node X coord
-	 * @param y : node Y coord
-	 * @param z : node Z coord
-	 * @return a {@link Node}, based on 3D coords, if it exists in buffer.
-	 */
-	private final Node getNode(int x, int y, short z)
-	{
-		// Integrity check.
-		if (x < 0 || x >= GeoStructure.GEO_CELLS_X || y < 0 || y >= GeoStructure.GEO_CELLS_Y)
-			return null;
-		
-		// check node X out of coordinates
-		final int ix = x - _cx;
-		if (ix < 0 || ix >= _size)
-			return null;
-		
-		// check node Y out of coordinates
-		final int iy = y - _cy;
-		if (iy < 0 || iy >= _size)
-			return null;
-		
-		// get node
-		Node result = _buffer[ix][iy];
-		
-		// check and update
-		if (result.getLoc() == null)
-			result.setLoc(x, y, z);
-		
-		// return node
-		return result;
-	}
-	
-	/**
-	 * Add node given by coordinates to the buffer.
-	 * @param x : geo X coord
-	 * @param y : geo Y coord
-	 * @param z : geo Z coord
-	 * @param weight : weight of movement to new node
-	 */
-	private final void addNode(int x, int y, short z, int weight)
-	{
-		// get node to be expanded
-		Node node = getNode(x, y, z);
-		if (node == null)
-			return;
-		
-		// Z distance between nearby cells is higher than cell size, record as geodata bug
-		if (node.getLoc().getZ() > (z + 2 * GeoStructure.CELL_HEIGHT))
-		{
-			if (Config.DEBUG_GEO_NODE)
-				GeoEngine.getInstance().addGeoBug(node.getLoc(), "NodeBufferDiag: Check Z coords.");
 			
-			return;
-		}
+		// Get geo coordinates of the node to be expanded.
+		// Note: Z coord shifted up to avoid dual-layer issues.
+		final int x = _current.getGeoX();
+		final int y = _current.getGeoY();
+		final int z = _current.getZ() + GeoStructure.CELL_IGNORE_HEIGHT;
 		
-		// node was already expanded, return
-		if (node.getCost() >= 0)
-			return;
+		byte nsweN = GeoStructure.CELL_FLAG_NONE;
+		byte nsweS = GeoStructure.CELL_FLAG_NONE;
+		byte nsweW = GeoStructure.CELL_FLAG_NONE;
+		byte nsweE = GeoStructure.CELL_FLAG_NONE;
 		
-		node.setParent(_current);
-		if (node.getLoc().getNSWE() != (byte) 0xFF)
-			node.setCost(getCostH(x, y, node.getLoc().getZ()) + weight * Config.OBSTACLE_MULTIPLIER);
-		else
-			node.setCost(getCostH(x, y, node.getLoc().getZ()) + weight);
+		// Can move north, expand.
+		if ((nswe & GeoStructure.CELL_FLAG_N) != 0)
+			nsweN = addNode(x, y - 1, z, Config.MOVE_WEIGHT);
 		
-		Node current = _current;
-		int count = 0;
-		while (current.getChild() != null && count < Config.MAX_ITERATIONS * 4)
-		{
-			count++;
-			if (current.getChild().getCost() > node.getCost())
-			{
-				node.setChild(current.getChild());
-				break;
-			}
-			current = current.getChild();
-		}
+		// Can move south, expand.
+		if ((nswe & GeoStructure.CELL_FLAG_S) != 0)
+			nsweS = addNode(x, y + 1, z, Config.MOVE_WEIGHT);
 		
-		if (count >= Config.MAX_ITERATIONS * 4)
-			System.err.println("Pathfinding: too long loop detected, cost:" + node.getCost());
+		// Can move west, expand.
+		if ((nswe & GeoStructure.CELL_FLAG_W) != 0)
+			nsweW = addNode(x - 1, y, z, Config.MOVE_WEIGHT);
 		
-		current.setChild(node);
+		// Can move east, expand.
+		if ((nswe & GeoStructure.CELL_FLAG_E) != 0)
+			nsweE = addNode(x + 1, y, z, Config.MOVE_WEIGHT);
+		
+		// Can move north-west, expand.
+		if ((nsweW & GeoStructure.CELL_FLAG_N) != 0 && (nsweN & GeoStructure.CELL_FLAG_W) != 0)
+			addNode(x - 1, y - 1, z, Config.MOVE_WEIGHT_DIAG);
+		
+		// Can move north-east, expand.
+		if ((nsweE & GeoStructure.CELL_FLAG_N) != 0 && (nsweN & GeoStructure.CELL_FLAG_E) != 0)
+			addNode(x + 1, y - 1, z, Config.MOVE_WEIGHT_DIAG);
+		
+		// Can move south-west, expand.
+		if ((nsweW & GeoStructure.CELL_FLAG_S) != 0 && (nsweS & GeoStructure.CELL_FLAG_W) != 0)
+			addNode(x - 1, y + 1, z, Config.MOVE_WEIGHT_DIAG);
+		
+		// Can move south-east, expand.
+		if ((nsweE & GeoStructure.CELL_FLAG_S) != 0 && (nsweS & GeoStructure.CELL_FLAG_E) != 0)
+			addNode(x + 1, y + 1, z, Config.MOVE_WEIGHT_DIAG);
 	}
 	
 	/**
-	 * @param x : node X coord
-	 * @param y : node Y coord
-	 * @param i : node Z coord
-	 * @return double : node cost
+	 * Take {@link Node} from buffer, validate it and add to opened list.
+	 * @param gx : The new node X geodata coordinate.
+	 * @param gy : The new node Y geodata coordinate.
+	 * @param gz : The new node Z geodata coordinate.
+	 * @param weight : The weight of movement to the new node.
+	 * @return The nswe of the added node. Blank, if not added.
 	 */
-	private final double getCostH(int x, int y, int i)
+	private byte addNode(int gx, int gy, int gz, int weight)
 	{
-		final int dX = x - _gtx;
-		final int dY = y - _gty;
-		final int dZ = (i - _gtz) / GeoStructure.CELL_HEIGHT;
+		// Check new node is out of geodata grid (world coordinates).
+		if (gx < 0 || gx >= GeoStructure.GEO_CELLS_X || gy < 0 || gy >= GeoStructure.GEO_CELLS_Y)
+			return GeoStructure.CELL_FLAG_NONE;
 		
-		// return (Math.abs(dX) + Math.abs(dY) + Math.abs(dZ)) * Config.HEURISTIC_WEIGHT; // Manhattan distance
-		return Math.sqrt(dX * dX + dY * dY + dZ * dZ) * Config.HEURISTIC_WEIGHT; // Direct distance
+		// Check buffer has reached capacity.
+		if (_bufferIndex >= _buffer.length)
+			return GeoStructure.CELL_FLAG_NONE;
+		
+		// Get geodata block and check if there is a layer at given coordinates.
+		ABlock block = GeoEngine.getInstance().getBlock(gx, gy);
+		final int index = block.getIndexBelow(gx, gy, gz, null);
+		if (index < 0)
+			return GeoStructure.CELL_FLAG_NONE;
+		
+		// Get node geodata Z and nswe.
+		gz = block.getHeight(index, null);
+		final byte nswe = block.getNswe(index, null);
+		
+		// Get node from current index (don't move index yet).
+		Node node = _buffer[_bufferIndex];
+		
+		// Node is nearby obstacle, override weight.
+		if (nswe != GeoStructure.CELL_FLAG_ALL)
+			weight = Config.OBSTACLE_WEIGHT;
+		
+		// Set node geodata coordinates.
+		node.setGeo(gx, gy, gz, nswe);
+		
+		// Node is already added to opened list, return.
+		if (_opened.contains(node))
+			return nswe;
+		
+		// Node was already expanded, return.
+		if (_closed.contains(node))
+			return nswe;
+		
+		// The node is to be used. Set node movement cost and add it to opened list. Move the buffer index.
+		node.setCost(_current, weight, getCostH(gx, gy, gz));
+		_opened.add(node);
+		_bufferIndex++;
+		return nswe;
+	}
+	
+	/**
+	 * Calculate cost H value, calculated using diagonal distance method.<br>
+	 * Note: Manhattan distance is too simple, causing to explore more unwanted cells.
+	 * @param gx : The node geodata X coordinate.
+	 * @param gy : The node geodata Y coordinate.
+	 * @param gz : The node geodata Z coordinate.
+	 * @return The cost H value (estimated cost to reach the target).
+	 */
+	private int getCostH(int gx, int gy, int gz)
+	{
+		// Get differences to the target.
+		final int dx = Math.abs(gx - _gtx);
+		final int dy = Math.abs(gy - _gty);
+		final int dz = Math.abs(gz - _gtz) / GeoStructure.CELL_HEIGHT;
+		
+		// Get diagonal and axial differences to the target.
+		final int dd = Math.min(dx, dy);
+		final int da = Math.max(dx, dy) - dd;
+		
+		// Calculate the diagonal distance of the node to the target.
+		return dd * Config.HEURISTIC_WEIGHT_DIAG + (da + dz) * Config.HEURISTIC_WEIGHT;
 	}
 }

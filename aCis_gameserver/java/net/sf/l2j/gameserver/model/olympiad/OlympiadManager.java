@@ -6,10 +6,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.enums.OlympiadType;
+import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
@@ -117,7 +118,7 @@ public class OlympiadManager
 		return false;
 	}
 	
-	public final boolean registerNoble(Player player, OlympiadType type)
+	public final boolean registerNoble(Npc npc, Player player, OlympiadType type)
 	{
 		if (!Olympiad.getInstance().isInCompPeriod())
 		{
@@ -135,7 +136,7 @@ public class OlympiadManager
 		{
 			case CLASSED:
 			{
-				if (!checkNoble(player))
+				if (!checkNoble(npc, player))
 					return false;
 				
 				List<Integer> classed = _classBasedRegisters.get(player.getBaseClass());
@@ -154,7 +155,7 @@ public class OlympiadManager
 			
 			case NON_CLASSED:
 			{
-				if (!checkNoble(player))
+				if (!checkNoble(npc, player))
 					return false;
 				
 				_nonClassBasedRegisters.add(player.getObjectId());
@@ -224,10 +225,11 @@ public class OlympiadManager
 	}
 	
 	/**
-	 * @param player - messages will be sent to this Player
-	 * @return true if all requirements are met
+	 * @param npc : The {@link Npc} the {@link Player} is talking to.
+	 * @param player : The {@link Player} being tested.
+	 * @return True if all requirements are met, or false otherwise.
 	 */
-	private final boolean checkNoble(Player player)
+	private final boolean checkNoble(Npc npc, Player player)
 	{
 		if (!player.isNoble())
 		{
@@ -259,29 +261,28 @@ public class OlympiadManager
 		if (isInCompetition(player, true))
 			return false;
 		
-		StatsSet statDat = Olympiad.getInstance().getNobleStats(player.getObjectId());
-		if (statDat == null)
+		StatSet set = Olympiad.getInstance().getNobleStats(player.getObjectId());
+		if (set == null)
 		{
-			statDat = new StatsSet();
-			statDat.set(Olympiad.CLASS_ID, player.getBaseClass());
-			statDat.set(Olympiad.CHAR_NAME, player.getName());
-			statDat.set(Olympiad.POINTS, Config.OLY_START_POINTS);
-			statDat.set(Olympiad.COMP_DONE, 0);
-			statDat.set(Olympiad.COMP_WON, 0);
-			statDat.set(Olympiad.COMP_LOST, 0);
-			statDat.set(Olympiad.COMP_DRAWN, 0);
-			statDat.set("to_save", true);
+			set = new StatSet();
+			set.set(Olympiad.CLASS_ID, player.getBaseClass());
+			set.set(Olympiad.CHAR_NAME, player.getName());
+			set.set(Olympiad.POINTS, Config.OLY_START_POINTS);
+			set.set(Olympiad.COMP_DONE, 0);
+			set.set(Olympiad.COMP_WON, 0);
+			set.set(Olympiad.COMP_LOST, 0);
+			set.set(Olympiad.COMP_DRAWN, 0);
 			
-			Olympiad.getInstance().addNobleStats(player.getObjectId(), statDat);
+			Olympiad.getInstance().addNobleStats(player.getObjectId(), set);
 		}
 		
 		final int points = Olympiad.getInstance().getNoblePoints(player.getObjectId());
 		if (points <= 0)
 		{
-			final NpcHtmlMessage message = new NpcHtmlMessage(0);
-			message.setFile("data/html/olympiad/noble_nopoints1.htm");
-			message.replace("%objectId%", player.getTargetId());
-			player.sendPacket(message);
+			final NpcHtmlMessage html = new NpcHtmlMessage(npc.getObjectId());
+			html.setFile("data/html/olympiad/noble_nopoints1.htm");
+			html.replace("%objectId%", npc.getObjectId());
+			player.sendPacket(html);
 			return false;
 		}
 		

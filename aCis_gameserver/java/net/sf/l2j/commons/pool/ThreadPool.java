@@ -52,7 +52,7 @@ public final class ThreadPool
 		
 		_instantPools = new ThreadPoolExecutor[poolCount];
 		for (int i = 0; i < poolCount; i++)
-			_instantPools[i] = new ThreadPoolExecutor(Config.THREADS_PER_INSTANT_THREAD_POOL, Config.THREADS_PER_INSTANT_THREAD_POOL, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(100000));
+			_instantPools[i] = new ThreadPoolExecutor(Config.THREADS_PER_INSTANT_THREAD_POOL, Config.THREADS_PER_INSTANT_THREAD_POOL, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(100000));
 		
 		// Prestart core threads.
 		for (ScheduledThreadPoolExecutor threadPool : _scheduledPools)
@@ -171,7 +171,7 @@ public final class ThreadPool
 	{
 		try
 		{
-			System.out.println("ThreadPool: Shutting down.");
+			LOGGER.info("ThreadPool: Shutting down.");
 			
 			for (ScheduledThreadPoolExecutor threadPool : _scheduledPools)
 				threadPool.shutdownNow();
@@ -179,9 +179,9 @@ public final class ThreadPool
 			for (ThreadPoolExecutor threadPool : _instantPools)
 				threadPool.shutdownNow();
 		}
-		catch (Throwable t)
+		catch (Exception e)
 		{
-			t.printStackTrace();
+			e.printStackTrace();
 		}
 	}
 	

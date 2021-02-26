@@ -14,9 +14,6 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class EffectWarp extends AbstractEffect
 {
-	private int _x, _y, _z;
-	private Creature _actor;
-	
 	public EffectWarp(EffectTemplate template, L2Skill skill, Creature effected, Creature effector)
 	{
 		super(template, skill, effected, effector);
@@ -31,38 +28,36 @@ public class EffectWarp extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		_actor = isSelfEffect() ? getEffector() : getEffected();
+		final Creature actor = (isSelfEffect()) ? getEffector() : getEffected();
 		
-		if (_actor.isMovementDisabled())
+		if (actor.isMovementDisabled())
 			return false;
 		
-		int _radius = getSkill().getFlyRadius();
+		final double angle = MathUtil.convertHeadingToDegree(actor.getHeading());
+		final double radian = Math.toRadians(angle);
+		final double course = Math.toRadians(getSkill().getFlyCourse());
 		
-		double angle = MathUtil.convertHeadingToDegree(_actor.getHeading());
-		double radian = Math.toRadians(angle);
-		double course = Math.toRadians(getSkill().getFlyCourse());
+		final int x1 = (int) (Math.cos(Math.PI + radian + course) * getSkill().getFlyRadius());
+		final int y1 = (int) (Math.sin(Math.PI + radian + course) * getSkill().getFlyRadius());
 		
-		int x1 = (int) (Math.cos(Math.PI + radian + course) * _radius);
-		int y1 = (int) (Math.sin(Math.PI + radian + course) * _radius);
+		int x = actor.getX() + x1;
+		int y = actor.getY() + y1;
+		int z = actor.getZ();
 		
-		_x = _actor.getX() + x1;
-		_y = _actor.getY() + y1;
-		_z = _actor.getZ();
-		
-		Location destiny = GeoEngine.getInstance().getValidLocation(_actor, _x, _y, _z);
-		_x = destiny.getX();
-		_y = destiny.getY();
-		_z = destiny.getZ();
+		final Location loc = GeoEngine.getInstance().getValidLocation(actor, x, y, z);
+		x = loc.getX();
+		y = loc.getY();
+		z = loc.getZ();
 		
 		// TODO: check if this AI intention is retail-like.
-		_actor.getAI().tryToIdle();
+		actor.getAI().tryToIdle();
 		
-		_actor.broadcastPacket(new FlyToLocation(_actor, _x, _y, _z, FlyType.DUMMY));
-		_actor.getAttack().stop();
-		_actor.getCast().stop();
+		actor.broadcastPacket(new FlyToLocation(actor, x, y, z, FlyType.DUMMY));
+		actor.getAttack().stop();
+		actor.getCast().stop();
 		
-		_actor.setXYZ(_x, _y, _z);
-		_actor.broadcastPacket(new ValidateLocation(_actor));
+		actor.setXYZ(x, y, z);
+		actor.broadcastPacket(new ValidateLocation(actor));
 		
 		return true;
 	}

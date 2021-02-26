@@ -1,19 +1,7 @@
 package net.sf.l2j.gameserver.geoengine.geodata;
 
-import java.io.BufferedOutputStream;
-
-import net.sf.l2j.gameserver.enums.GeoType;
-
 public class BlockNull extends ABlock
 {
-	private byte _nswe;
-	
-	public BlockNull(GeoType format)
-	{
-		// Get nswe.
-		_nswe = format != GeoType.L2D ? 0x0F : (byte) (0xFF);
-	}
-	
 	@Override
 	public final boolean hasGeoPos()
 	{
@@ -29,7 +17,7 @@ public class BlockNull extends ABlock
 	@Override
 	public final byte getNsweNearest(int geoX, int geoY, int worldZ, IGeoObject ignore)
 	{
-		return _nswe;
+		return GeoStructure.CELL_FLAG_ALL;
 	}
 	
 	@Override
@@ -59,16 +47,6 @@ public class BlockNull extends ABlock
 	@Override
 	public final byte getNswe(int index, IGeoObject ignore)
 	{
-		return _nswe;
-	}
-	
-	@Override
-	public final void setNswe(int index, byte nswe)
-	{
-	}
-	
-	@Override
-	public final void saveBlock(BufferedOutputStream stream)
-	{
+		return GeoStructure.CELL_FLAG_ALL;
 	}
 }

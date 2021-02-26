@@ -9,6 +9,7 @@ public class TradeItem
 	private final Item _item;
 	private int _enchant;
 	private int _count;
+	private int _maxCount;
 	private int _price;
 	
 	public TradeItem(ItemInstance item, int count, int price)
@@ -17,6 +18,7 @@ public class TradeItem
 		_item = item.getItem();
 		_enchant = item.getEnchantLevel();
 		_count = count;
+		_maxCount = count;
 		_price = price;
 	}
 	
@@ -26,6 +28,7 @@ public class TradeItem
 		_item = item;
 		_enchant = enchant;
 		_count = count;
+		_maxCount = count;
 		_price = price;
 	}
 	
@@ -35,6 +38,7 @@ public class TradeItem
 		_item = item.getItem();
 		_enchant = item.getEnchant();
 		_count = count;
+		_maxCount = count;
 		_price = price;
 	}
 	
@@ -71,6 +75,11 @@ public class TradeItem
 	public void setCount(int count)
 	{
 		_count = count;
+	}
+	
+	public int getMaxCount()
+	{
+		return _maxCount;
 	}
 	
 	public int getPrice()

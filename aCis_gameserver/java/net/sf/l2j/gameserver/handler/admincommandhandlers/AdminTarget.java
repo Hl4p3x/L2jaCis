@@ -5,9 +5,6 @@ import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 
-/**
- * This class handles following admin commands: - target name = sets player with respective name as target
- */
 public class AdminTarget implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
@@ -16,34 +13,31 @@ public class AdminTarget implements IAdminCommandHandler
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
 		if (command.startsWith("admin_target"))
-			handleTarget(command, activeChar);
-		return true;
+		{
+			try
+			{
+				final Player worldPlayer = World.getInstance().getPlayer(command.substring(13));
+				if (worldPlayer == null)
+				{
+					player.sendPacket(SystemMessageId.CONTACT_CURRENTLY_OFFLINE);
+					return;
+				}
+				
+				worldPlayer.onAction(player, false, false);
+			}
+			catch (IndexOutOfBoundsException e)
+			{
+				player.sendPacket(SystemMessageId.INCORRECT_CHARACTER_NAME_TRY_AGAIN);
+			}
+		}
 	}
 	
 	@Override
 	public String[] getAdminCommandList()
 	{
 		return ADMIN_COMMANDS;
-	}
-	
-	private static void handleTarget(String command, Player activeChar)
-	{
-		try
-		{
-			String targetName = command.substring(13);
-			Player obj = World.getInstance().getPlayer(targetName);
-			
-			if (obj != null)
-				obj.onAction(activeChar, false, false);
-			else
-				activeChar.sendPacket(SystemMessageId.CONTACT_CURRENTLY_OFFLINE);
-		}
-		catch (IndexOutOfBoundsException e)
-		{
-			activeChar.sendPacket(SystemMessageId.INCORRECT_CHARACTER_NAME_TRY_AGAIN);
-		}
 	}
 }

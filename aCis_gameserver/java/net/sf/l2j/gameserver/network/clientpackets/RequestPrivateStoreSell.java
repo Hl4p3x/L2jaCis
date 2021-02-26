@@ -80,7 +80,7 @@ public final class RequestPrivateStoreSell extends L2GameClientPacket
 		if (!storeList.privateStoreSell(player, _items))
 			return;
 		
-		if (storeList.getItems().isEmpty())
+		if (storeList.isEmpty())
 		{
 			storePlayer.setOperateType(OperateType.NONE);
 			storePlayer.broadcastUserInfo();

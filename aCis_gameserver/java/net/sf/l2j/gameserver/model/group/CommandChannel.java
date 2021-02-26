@@ -7,11 +7,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.pledge.Clan;
+import net.sf.l2j.gameserver.network.NpcStringId;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.CreatureSay;
 import net.sf.l2j.gameserver.network.serverpackets.ExCloseMPCC;
 import net.sf.l2j.gameserver.network.serverpackets.ExMPCCPartyInfoUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.ExOpenMPCC;
+import net.sf.l2j.gameserver.network.serverpackets.ExShowScreenMessage;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
 
 /**
@@ -114,6 +116,18 @@ public class CommandChannel extends AbstractGroup
 	{
 		for (Party party : _parties)
 			party.broadcastCreatureSay(msg, broadcaster);
+	}
+	
+	@Override
+	public void broadcastOnScreen(int time, NpcStringId npcStringId)
+	{
+		broadcastPacket(new ExShowScreenMessage(npcStringId.getMessage(), time));
+	}
+	
+	@Override
+	public void broadcastOnScreen(int time, NpcStringId npcStringId, Object... params)
+	{
+		broadcastPacket(new ExShowScreenMessage(npcStringId.getMessage(params), time));
 	}
 	
 	@Override

@@ -204,7 +204,7 @@ public final class UseItem extends L2GameClientPacket
 			
 			for (final Quest quest : item.getQuestEvents())
 			{
-				final QuestState state = player.getQuestState(quest.getName());
+				final QuestState state = player.getQuestList().getQuestState(quest.getName());
 				if (state == null || !state.isStarted())
 					continue;
 				

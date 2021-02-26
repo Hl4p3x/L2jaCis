@@ -2,17 +2,17 @@ package net.sf.l2j.gameserver.data.xml;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.AccessLevel;
+import net.sf.l2j.gameserver.model.AdminCommand;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.L2GameServerPacket;
@@ -25,14 +25,14 @@ import org.w3c.dom.Document;
  * This class loads and handles following concepts :
  * <ul>
  * <li>{@link AccessLevel}s retain informations such as isGM() and multiple allowed actions.</li>
- * <li>Admin command rights' authorized {@link AccessLevel}.</li>
+ * <li>{@link AdminCommand}s with their names, authorized {@link AccessLevel}s and descriptions.</li>
  * <li>GM list holds GM {@link Player}s used by /gmlist. It also stores the hidden state.</li>
  * </ul>
  */
 public final class AdminData implements IXmlReader
 {
 	private final TreeMap<Integer, AccessLevel> _accessLevels = new TreeMap<>();
-	private final Map<String, Integer> _adminCommandAccessRights = new HashMap<>();
+	private final List<AdminCommand> _adminCommands = new ArrayList<>();
 	private final Map<Player, Boolean> _gmList = new ConcurrentHashMap<>();
 	
 	protected AdminData()
@@ -47,7 +47,7 @@ public final class AdminData implements IXmlReader
 		LOGGER.info("Loaded {} access levels.", _accessLevels.size());
 		
 		parseFile("./data/xml/adminCommands.xml");
-		LOGGER.info("Loaded {} admin command rights.", _adminCommandAccessRights.size());
+		LOGGER.info("Loaded {} admin command rights.", _adminCommands.size());
 	}
 	
 	@Override
@@ -57,23 +57,25 @@ public final class AdminData implements IXmlReader
 		{
 			forEach(listNode, "access", accessNode ->
 			{
-				final StatsSet set = parseAttributes(accessNode);
+				final StatSet set = parseAttributes(accessNode);
 				_accessLevels.put(set.getInteger("level"), new AccessLevel(set));
 			});
-			forEach(listNode, "aCar", aCarNode ->
-			{
-				final StatsSet set = parseAttributes(aCarNode);
-				_adminCommandAccessRights.put(set.getString("name"), set.getInteger("accessLevel"));
-			});
+			
+			forEach(listNode, "aCar", aCarNode -> _adminCommands.add(new AdminCommand(parseAttributes(aCarNode))));
 		});
 	}
 	
 	public void reload()
 	{
 		_accessLevels.clear();
-		_adminCommandAccessRights.clear();
+		_adminCommands.clear();
 		
 		load();
+	}
+	
+	public List<AdminCommand> getAdminCommands()
+	{
+		return _adminCommands;
 	}
 	
 	/**
@@ -109,14 +111,14 @@ public final class AdminData implements IXmlReader
 	 */
 	public boolean hasAccess(String command, AccessLevel accessToCheck)
 	{
-		final Integer level = _adminCommandAccessRights.get(command);
-		if (level == null)
+		final AdminCommand ac = _adminCommands.stream().filter(c -> c.getName().equalsIgnoreCase(command)).findFirst().orElse(null);
+		if (ac == null)
 		{
 			LOGGER.warn("No rights defined for admin command '{}'.", command);
 			return false;
 		}
 		
-		final AccessLevel access = AdminData.getInstance().getAccessLevel(level);
+		final AccessLevel access = getAccessLevel(ac.getAccessLevel());
 		return access != null && (access.getLevel() == accessToCheck.getLevel() || accessToCheck.hasChildAccess(access));
 	}
 	

@@ -101,7 +101,7 @@ public class CharInfo extends L2GameServerPacket
 		writeF(_player.getStatus().getAttackSpeedMultiplier());
 		
 		final Summon summon = _player.getSummon();
-		if (_player.getMountType() != 0 && summon != null)
+		if (_player.isMounted() && summon != null)
 		{
 			writeF(summon.getCollisionRadius());
 			writeF(summon.getCollisionHeight());
@@ -134,8 +134,8 @@ public class CharInfo extends L2GameServerPacket
 		writeC(_player.getMountType());
 		writeC(_player.getOperateType().getId());
 		
-		writeH(_player.getCubicList().getCubics().size());
-		for (final Cubic cubic : _player.getCubicList().getCubics())
+		writeH(_player.getCubicList().size());
+		for (final Cubic cubic : _player.getCubicList())
 			writeH(cubic.getId());
 		
 		writeC((_player.isInPartyMatchRoom()) ? 1 : 0);

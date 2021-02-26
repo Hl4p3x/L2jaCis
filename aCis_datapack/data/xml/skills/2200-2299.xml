@@ -218,9 +218,9 @@
 	<skill id="2217" levels="5" name="Item - Quest Treasure Box">
 		<table name="#extractableItems">
 			6697,1,9;6693,1,9;6694,1,9;6696,1,9;7579,1,9;6690,1,9;6688,1,9;6691,1,9;6689,1,9;6695,1,9;57,330000,10
-			6706,1,8.5;6710,1,8.5;6714,1,8.5;6703,1,8.5;6704,1,8.5;6708,1,8.5;6709,1,8.5;6712,1,8.5;6713,1,8.5;6705,1,8.5;13099,1,8.5;57,292000,15
+			6706,1,8.5;6710,1,8.5;6714,1,8.5;6703,1,8.5;6704,1,8.5;6708,1,8.5;6709,1,8.5;6712,1,8.5;6713,1,8.5;6705,1,8.5;57,292000,15
 			6702,1,20;6701,1,20;6707,1,20;6711,1,20;57,93000,20
-			6857,1,8.5;6859,1,8.5;6867,1,8.5;6869,1,8.5;6875,1,8.5;6877,1,8.5;6861,1,8.5;13100,1,8.5;6863,1,8.5;6871,1,8.5;6879,1,8.5;57,340000,15
+			6857,1,8.5;6859,1,8.5;6867,1,8.5;6869,1,8.5;6875,1,8.5;6877,1,8.5;6861,1,8.5;6863,1,8.5;6871,1,8.5;6879,1,8.5;57,340000,15
 			6855,1,20;6853,1,20;6865,1,20;6873,1,20;57,850000,20
 		</table>
 		<set name="capsuled_items_skill" val="#extractableItems" />
@@ -475,8 +475,8 @@
 		</cond>
 	</skill>
 	<skill id="2229" levels="8" name="Treasure Chest Key">
-		<table name="#skillId"> 6665 6666 6667 6668 6669 6670 6671 6672 </table>
-		<set name="target" val="ONE" />
+		<table name="#itemId"> 6665 6666 6667 6668 6669 6670 6671 6672 </table>
+		<set name="target" val="UNLOCKABLE" />
 		<set name="hitTime" val="500" />
 		<set name="staticHitTime" val="true" />
 		<set name="reuseDelay" val="8000" />
@@ -484,7 +484,7 @@
 		<set name="operateType" val="ACTIVE" />
 		<set name="castRange" val="40" />
 		<set name="effectRange" val="400" />
-		<set name="itemConsumeId" val="#skillId"/>
+		<set name="itemConsumeId" val="#itemId"/>
 		<set name="itemConsumeCount" val="1"/>
 	</skill>
 	<skill id="2230" levels="1" name="Item - Theme Sound Crystal">

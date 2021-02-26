@@ -9,7 +9,12 @@ public class ZoneCylinder extends ZoneForm
 {
 	protected static final int STEP = 50;
 	
-	private final int _x, _y, _z1, _z2, _rad, _radS;
+	private final int _x;
+	private final int _y;
+	private final int _z1;
+	private final int _z2;
+	private final int _rad;
+	private final int _radS;
 	
 	public ZoneCylinder(int x, int y, int z1, int z2, int rad)
 	{

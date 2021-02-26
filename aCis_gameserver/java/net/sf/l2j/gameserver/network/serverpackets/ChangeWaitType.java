@@ -9,25 +9,26 @@ public class ChangeWaitType extends L2GameServerPacket
 	public static final int WT_START_FAKEDEATH = 2;
 	public static final int WT_STOP_FAKEDEATH = 3;
 	
-	private final int _charObjId;
+	private final int _objectId;
 	private final int _moveType;
-	private final int _x, _y, _z;
+	private final int _x;
+	private final int _y;
+	private final int _z;
 	
-	public ChangeWaitType(Creature character, int newMoveType)
+	public ChangeWaitType(Creature creature, int newMoveType)
 	{
-		_charObjId = character.getObjectId();
+		_objectId = creature.getObjectId();
 		_moveType = newMoveType;
-		
-		_x = character.getX();
-		_y = character.getY();
-		_z = character.getZ();
+		_x = creature.getX();
+		_y = creature.getY();
+		_z = creature.getZ();
 	}
 	
 	@Override
 	protected final void writeImpl()
 	{
 		writeC(0x2f);
-		writeD(_charObjId);
+		writeD(_objectId);
 		writeD(_moveType);
 		writeD(_x);
 		writeD(_y);

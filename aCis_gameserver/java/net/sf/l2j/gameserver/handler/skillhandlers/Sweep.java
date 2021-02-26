@@ -33,7 +33,7 @@ public class Sweep implements ISkillHandler
 			
 			final Monster monster = ((Monster) target);
 			
-			final List<IntIntHolder> items = monster.getSpoilState().getSweepItems();
+			final List<IntIntHolder> items = monster.getSpoilState();
 			if (items.isEmpty())
 				continue;
 			

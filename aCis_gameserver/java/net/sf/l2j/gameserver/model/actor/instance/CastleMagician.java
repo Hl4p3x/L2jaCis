@@ -57,7 +57,6 @@ public class CastleMagician extends Folk
 			{
 			}
 			showChatWindow(player, val);
-			return;
 		}
 		else if (command.equals("gotoleader"))
 		{
@@ -78,7 +77,6 @@ public class CastleMagician extends Folk
 				String filename = "data/html/castlemagician/magician-nogate.htm";
 				showChatWindow(player, filename);
 			}
-			return;
 		}
 		else
 			super.onBypassFeedback(player, command);

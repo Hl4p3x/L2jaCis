@@ -17,7 +17,7 @@ public class ShopPreviewList extends L2GameServerPacket
 	public ShopPreviewList(NpcBuyList list, int currentMoney, int expertiseIndex)
 	{
 		_listId = list.getListId();
-		_list = list.getProducts();
+		_list = list.values();
 		_money = currentMoney;
 		_expertise = expertiseIndex;
 	}

@@ -4,9 +4,6 @@ import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.network.serverpackets.ExShowQuestInfo;
 
-/**
- * @author LBaldi
- */
 public class Adventurer extends Folk
 {
 	public Adventurer(int objectId, NpcTemplate template)

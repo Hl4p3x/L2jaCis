@@ -103,13 +103,10 @@ public final class RequestCrystallizeItem extends L2GameClientPacket
 			
 			player.sendPacket(iu);
 			
-			SystemMessage msg;
 			if (item.getEnchantLevel() > 0)
-				msg = SystemMessage.getSystemMessage(SystemMessageId.EQUIPMENT_S1_S2_REMOVED).addNumber(item.getEnchantLevel()).addItemName(item.getItemId());
+				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.EQUIPMENT_S1_S2_REMOVED).addNumber(item.getEnchantLevel()).addItemName(item.getItemId()));
 			else
-				msg = SystemMessage.getSystemMessage(SystemMessageId.S1_DISARMED).addItemName(item.getItemId());
-			
-			player.sendPacket(msg);
+				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_DISARMED).addItemName(item.getItemId()));
 		}
 		
 		// Remove the item from inventory.

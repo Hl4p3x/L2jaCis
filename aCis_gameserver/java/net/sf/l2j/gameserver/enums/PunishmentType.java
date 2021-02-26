@@ -8,16 +8,16 @@ public enum PunishmentType
 	CHAR("banned"),
 	ACC("banned");
 	
-	private final String _name;
+	private final String _description;
 	
-	PunishmentType(String name)
+	PunishmentType(String description)
 	{
-		_name = name;
+		_description = description;
 	}
 	
-	public String getName()
+	public String getDescription()
 	{
-		return _name;
+		return _description;
 	}
 	
 	public static final PunishmentType[] VALUES = values();

@@ -4,8 +4,9 @@ import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Summon;
+import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetEnemySummon implements ITargetHandler
@@ -19,21 +20,40 @@ public class TargetEnemySummon implements ITargetHandler
 	@Override
 	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
 	{
-		// Single target skill. Will never be called.
-		return EMPTY_TARGET_ARRAY;
+		return new Creature[]
+		{
+			target
+		};
 	}
 	
 	@Override
 	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
-		// TODO Check if Betray/Erase can be cast on Servitor (not Summon) as well as Player
-		if (!(caster instanceof Player && target instanceof Summon))
-			return null;
-		
-		final Player summonOwner = target.getActingPlayer();
-		if (!(caster.getSummon() != target && !target.isDead() && (summonOwner.getPvpFlag() != 0 || summonOwner.getKarma() > 0) || (summonOwner.isInsideZone(ZoneId.PVP) && caster.isInsideZone(ZoneId.PVP)) || (summonOwner.isInDuel() && ((Player) caster).isInDuel() && summonOwner.getDuelId() == ((Player) caster).getDuelId())))
-			return null;
-		
 		return target;
+	}
+	
+	@Override
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed)
+	{
+		if (!(target instanceof Summon) || target.isDead() || caster.getSummon() == target || !target.getActingPlayer().isAttackableWithoutForceBy(caster))
+		{
+			caster.sendPacket(SystemMessageId.INVALID_TARGET);
+			return false;
+		}
+		
+		if (caster.isInsideZone(ZoneId.PEACE))
+		{
+			caster.sendPacket(SystemMessageId.CANT_ATK_PEACEZONE);
+			return false;
+		}
+		
+		final Summon summon = (Summon) target;
+		if (summon.isInsideZone(ZoneId.PEACE))
+		{
+			caster.sendPacket(SystemMessageId.TARGET_IN_PEACEZONE);
+			return false;
+		}
+		
+		return true;
 	}
 }

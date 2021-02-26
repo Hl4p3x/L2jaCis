@@ -1,9 +1,7 @@
 package net.sf.l2j.gameserver.model.item.kind;
 
-import java.util.List;
-
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
@@ -49,7 +47,7 @@ public final class Weapon extends Item
 	private final int _reducedSoulshot;
 	private final int _reducedSoulshotChance;
 	
-	public Weapon(StatsSet set)
+	public Weapon(StatSet set)
 	{
 		super(set);
 		
@@ -69,9 +67,9 @@ public final class Weapon extends Item
 		_reuseDelay = set.getInteger("reuse_delay", 0);
 		_isMagical = set.getBool("is_magical", false);
 		
-		String[] reduced_soulshots = set.getString("reduced_soulshot", "").split(",");
-		_reducedSoulshotChance = (reduced_soulshots.length == 2) ? Integer.parseInt(reduced_soulshots[0]) : 0;
-		_reducedSoulshot = (reduced_soulshots.length == 2) ? Integer.parseInt(reduced_soulshots[1]) : 0;
+		String[] reducedSoulshot = set.getString("reduced_soulshot", "").split(",");
+		_reducedSoulshotChance = (reducedSoulshot.length == 2) ? Integer.parseInt(reducedSoulshot[0]) : 0;
+		_reducedSoulshot = (reducedSoulshot.length == 2) ? Integer.parseInt(reducedSoulshot[1]) : 0;
 		
 		if (set.containsKey("enchant4_skill"))
 			_enchant4Skill = set.getIntIntHolder("enchant4_skill");
@@ -242,8 +240,10 @@ public final class Weapon extends Item
 		if (caster instanceof Player)
 			caster.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_HAS_BEEN_ACTIVATED).addSkillName(skillOnMagic));
 		
-		final Creature[] targets = new Creature[1];
-		targets[0] = target;
+		final Creature[] targets = new Creature[]
+		{
+			target
+		};
 		
 		// Get the skill handler corresponding to the skill type - Launch the magic skill and calculate its effects.
 		final ISkillHandler handler = SkillHandler.getInstance().getHandler(skillOnMagic.getSkillType());
@@ -252,16 +252,13 @@ public final class Weapon extends Item
 		else
 			skillOnMagic.useSkill(caster, targets);
 		
-		// notify quests of a skill use
+		// Notify NPCs in a 1000 range of a skill use.
 		if (caster instanceof Player)
 		{
-			// Mobs in range 1000 see spell
-			for (Npc npcMob : caster.getKnownTypeInRadius(Npc.class, 1000))
+			for (Npc npc : caster.getKnownTypeInRadius(Npc.class, 1000))
 			{
-				final List<Quest> scripts = npcMob.getTemplate().getEventQuests(ScriptEventType.ON_SKILL_SEE);
-				if (scripts != null)
-					for (Quest quest : scripts)
-						quest.notifySkillSee(npcMob, (Player) caster, skillOnMagic, targets, false);
+				for (Quest quest : npc.getTemplate().getEventQuests(ScriptEventType.ON_SKILL_SEE))
+					quest.notifySkillSee(npc, (Player) caster, skillOnMagic, targets, false);
 			}
 		}
 	}

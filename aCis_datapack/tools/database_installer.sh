@@ -77,6 +77,11 @@ $MYL < ../sql/gameservers.sql &> /dev/null
 
 $MYG < ../sql/auctions.sql &> /dev/null
 $MYG < ../sql/augmentations.sql &> /dev/null
+$MYG < ../sql/bbs_favorite.sql &> /dev/null
+$MYG < ../sql/bbs_forum.sql &> /dev/null
+$MYG < ../sql/bbs_mail.sql &> /dev/null
+$MYG < ../sql/bbs_post.sql &> /dev/null
+$MYG < ../sql/bbs_topic.sql &> /dev/null
 $MYG < ../sql/bookmarks.sql &> /dev/null
 $MYG < ../sql/buffer_schemes.sql &> /dev/null
 $MYG < ../sql/buylists.sql &> /dev/null
@@ -89,7 +94,6 @@ $MYG < ../sql/castle_trapupgrade.sql &> /dev/null
 $MYG < ../sql/character_friends.sql &> /dev/null
 $MYG < ../sql/character_hennas.sql &> /dev/null
 $MYG < ../sql/character_macroses.sql &> /dev/null
-$MYG < ../sql/character_mail.sql &> /dev/null
 $MYG < ../sql/character_memo.sql &> /dev/null
 $MYG < ../sql/character_quests.sql &> /dev/null
 $MYG < ../sql/character_raid_points.sql &> /dev/null
@@ -111,7 +115,6 @@ $MYG < ../sql/clanhall_siege_attackers.sql &> /dev/null
 $MYG < ../sql/clanhall_siege_guards.sql &> /dev/null
 $MYG < ../sql/cursed_weapons.sql &> /dev/null
 $MYG < ../sql/fishing_championship.sql &> /dev/null
-$MYG < ../sql/forums.sql &> /dev/null
 $MYG < ../sql/games.sql &> /dev/null
 $MYG < ../sql/grandboss_data.sql &> /dev/null
 $MYG < ../sql/grandboss_list.sql &> /dev/null
@@ -126,8 +129,9 @@ $MYG < ../sql/olympiad_data.sql&> /dev/null
 $MYG < ../sql/olympiad_fights.sql&> /dev/null
 $MYG < ../sql/olympiad_nobles_eom.sql&> /dev/null
 $MYG < ../sql/olympiad_nobles.sql&> /dev/null
+$MYG < ../sql/petition.sql &> /dev/null
+$MYG < ../sql/petition_message.sql &> /dev/null
 $MYG < ../sql/pets.sql &> /dev/null
-$MYG < ../sql/posts.sql &> /dev/null
 $MYG < ../sql/raidboss_spawnlist.sql &> /dev/null
 $MYG < ../sql/rainbowsprings_attacker_list.sql &> /dev/null
 $MYG < ../sql/random_spawn.sql &> /dev/null
@@ -139,7 +143,6 @@ $MYG < ../sql/seven_signs_status.sql &> /dev/null
 $MYG < ../sql/siege_clans.sql &> /dev/null
 $MYG < ../sql/spawnlist_4s.sql &> /dev/null
 $MYG < ../sql/spawnlist.sql &> /dev/null
-$MYG < ../sql/topic.sql &> /dev/null
 echo ""
 echo "Was fast, isn't it ?"
 }

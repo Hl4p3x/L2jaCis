@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.model.WorldObject;
@@ -14,7 +14,7 @@ import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class L2SkillChargeDmg extends L2Skill
 {
-	public L2SkillChargeDmg(StatsSet set)
+	public L2SkillChargeDmg(StatSet set)
 	{
 		super(set);
 	}

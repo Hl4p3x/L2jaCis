@@ -5,10 +5,6 @@ import java.util.StringTokenizer;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.actor.Player;
 
-/**
- * This class handles following admin commands:<br>
- * - test <custom parameter> = developer testing command
- */
 public class AdminTest implements IAdminCommandHandler
 {
 	private static final String[] ADMIN_COMMANDS =
@@ -17,25 +13,25 @@ public class AdminTest implements IAdminCommandHandler
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
-		StringTokenizer st = new StringTokenizer(command);
-		if (st.countTokens() > 1)
-		{
-			st.nextToken();
-			switch (st.nextToken())
-			{
-				// Add your own cases.
-				
-				default:
-					activeChar.sendMessage("Usage : //test ...");
-					break;
-			}
-		}
-		else
-			activeChar.sendMessage("Usage : //test ...");
+		final StringTokenizer st = new StringTokenizer(command);
+		st.nextToken();
 		
-		return true;
+		if (!st.hasMoreTokens())
+		{
+			player.sendMessage("Usage : //test ...");
+			return;
+		}
+		
+		switch (st.nextToken())
+		{
+			// Add your own cases.
+			
+			default:
+				player.sendMessage("Usage : //test ...");
+				break;
+		}
 	}
 	
 	@Override

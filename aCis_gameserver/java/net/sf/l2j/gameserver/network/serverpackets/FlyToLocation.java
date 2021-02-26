@@ -6,8 +6,13 @@ import net.sf.l2j.gameserver.model.actor.Creature;
 
 public final class FlyToLocation extends L2GameServerPacket
 {
-	private final int _destX, _destY, _destZ;
-	private final int _chaObjId, _chaX, _chaY, _chaZ;
+	private final int _chaObjId;
+	private final int _chaX;
+	private final int _chaY;
+	private final int _chaZ;
+	private final int _destX;
+	private final int _destY;
+	private final int _destZ;
 	private final FlyType _type;
 	
 	public FlyToLocation(Creature cha, int destX, int destY, int destZ, FlyType type)

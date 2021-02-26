@@ -8,15 +8,16 @@ import net.sf.l2j.gameserver.model.buylist.Product;
 
 public final class BuyList extends L2GameServerPacket
 {
-	private final int _listId, _money;
+	private final int _money;
+	private final int _listId;
 	private final Collection<Product> _list;
 	private double _taxRate = 0;
 	
 	public BuyList(NpcBuyList list, int currentMoney, double taxRate)
 	{
-		_listId = list.getListId();
-		_list = list.getProducts();
 		_money = currentMoney;
+		_listId = list.getListId();
+		_list = list.values();
 		_taxRate = taxRate;
 	}
 	
@@ -37,10 +38,10 @@ public final class BuyList extends L2GameServerPacket
 				writeD(product.getItemId());
 				writeD((product.getCount() < 0) ? 0 : product.getCount());
 				writeH(product.getItem().getType2());
-				writeH(0x00); // TODO: ItemInstance getCustomType1()
+				writeH(0x00);
 				writeD(product.getItem().getBodyPart());
-				writeH(0x00); // TODO: ItemInstance getEnchantLevel()
-				writeH(0x00); // TODO: ItemInstance getCustomType2()
+				writeH(0x00);
+				writeH(0x00);
 				writeH(0x00);
 				
 				if (product.getItemId() >= 3960 && product.getItemId() <= 4026)

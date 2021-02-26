@@ -7,7 +7,9 @@ import net.sf.l2j.gameserver.model.actor.instance.Servitor;
 public class PetStatusUpdate extends L2GameServerPacket
 {
 	private final Summon _summon;
-	private int _maxFed, _curFed;
+	
+	private int _maxFed;
+	private int _curFed;
 	
 	public PetStatusUpdate(Summon summon)
 	{

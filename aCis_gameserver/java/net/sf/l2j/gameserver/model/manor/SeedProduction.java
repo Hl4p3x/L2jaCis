@@ -44,7 +44,9 @@ public class SeedProduction
 	
 	public final boolean decreaseAmount(int val)
 	{
-		int current, next;
+		int current;
+		int next;
+		
 		do
 		{
 			current = _amount.get();

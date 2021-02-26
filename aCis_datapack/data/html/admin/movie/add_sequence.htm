@@ -1,4 +1,4 @@
-<html><title>KKnD's Movie Maker</title><body>
+<html><title>Movie Maker</title><body>
 	<font color="LEVEL">New sequence</font><br>
 	<center>
 		<table width=270>
@@ -34,8 +34,7 @@
 		
 		<table>
 			<tr>
-				<td><button value="Add sequence" action="bypass -h admin_addsequence $tsId $tdist $tyaw $tpitch $ttime $tdur $tturn $trise $tscreen" width=75 height=21 back="L2UI_ch3.Btn1_normalOn" fore="L2UI_ch3.Btn1_normal"></td>
-				<td><button value="Play sequence" action="bypass -h admin_playsequence $tdist $tyaw $tpitch $ttime $tdur $tturn $trise $tscreen" width=75 height=21 back="L2UI_ch3.Btn1_normalOn" fore="L2UI_ch3.Btn1_normal"></td>
+				<td><button value="Add sequence" action="bypass -h admin_sequence add $tsId $tdist $tyaw $tpitch $ttime $tdur $tturn $trise $tscreen" width=75 height=21 back="L2UI_ch3.Btn1_normalOn" fore="L2UI_ch3.Btn1_normal"></td>
 				<td><button value="Back" action="bypass -h admin_movie" width=75 height=21 back="L2UI_ch3.Btn1_normalOn" fore="L2UI_ch3.Btn1_normal"></td>
 			</tr>
 		</table>

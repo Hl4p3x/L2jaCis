@@ -12,9 +12,9 @@ import net.sf.l2j.gameserver.model.holder.IntIntHolder;
  * <br>
  * A spoil occurs when a {@link Player} procs a spoil skill over a Monster.
  */
-public class SpoilState
+public class SpoilState extends ArrayList<IntIntHolder>
 {
-	private final List<IntIntHolder> _sweepItems = new ArrayList<>();
+	private static final long serialVersionUID = 1L;
 	
 	private int _spoilerId;
 	
@@ -50,27 +50,21 @@ public class SpoilState
 	}
 	
 	/**
-	 * @return the {@link List} containing all {@link IntIntHolder} that can be spoiled.
-	 */
-	public List<IntIntHolder> getSweepItems()
-	{
-		return _sweepItems;
-	}
-	
-	/**
 	 * @return true if _sweepItems {@link List} is filled.
 	 */
 	public boolean isSweepable()
 	{
-		return !_sweepItems.isEmpty();
+		return !isEmpty();
 	}
 	
 	/**
 	 * Clear all spoil related variables.
 	 */
+	@Override
 	public void clear()
 	{
 		_spoilerId = 0;
-		_sweepItems.clear();
+		
+		super.clear();
 	}
 }

@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.holder.skillnode;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 /**
  * A datatype used by fishing (or common) skill types. It extends {@link SkillNode}.
@@ -12,7 +12,7 @@ public final class FishingSkillNode extends SkillNode
 	
 	private final boolean _isDwarven;
 	
-	public FishingSkillNode(StatsSet set)
+	public FishingSkillNode(StatSet set)
 	{
 		super(set);
 		

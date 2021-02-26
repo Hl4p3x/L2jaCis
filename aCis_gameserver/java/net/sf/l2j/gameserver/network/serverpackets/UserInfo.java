@@ -3,7 +3,6 @@ package net.sf.l2j.gameserver.network.serverpackets;
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.CursedWeaponManager;
 import net.sf.l2j.gameserver.enums.Paperdoll;
-import net.sf.l2j.gameserver.enums.PolyType;
 import net.sf.l2j.gameserver.enums.TeamType;
 import net.sf.l2j.gameserver.enums.skills.AbnormalEffect;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -36,7 +35,7 @@ public class UserInfo extends L2GameServerPacket
 		writeD(_player.getZ());
 		writeD(_player.getHeading());
 		writeD(_player.getObjectId());
-		writeS((_player.getPolyTemplate() != null) ? _player.getPolyTemplate().getName() : _player.getName());
+		writeS((_player.getPolymorphTemplate() != null) ? _player.getPolymorphTemplate().getName() : _player.getName());
 		writeD(_player.getRace().ordinal());
 		writeD(_player.getAppearance().getSex().ordinal());
 		writeD((_player.getClassIndex() == 0) ? _player.getClassId().getId() : _player.getBaseClass());
@@ -156,7 +155,7 @@ public class UserInfo extends L2GameServerPacket
 		writeF(_player.getStatus().getAttackSpeedMultiplier());
 		
 		final Summon summon = _player.getSummon();
-		if (_player.getMountType() != 0 && summon != null)
+		if (_player.isMounted() && summon != null)
 		{
 			writeF(summon.getCollisionRadius());
 			writeF(summon.getCollisionHeight());
@@ -172,7 +171,7 @@ public class UserInfo extends L2GameServerPacket
 		writeD(_player.getAppearance().getFace());
 		writeD((_player.isGM()) ? 1 : 0);
 		
-		writeS((_player.getPolyType() != PolyType.DEFAULT) ? "Morphed" : _player.getTitle());
+		writeS((_player.getPolymorphTemplate() != null) ? "Morphed" : _player.getTitle());
 		
 		writeD(_player.getClanId());
 		writeD(_player.getClanCrestId());
@@ -185,8 +184,8 @@ public class UserInfo extends L2GameServerPacket
 		writeD(_player.getPkKills());
 		writeD(_player.getPvpKills());
 		
-		writeH(_player.getCubicList().getCubics().size());
-		for (final Cubic cubic : _player.getCubicList().getCubics())
+		writeH(_player.getCubicList().size());
+		for (final Cubic cubic : _player.getCubicList())
 			writeH(cubic.getId());
 		
 		writeC((_player.isInPartyMatchRoom()) ? 1 : 0);

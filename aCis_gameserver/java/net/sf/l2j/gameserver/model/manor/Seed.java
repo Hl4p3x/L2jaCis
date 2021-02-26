@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.manor;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.xml.ItemData;
@@ -21,7 +21,7 @@ public final class Seed
 	private final int _seedReferencePrice;
 	private final int _cropReferencePrice;
 	
-	public Seed(StatsSet set)
+	public Seed(StatSet set)
 	{
 		_seedId = set.getInteger("id");
 		_cropId = set.getInteger("cropId");

@@ -4,8 +4,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Calendar;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.pool.ConnectionPool;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.manager.ClanHallManager;
@@ -34,7 +34,7 @@ public final class SiegableHall extends ClanHall
 	
 	private ClanHallSiege _siege;
 	
-	public SiegableHall(StatsSet set)
+	public SiegableHall(StatSet set)
 	{
 		super(set);
 		

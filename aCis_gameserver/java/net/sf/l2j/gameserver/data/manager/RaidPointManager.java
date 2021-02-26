@@ -42,12 +42,8 @@ public class RaidPointManager
 				final int bossId = rs.getInt("boss_id");
 				final int points = rs.getInt("points");
 				
-				Map<Integer, Integer> playerData = _entries.get(objectId);
-				if (playerData == null)
-					playerData = new HashMap<>();
-				
+				final Map<Integer, Integer> playerData = _entries.computeIfAbsent(objectId, m -> new HashMap<>());
 				playerData.put(bossId, points);
-				_entries.put(objectId, playerData);
 			}
 		}
 		catch (Exception e)
@@ -64,22 +60,19 @@ public class RaidPointManager
 	
 	/**
 	 * Add points for a given {@link Player} and a given boss npcId.
-	 * @param player : The player used for objectId.
+	 * @param player : The {@link Player} used for objectId.
 	 * @param bossId : The boss npcId to register.
 	 * @param points : The points to add.
 	 */
 	public final void addPoints(Player player, int bossId, int points)
 	{
-		final int objectId = player.getObjectId();
+		if (points < 0)
+			return;
 		
-		Map<Integer, Integer> playerData = _entries.get(objectId);
-		if (playerData == null)
-		{
-			playerData = new HashMap<>();
-			
-			_entries.put(objectId, playerData);
-		}
-		playerData.merge(bossId, points, Integer::sum);
+		final int objectId = player.getObjectId();
+		final Map<Integer, Integer> playerData = _entries.computeIfAbsent(objectId, m -> new HashMap<>());
+		
+		points = playerData.merge(bossId, points, Integer::sum);
 		
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(INSERT_DATA))
@@ -101,7 +94,7 @@ public class RaidPointManager
 	 */
 	public final int getPointsByOwnerId(int objectId)
 	{
-		Map<Integer, Integer> playerData = _entries.get(objectId);
+		final Map<Integer, Integer> playerData = _entries.get(objectId);
 		if (playerData == null || playerData.isEmpty())
 			return 0;
 		
@@ -128,7 +121,7 @@ public class RaidPointManager
 	
 	/**
 	 * @param objectId : The objectId of the {@link Player} to check.
-	 * @return the current rank of a player based on its objectId, or 0 if no entry is found.
+	 * @return the current rank of a {@link Player} based on its objectId, or 0 if no entry is found.
 	 */
 	public final int calculateRanking(int objectId)
 	{
@@ -153,10 +146,10 @@ public class RaidPointManager
 	}
 	
 	/**
-	 * A method used to generate the ranking map. Limited to the first 100 players.
+	 * A method used to generate the ranking map. Limited to the first 100 {@link Player}s.
 	 * <ul>
-	 * <li>Retrieve player data, compute their points and store the entry on a temporary map if the points are > 0.</li>
-	 * <li>Sort the temporary map based on points and feed a second map with objectId<>ranking.</li>
+	 * <li>Retrieve {@link Player} data, compute their points and store the entry on a temporary {@link Map} if the points are > 0.</li>
+	 * <li>Sort the temporary {@link Map} based on points and feed a second {@link Map} with objectId<>ranking.</li>
 	 * </ul>
 	 * @return a {@link Map} consisting of {@link Player} objectId for the key, and ranking for the value.
 	 */

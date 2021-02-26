@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.actor.instance.StaticObject;
@@ -37,7 +37,7 @@ public class StaticObjectData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "object", objectNode ->
 		{
-			final StatsSet set = parseAttributes(objectNode);
+			final StatSet set = parseAttributes(objectNode);
 			final StaticObject obj = new StaticObject(IdFactory.getInstance().getNextId());
 			obj.setStaticObjectId(set.getInteger("id"));
 			obj.setType(set.getInteger("type"));

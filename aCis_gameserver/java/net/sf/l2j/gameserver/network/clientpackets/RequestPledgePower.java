@@ -36,7 +36,7 @@ public final class RequestPledgePower extends L2GameClientPacket
 				if (_rank == 9)
 					_privs = (_privs & Clan.CP_CL_VIEW_WAREHOUSE) + (_privs & Clan.CP_CH_OPEN_DOOR) + (_privs & Clan.CP_CS_OPEN_DOOR);
 				
-				clan.setPriviledgesForRank(_rank, _privs);
+				clan.setPrivilegesForRanking(_rank, _privs);
 			}
 		}
 		else

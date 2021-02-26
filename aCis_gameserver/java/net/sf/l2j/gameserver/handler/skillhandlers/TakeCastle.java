@@ -23,7 +23,7 @@ public class TakeCastle implements ISkillHandler
 	@Override
 	public void useSkill(Creature activeChar, L2Skill skill, WorldObject[] targets)
 	{
-		if (activeChar == null || !(activeChar instanceof Player))
+		if (!(activeChar instanceof Player))
 			return;
 		
 		if (targets.length == 0)

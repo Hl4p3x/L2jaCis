@@ -6,18 +6,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.pool.ThreadPool;
-import net.sf.l2j.commons.random.Rnd;
 
 import net.sf.l2j.gameserver.data.xml.NpcData;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.idfactory.IdFactory;
 import net.sf.l2j.gameserver.model.MinionData;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
+import net.sf.l2j.gameserver.model.location.SpawnLocation;
 
-public class MinionList
+public class MinionList extends ConcurrentHashMap<Monster, Boolean>
 {
-	private final Map<Monster, Boolean> _minions = new ConcurrentHashMap<>();
+	private static final long serialVersionUID = 1L;
+	
 	private final Monster _master;
 	
 	public MinionList(Monster master)
@@ -26,34 +28,21 @@ public class MinionList
 	}
 	
 	/**
-	 * @return a set of the spawned (alive) minions.
+	 * @return a {@link List} of spawned {@link Monster}s minions.
 	 */
 	public List<Monster> getSpawnedMinions()
 	{
-		return _minions.entrySet().stream().filter(m -> m.getValue() == true).map(Map.Entry::getKey).collect(Collectors.toList());
+		return entrySet().stream().filter(m -> m.getValue() == true).map(Map.Entry::getKey).collect(Collectors.toList());
 	}
 	
 	/**
-	 * @return a complete view of minions.
-	 */
-	public Map<Monster, Boolean> getMinions()
-	{
-		return _minions;
-	}
-	
-	/**
-	 * Manage the spawn of Minions.
-	 * <ul>
-	 * <li>Get the Minion data of all Minions that must be spawn</li>
-	 * <li>For each Minion type, spawn the amount of Minion needed</li>
-	 * </ul>
+	 * Manage the spawn of {@link Monster}s minions, using the associated {@link MinionData}'s {@link Monster} master.
 	 */
 	public final void spawnMinions()
 	{
 		// We generate new instances. We can't reuse existing instances, since previous monsters can still exist.
 		for (MinionData data : _master.getTemplate().getMinionData())
 		{
-			// Get the template of the Minion to spawn
 			final NpcTemplate template = NpcData.getInstance().getTemplate(data.getMinionId());
 			if (template == null)
 				continue;
@@ -64,56 +53,56 @@ public class MinionList
 				minion.setMaster(_master);
 				minion.setMinion(_master.isRaidBoss());
 				
-				initializeNpcInstance(_master, minion);
+				initializeMinion(_master, minion);
 			}
 		}
 	}
 	
 	/**
-	 * Called on the master death.
+	 * Called on the {@link Monster} master death.
 	 * <ul>
-	 * <li>In case of regular master monster : minions references are deleted, but monsters instances are kept alive (until they gonna be deleted if their interaction move to IDLE, or killed).</li>
-	 * <li>In case of raid bosses : all minions are instantly deleted.</li>
+	 * <li>In case of regular {@link Monster} master : minions references are deleted, but {@link Monster}s instances are kept alive (until they gonna be deleted if their interaction move to IDLE, or killed).</li>
+	 * <li>In case of raid bosses : all {@link Monster} minions are instantly deleted.</li>
 	 * </ul>
 	 */
 	public void onMasterDie()
 	{
 		if (_master.isRaidBoss())
 		{
-			// For all minions, delete them.
+			// For all spawned minions, delete them.
 			for (Monster minion : getSpawnedMinions())
 				minion.deleteMe();
 		}
 		else
 		{
 			// For all minions, remove leader reference.
-			for (Monster minion : _minions.keySet())
+			for (Monster minion : keySet())
 				minion.setMaster(null);
 		}
 		
 		// Cleanup the entire MinionList.
-		_minions.clear();
+		clear();
 	}
 	
 	/**
-	 * Called on master deletion.
+	 * Called on {@link Monster} master deletion.
 	 */
 	public void onMasterDeletion()
 	{
 		// For all minions, delete them and remove leader reference.
-		for (Monster minion : _minions.keySet())
+		for (Monster minion : keySet())
 		{
 			minion.setMaster(null);
 			minion.deleteMe();
 		}
 		
 		// Cleanup the entire MinionList.
-		_minions.clear();
+		clear();
 	}
 	
 	/**
-	 * Called on minion deletion, or on master death.
-	 * @param minion : The minion to make checks on.
+	 * Called on {@link Monster} minion deletion, or on {@link Monster} master death.
+	 * @param minion : The {@link Monster} minion to make checks on.
 	 */
 	public void onMinionDeletion(Monster minion)
 	{
@@ -121,17 +110,17 @@ public class MinionList
 		minion.setMaster(null);
 		
 		// Cleanup the map form this reference.
-		_minions.remove(minion);
+		remove(minion);
 	}
 	
 	/**
-	 * Called on minion death. Flag the {@link Monster} from the list of the spawned minions as unspawned.
-	 * @param minion : The minion to make checks on.
-	 * @param respawnTime : Respawn the Monster using this timer, but only if master is alive.
+	 * Called on {@link Monster} minion death. Flag the {@link Monster} from the list of the spawned minions as unspawned.
+	 * @param minion : The {@link Monster} minion to make checks on.
+	 * @param respawnTime : Respawn the {@link Monster} using this timer, but only if {@link Monster} master is alive.
 	 */
 	public void onMinionDie(Monster minion, int respawnTime)
 	{
-		_minions.put(minion, false);
+		put(minion, false);
 		
 		if (minion.isRaidRelated() && respawnTime > 0 && !_master.isAlikeDead())
 		{
@@ -140,22 +129,22 @@ public class MinionList
 				// Master is visible, but minion isn't spawned back (via teleport, for example).
 				if (!_master.isAlikeDead() && _master.isVisible())
 				{
-					final Boolean state = _minions.get(minion);
+					final Boolean state = get(minion);
 					if (state != null && !state)
 					{
 						minion.refreshID();
-						initializeNpcInstance(_master, minion);
+						
+						initializeMinion(_master, minion);
 					}
 				}
-			
 			}, respawnTime);
 		}
 	}
 	
 	/**
-	 * Called if master/minion was attacked. Master and all free minions receive aggro against attacker.
-	 * @param caller : That instance will call for help versus attacker.
-	 * @param attacker : That instance will receive all aggro.
+	 * Called when {@link Monster} master/minion is attacked. Master and its minions aggro the {@link Creature} attacker.
+	 * @param caller : The {@link Creature} calling for help.
+	 * @param attacker : The {@link Creature} who will be aggroed.
 	 */
 	public void onAssist(Creature caller, Creature attacker)
 	{
@@ -164,7 +153,7 @@ public class MinionList
 		
 		// The master is aggroed.
 		if (!_master.isAlikeDead() && !_master.isInCombat())
-			_master.addDamageHate(attacker, 0, 1);
+			_master.getAggroList().addDamageHate(attacker, 0, 1);
 		
 		final boolean callerIsMaster = (caller == _master);
 		
@@ -176,12 +165,12 @@ public class MinionList
 		for (Monster minion : getSpawnedMinions())
 		{
 			if (!minion.isDead() && (callerIsMaster || !minion.isInCombat()))
-				minion.addDamageHate(attacker, 0, aggro);
+				minion.getAggroList().addDamageHate(attacker, 0, aggro);
 		}
 	}
 	
 	/**
-	 * Teleport all minions back to master position.
+	 * Teleport all {@link Monster} minions back to {@link Monster} master position.
 	 */
 	public void onMasterTeleported()
 	{
@@ -190,40 +179,32 @@ public class MinionList
 			if (minion.isDead() || minion.isMovementDisabled())
 				continue;
 			
-			minion.teleToMaster();
+			minion.teleportToMaster();
 		}
 	}
 	
-	protected final Monster initializeNpcInstance(Monster master, Monster minion)
+	/**
+	 * Prepare a {@link Monster} minion and spawn it.
+	 * @param master : The {@link Monster} master.
+	 * @param minion : The {@link Monster} minion.
+	 */
+	private void initializeMinion(Monster master, Monster minion)
 	{
-		_minions.put(minion, true);
+		put(minion, true);
 		
 		minion.setNoRndWalk(true);
 		minion.stopAllEffects();
 		minion.setIsDead(false);
 		minion.setDecayed(false);
-		
-		// Set the Minion HP, MP.
 		minion.getStatus().setMaxHpMp();
 		
-		// Init the position of the Minion and add it in the world as a visible object
-		final int offset = (int) (100 + minion.getCollisionRadius() + master.getCollisionRadius());
-		final int minRadius = (int) (master.getCollisionRadius() + 30);
+		final int minOffset = (int) (master.getCollisionRadius() + 30);
+		final int maxOffset = (int) (100 + minion.getCollisionRadius() + master.getCollisionRadius());
 		
-		int newX = Rnd.get(minRadius * 2, offset * 2); // x
-		int newY = Rnd.get(newX, offset * 2); // distance
-		newY = (int) Math.sqrt(newY * newY - newX * newX); // y
-		if (newX > offset + minRadius)
-			newX = master.getX() + newX - offset;
-		else
-			newX = master.getX() - newX + minRadius;
-		if (newY > offset + minRadius)
-			newY = master.getY() + newY - offset;
-		else
-			newY = master.getY() - newY + minRadius;
+		final SpawnLocation spawnLoc = master.getPosition().clone();
+		spawnLoc.addRandomOffsetBetweenTwoValues(minOffset, maxOffset);
+		spawnLoc.set(GeoEngine.getInstance().getValidLocation(master, spawnLoc));
 		
-		minion.spawnMe(newX, newY, master.getZ(), master.getHeading());
-		
-		return minion;
+		minion.spawnMe(spawnLoc);
 	}
 }

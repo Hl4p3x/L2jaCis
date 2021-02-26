@@ -2,6 +2,7 @@ package net.sf.l2j.gameserver.model.actor.move;
 
 import java.awt.Color;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ScheduledFuture;
 
@@ -11,6 +12,7 @@ import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.actors.MoveType;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.geoengine.geodata.GeoStructure;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -121,10 +123,10 @@ public class CreatureMove<T extends Creature>
 	
 	/**
 	 * Move the {@link Creature} associated to this {@link CreatureMove} to defined {@link Location}.
-	 * @param dLoc : The {@link Location} used as original destination.
+	 * @param destination : The {@link Location} used as original destination.
 	 * @param pathfinding : If true, we try to setup a pathfind. If a pathfind occured, then the destination {@link Location} is the first pathfind segment.
 	 */
-	protected void moveToLocation(Location dLoc, boolean pathfinding)
+	protected void moveToLocation(Location destination, boolean pathfinding)
 	{
 		// Get the current position of the Creature.
 		final Location position = _actor.getPosition().clone();
@@ -136,19 +138,12 @@ public class CreatureMove<T extends Creature>
 		// Initialize variables.
 		_geoPath.clear();
 		
-		// Visual destination isn't the same than computed destination. Remove collision radius out of it.
-		final Location destination = new Location(position);
-		destination.setLocationMinusOffset(dLoc, _actor.getCollisionRadius());
-		
 		if (pathfinding)
 		{
 			// Calculate the path.
 			final Location loc = calculatePath(position.getX(), position.getY(), position.getZ(), destination.getX(), destination.getY(), destination.getZ());
 			if (loc != null)
-			{
 				destination.set(loc);
-				dLoc.set(loc);
-			}
 		}
 		
 		// Draw a debug of this movement if activated.
@@ -206,7 +201,7 @@ public class CreatureMove<T extends Creature>
 		registerMoveTask();
 		
 		// Broadcast MoveToLocation packet to known objects.
-		_actor.broadcastPacket(new MoveToLocation(_actor, dLoc));
+		_actor.broadcastPacket(new MoveToLocation(_actor, destination));
 	}
 	
 	public void registerMoveTask()
@@ -256,22 +251,15 @@ public class CreatureMove<T extends Creature>
 		if (destination == null)
 			return false;
 		
-		Location targetLoc = destination;
-		if (_geoPath.isEmpty())
-		{
-			targetLoc = _actor.getPosition().clone();
-			targetLoc.setLocationMinusOffset(destination, _actor.getCollisionRadius());
-		}
-		
 		// Set the current x/y.
 		_xAccurate = _actor.getX();
 		_yAccurate = _actor.getY();
 		
 		// Set the destination.
-		_destination.set(targetLoc);
+		_destination.set(destination);
 		
 		// Set the heading.
-		_actor.getPosition().setHeadingTo(targetLoc);
+		_actor.getPosition().setHeadingTo(destination);
 		
 		// Broadcast MoveToLocation packet to known objects.
 		_actor.broadcastPacket(new MoveToLocation(_actor, destination));
@@ -319,11 +307,6 @@ public class CreatureMove<T extends Creature>
 		final double leftDistance = (type == MoveType.GROUND) ? Math.sqrt(dx * dx + dy * dy) : Math.sqrt(dx * dx + dy * dy + dz * dz);
 		final double passedDistance = _actor.getStatus().getMoveSpeed() / 10;
 		
-		// Calculate the current distance fraction based on the delta.
-		double fraction = 1;
-		if (passedDistance < leftDistance)
-			fraction = passedDistance / leftDistance;
-		
 		// Calculate the maximum Z.
 		int maxZ = World.WORLD_Z_MAX;
 		if (type == MoveType.SWIM)
@@ -340,12 +323,16 @@ public class CreatureMove<T extends Creature>
 		// Set the position only
 		if (passedDistance < leftDistance)
 		{
+			// Calculate the current distance fraction based on the delta.
+			final double fraction = passedDistance / leftDistance;
+			
 			_xAccurate += dx * fraction;
 			_yAccurate += dy * fraction;
 			
+			// Note: Z coord shifted up to avoid dual-layer issues.
 			nextX = (int) _xAccurate;
 			nextY = (int) _yAccurate;
-			nextZ = Math.min((type == MoveType.GROUND) ? GeoEngine.getInstance().getHeight(nextX, nextY, curZ) : (curZ + (int) (dz * fraction + 0.5)), maxZ);
+			nextZ = Math.min((type == MoveType.GROUND) ? GeoEngine.getInstance().getHeight(nextX, nextY, curZ + 2 * GeoStructure.CELL_HEIGHT) : (curZ + (int) (dz * fraction + 0.5)), maxZ);
 		}
 		// Already there : set the position to the destination.
 		else
@@ -390,19 +377,10 @@ public class CreatureMove<T extends Creature>
 		
 		_actor.revalidateZone(false);
 		
-		if (isOnLastPawnMoveGeoPath())
-		{
-			final boolean stopMovementPrematurely = (type == MoveType.GROUND) ? _actor.isIn2DRadius(_pawn, _offset) : _actor.isIn3DRadius(_pawn, _offset);
-			if (stopMovementPrematurely)
-				return true;
-		}
+		if (isOnLastPawnMoveGeoPath() && ((type == MoveType.GROUND) ? _actor.isIn2DRadius(_pawn, _offset) : _actor.isIn3DRadius(_pawn, _offset)))
+			return true;
 		
 		return (passedDistance >= leftDistance);
-	}
-	
-	public boolean maybeMoveToPawn(WorldObject target, int offset, boolean isShiftPressed)
-	{
-		return false;
 	}
 	
 	public boolean maybeStartOffensiveFollow(Creature target, int weaponAttackRange)
@@ -410,54 +388,41 @@ public class CreatureMove<T extends Creature>
 		if (weaponAttackRange < 0)
 			return false;
 		
-		final int collisionOffset = (int) (_actor.getCollisionRadius() + target.getCollisionRadius());
-		if (!_actor.isIn2DRadius(target, weaponAttackRange + collisionOffset))
-		{
-			if (!_actor.isMovementDisabled())
-				startOffensiveFollow(target, weaponAttackRange);
-			
-			return true;
-		}
+		if (_actor.isIn2DRadius(target, (int) (weaponAttackRange + _actor.getCollisionRadius() + target.getCollisionRadius())))
+			return false;
 		
-		return false;
+		if (!_actor.isMovementDisabled())
+			startOffensiveFollow(target, weaponAttackRange);
+		
+		return true;
 	}
 	
 	public boolean maybeStartFriendlyFollow(Creature target, int range)
 	{
-		if (!_actor.isMovementDisabled())
-		{
-			startFriendlyFollow(target, range);
-			return true;
-		}
+		if (_actor.isMovementDisabled())
+			return false;
 		
-		return false;
+		startFriendlyFollow(target, range);
+		return true;
 	}
 	
 	// Used for:
 	// Players: Pickup (pathfinding = true), casting signets (pathfinding = false), regular movement
 	// Monsters: regular movement, NOT for combat
-	public boolean maybeMoveToLocation(Location target, int offset, boolean pathfinding, boolean isShiftPressed)
+	public boolean maybeMoveToLocation(Location destination, int offset, boolean pathfinding, boolean isShiftPressed)
 	{
-		Location targetLoc = target;
-		if (offset > 0)
-		{
-			targetLoc = _actor.getPosition().clone();
-			targetLoc.setLocationMinusOffset(target, offset);
-		}
+		if (_actor.isIn3DRadius(destination, offset))
+			return false;
 		
-		if (!_actor.isIn3DRadius(targetLoc, offset))
+		if (!_actor.isMovementDisabled() && !isShiftPressed)
 		{
-			if (!_actor.isMovementDisabled() && !isShiftPressed)
-			{
-				_pawn = null;
-				_offset = 0;
-				moveToLocation(targetLoc, pathfinding);
-			}
+			_pawn = null;
+			_offset = 0;
 			
-			return true;
+			moveToLocation(destination, pathfinding);
 		}
 		
-		return false;
+		return true;
 	}
 	
 	/**
@@ -515,8 +480,8 @@ public class CreatureMove<T extends Creature>
 		final ExServerPrimitive dummy = _isDebugPath ? new ExServerPrimitive() : null;
 		
 		// Calculate the path. If no path or too short, calculate the first valid location.
-		final LinkedList<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, _actor instanceof Playable, dummy);
-		if (path == null || path.size() < 2)
+		final List<Location> path = GeoEngine.getInstance().findPath(ox, oy, oz, tx, ty, tz, _actor instanceof Playable, dummy);
+		if (path.size() < 2)
 			return GeoEngine.getInstance().getValidLocation(ox, oy, oz, tx, ty, tz, null);
 		
 		// Draw a debug of this movement if activated.
@@ -542,11 +507,6 @@ public class CreatureMove<T extends Creature>
 		
 		// Retrieve first Location.
 		return _geoPath.poll();
-	}
-	
-	public boolean canfollow(Creature target)
-	{
-		return (_actor != target);
 	}
 	
 	/**
@@ -584,30 +544,33 @@ public class CreatureMove<T extends Creature>
 	
 	protected void offensiveFollowTask(Creature target, int offset)
 	{
+		// No follow task, return.
 		if (_followTask == null)
 			return;
 		
-		// Invalid pawn to follow, or the pawn isn't registered on knownlist.
+		// Pawn isn't registered on knownlist.
 		if (!_actor.knows(target))
 		{
 			_actor.getAI().tryToActive();
 			return;
 		}
 		
-		Location targetLoc = _actor.getPosition().clone();
-		targetLoc.setLocationMinusOffset(target.getPosition(), target.getStatus().getMoveSpeed() / -2);
+		final Location destination = target.getPosition().clone();
+		final int realOffset = (int) (offset + _actor.getCollisionRadius() + target.getCollisionRadius());
 		
 		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(targetLoc, offset) : _actor.isIn3DRadius(targetLoc, offset))
+		if ((getMoveType() == MoveType.GROUND) ? _actor.isIn2DRadius(destination, realOffset) : _actor.isIn3DRadius(destination, realOffset))
 			return;
 		
 		_pawn = target;
 		_offset = offset;
-		moveToLocation(targetLoc, true);
+		
+		moveToLocation(destination, true);
 	}
 	
 	protected void friendlyFollowTask(Creature target, int offset)
 	{
+		// No follow task, return.
 		if (_followTask == null)
 			return;
 		
@@ -618,16 +581,17 @@ public class CreatureMove<T extends Creature>
 			return;
 		}
 		
-		Location targetLoc = _actor.getPosition().clone();
-		targetLoc.setLocationMinusOffset(target.getPosition(), (int) (offset + target.getCollisionRadius() + _actor.getCollisionRadius()));
+		final Location destination = target.getPosition().clone();
+		final int realOffset = (int) (offset + _actor.getCollisionRadius() + target.getCollisionRadius());
 		
 		// Don't bother moving if already in radius.
-		if (getMoveType() == MoveType.GROUND ? _actor.isIn2DRadius(targetLoc, offset) : _actor.isIn3DRadius(targetLoc, offset))
+		if ((getMoveType() == MoveType.GROUND) ? _actor.isIn2DRadius(destination, realOffset) : _actor.isIn3DRadius(destination, realOffset))
 			return;
 		
 		_pawn = null;
 		_offset = 0;
-		moveToLocation(targetLoc, true);
+		
+		moveToLocation(destination, true);
 	}
 	
 	/**

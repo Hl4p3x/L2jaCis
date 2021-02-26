@@ -20,7 +20,7 @@ public final class SendWarehouseWithdrawList extends L2GameClientPacket
 {
 	private static final int BATCH_LENGTH = 8; // length of one item
 	
-	private IntIntHolder _items[] = null;
+	private IntIntHolder[] _items = null;
 	
 	@Override
 	protected void readImpl()

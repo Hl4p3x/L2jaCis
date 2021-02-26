@@ -6,17 +6,16 @@ import java.util.concurrent.ScheduledFuture;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ThreadPool;
 
-import net.sf.l2j.Config;
-import net.sf.l2j.gameserver.data.SkillTable.FrequentSkill;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.GaugeColor;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.items.WeaponType;
+import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.Stats;
 import net.sf.l2j.gameserver.geoengine.GeoEngine;
-import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.container.creature.ChanceSkillList;
@@ -25,11 +24,9 @@ import net.sf.l2j.gameserver.model.item.kind.Weapon;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.Attack;
-import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.SetupGauge;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.Formulas;
-import net.sf.l2j.gameserver.skills.L2Skill;
 
 /**
  * This class groups all attack data related to a {@link Creature}.
@@ -41,15 +38,13 @@ public class CreatureAttack<T extends Creature>
 	
 	protected final T _actor;
 	
-	protected volatile boolean _isAttackingNow;
-	protected volatile boolean _isBowCoolingDown;
+	private boolean _isAttackingNow;
+	private boolean _isBowCoolingDown;
+	private HitHolder[] _hitHolders;
+	private WeaponType _weaponType;
+	private int _afterAttackDelay;
 	
-	protected HitHolder[] _hitHolders;
-	protected WeaponType _weaponType;
-	protected int _afterAttackDelay;
-	protected boolean _isBow;
-	
-	protected ScheduledFuture<?> _attackTask;
+	private ScheduledFuture<?> _attackTask;
 	
 	public CreatureAttack(T actor)
 	{
@@ -98,9 +93,13 @@ public class CreatureAttack<T extends Creature>
 	 * <li>if attack isn't aborted and hit isn't missed, manage attack or cast break of the target (calculating rate, sending message...)</li>
 	 * </ul>
 	 */
-	private void onHitTimer()
+	private final void onHitTimer()
 	{
-		// Somethng happens to the target between the attacker attacking and the actual damage being dealt.
+		// Content was cleaned meantime, simply return doing nothing.
+		if (!isAttackingNow())
+			return;
+			
+		// Something happens to the target between the attacker attacking and the actual damage being dealt.
 		// There is no PEACE zone check here. If the attack starts outside and in the meantime the mainTarget walks into a PEACE zone, it gets hit.
 		final Creature mainTarget = _hitHolders[0]._target;
 		if (mainTarget.isDead() || !_actor.knows(mainTarget))
@@ -110,10 +109,19 @@ public class CreatureAttack<T extends Creature>
 		}
 		
 		final Player player = _actor.getActingPlayer();
-		if (player != null && player.getSummon() != mainTarget)
+		
+		// Player can't flag if attacking his Summon, and vice-versa.
+		if (player != null && player.getSummon() != mainTarget && !(player.getSummon() == _actor && mainTarget == player))
 			player.updatePvPStatus(mainTarget);
 		
 		_actor.rechargeShots(true, false);
+		
+		// Test curses. Prevents messing up drop calculation.
+		if (_actor instanceof Playable && mainTarget.isRaidRelated() && _actor.testCursesOnAttack((Npc) mainTarget))
+		{
+			stop();
+			return;
+		}
 		
 		switch (_weaponType)
 		{
@@ -122,9 +130,13 @@ public class CreatureAttack<T extends Creature>
 				
 				_attackTask = ThreadPool.schedule(() ->
 				{
+					// Content was cleaned meantime, simply return doing nothing.
+					if (!isAttackingNow())
+						return;
+					
 					doHit(_hitHolders[1]);
 					
-					_attackTask = ThreadPool.schedule(() -> onFinishedAttack(), _afterAttackDelay);
+					_attackTask = ThreadPool.schedule(this::onFinishedAttack, _afterAttackDelay);
 				}, _afterAttackDelay);
 				break;
 			
@@ -132,11 +144,13 @@ public class CreatureAttack<T extends Creature>
 				for (HitHolder hitHolder : _hitHolders)
 					doHit(hitHolder);
 				
-				_attackTask = ThreadPool.schedule(() -> onFinishedAttack(), _afterAttackDelay);
+				_attackTask = ThreadPool.schedule(this::onFinishedAttack, _afterAttackDelay);
 				break;
 			
 			case BOW:
 				doHit(_hitHolders[0]);
+				
+				_isBowCoolingDown = true;
 				
 				_attackTask = ThreadPool.schedule(() ->
 				{
@@ -151,7 +165,7 @@ public class CreatureAttack<T extends Creature>
 			default:
 				doHit(_hitHolders[0]);
 				
-				_attackTask = ThreadPool.schedule(() -> onFinishedAttack(), _afterAttackDelay);
+				_attackTask = ThreadPool.schedule(this::onFinishedAttack, _afterAttackDelay);
 				break;
 		}
 	}
@@ -187,20 +201,6 @@ public class CreatureAttack<T extends Creature>
 		
 		_actor.sendDamageMessage(target, hitHolder._damage, false, hitHolder._crit, hitHolder._miss);
 		
-		// Character will be petrified if attacking a raid related object that's more than 8 levels lower
-		if (!Config.RAID_DISABLE_CURSE && target.isRaidRelated() && _actor.getStatus().getLevel() > target.getStatus().getLevel() + 8)
-		{
-			final L2Skill skill = FrequentSkill.RAID_CURSE2.getSkill();
-			if (skill != null)
-			{
-				// Send visual and skill effects. Caster is the victim.
-				_actor.broadcastPacket(new MagicSkillUse(_actor, _actor, skill.getId(), skill.getLevel(), 300, 0));
-				skill.getEffects(_actor, _actor);
-			}
-			
-			hitHolder._damage = 0; // prevents messing up drop calculation
-		}
-		
 		if (!hitHolder._miss && hitHolder._damage > 0)
 		{
 			_actor.getAI().startAttackStance();
@@ -211,7 +211,7 @@ public class CreatureAttack<T extends Creature>
 			int reflectedDamage = 0;
 			
 			// Reflect damage system - do not reflect if weapon is a bow or target is invulnerable
-			if (!_isBow && !target.isInvul())
+			if (_weaponType != WeaponType.BOW && !target.isInvul())
 			{
 				// quick fix for no drop from raid if boss attack high-level char with damage reflection
 				if (!target.isRaidRelated() || _actor.getActingPlayer() == null || _actor.getActingPlayer().getStatus().getLevel() <= target.getStatus().getLevel() + 8)
@@ -236,7 +236,7 @@ public class CreatureAttack<T extends Creature>
 				_actor.reduceCurrentHp(reflectedDamage, target, true, false, null);
 			
 			// Calculate the absorbed HP percentage. Do not absorb if weapon is a bow.
-			if (!_isBow)
+			if (_weaponType != WeaponType.BOW)
 			{
 				final double absorbPercent = _actor.getStatus().calcStat(Stats.ABSORB_DAMAGE_PERCENT, 0, null, null);
 				if (absorbPercent > 0)
@@ -284,31 +284,34 @@ public class CreatureAttack<T extends Creature>
 		
 		_actor.getPosition().setHeadingTo(target);
 		
-		boolean isHit;
+		HitHolder[] hits;
 		
 		switch (_actor.getAttackType())
 		{
 			case BOW:
-				isHit = doAttackHitByBow(attack, target, timeAtk, weaponItem);
+				hits = doAttackHitByBow(attack, target, timeAtk, weaponItem);
 				break;
 			
 			case POLE:
-				isHit = doAttackHitByPole(attack, target, timeAtk / 2);
+				hits = doAttackHitByPole(attack, target, timeAtk / 2);
 				break;
 			
 			case DUAL:
 			case DUALFIST:
-				isHit = doAttackHitByDual(attack, target, timeAtk / 2);
+				hits = doAttackHitByDual(attack, target, timeAtk / 2);
 				break;
 			
 			case FIST:
-				isHit = (_actor.getSecondaryWeaponItem() instanceof Armor) ? doAttackHitSimple(attack, target, timeAtk / 2) : doAttackHitByDual(attack, target, timeAtk / 2);
+				hits = (_actor.getSecondaryWeaponItem() instanceof Armor) ? doAttackHitSimple(attack, target, timeAtk / 2) : doAttackHitByDual(attack, target, timeAtk / 2);
 				break;
 			
 			default:
-				isHit = doAttackHitSimple(attack, target, timeAtk / 2);
+				hits = doAttackHitSimple(attack, target, timeAtk / 2);
 				break;
 		}
+		
+		// Process attack, store result.
+		final boolean isHit = attack.processHits(hits);
 		
 		// Check if hit isn't missed ; if we didn't miss the hit, discharge the shoulshots, if any.
 		if (isHit)
@@ -321,251 +324,162 @@ public class CreatureAttack<T extends Creature>
 	}
 	
 	/**
-	 * Launch a Bow attack.<BR>
-	 * <BR>
-	 * <B><U> Actions</U> :</B>
-	 * <ul>
-	 * <li>Calculate if hit is missed or not</li>
-	 * <li>Consumme arrows</li>
-	 * <li>If hit isn't missed, calculate if shield defense is efficient</li>
-	 * <li>If hit isn't missed, calculate if hit is critical</li>
-	 * <li>If hit isn't missed, calculate physical damages</li>
-	 * <li>If the Creature is a Player, Send SetupGauge</li>
-	 * <li>Create a new hit task with Medium priority</li>
-	 * <li>Calculate and set the disable delay of the bow in function of the Attack Speed</li>
-	 * <li>Add this hit to the Server-Client packet Attack</li>
-	 * </ul>
-	 * @param attack Server->Client packet Attack in which the hit will be added
-	 * @param target The Creature targeted
-	 * @param sAtk The Attack Speed of the attacker
-	 * @param weapon The weapon, which is attacker using
-	 * @return True if the hit isn't missed
+	 * Launch a Bow attack.
+	 * @param attack : The {@link Attack} serverpacket in which {@link HitHolder}s will be added.
+	 * @param target : The targeted {@link Creature}.
+	 * @param sAtk : The Attack Speed of the attacker.
+	 * @param weapon : The {@link Weapon} used to retrieve the reuse delay.
+	 * @return An array of generated {@link HitHolder}s.
 	 */
-	private boolean doAttackHitByBow(Attack attack, Creature target, int sAtk, Weapon weapon)
+	private HitHolder[] doAttackHitByBow(Attack attack, Creature target, int sAtk, Weapon weapon)
 	{
-		int damage1 = 0;
-		byte shld1 = 0;
-		boolean crit1 = false;
-		
 		_actor.reduceArrowCount();
 		_actor.getStatus().reduceMp(_actor.getActiveWeaponItem().getMpConsume());
 		
-		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
-		if (!miss1)
+		final HitHolder[] hits = new HitHolder[]
 		{
-			shld1 = Formulas.calcShldUse(_actor, target, null);
-			crit1 = Formulas.calcCrit(_actor, target, null);
-			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
-		}
+			getHitHolder(attack, target, false)
+		};
 		
 		int reuse = weapon.getReuseDelay();
 		if (reuse != 0)
 			reuse = (reuse * 345) / _actor.getStatus().getPAtkSpd();
 		
-		setAttackTask(new HitHolder[]
-		{
-			new HitHolder(target, damage1, crit1, miss1, shld1)
-		}, WeaponType.BOW, reuse);
+		setAttackTask(hits, WeaponType.BOW, reuse);
 		
-		_attackTask = ThreadPool.schedule(() -> onHitTimer(), sAtk);
+		_attackTask = ThreadPool.schedule(this::onHitTimer, sAtk);
 		
 		if (_actor instanceof Player)
 		{
 			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.GETTING_READY_TO_SHOOT_AN_ARROW));
 			_actor.sendPacket(new SetupGauge(GaugeColor.RED, sAtk + reuse));
 		}
-		attack.hit(attack.createHit(target, damage1, miss1, crit1, shld1));
-		
-		return !miss1;
+		return hits;
 	}
 	
 	/**
-	 * Launch a Dual attack.<BR>
-	 * <BR>
-	 * <B><U> Actions</U> :</B>
-	 * <ul>
-	 * <li>Calculate if hits are missed or not</li>
-	 * <li>If hits aren't missed, calculate if shield defense is efficient</li>
-	 * <li>If hits aren't missed, calculate if hit is critical</li>
-	 * <li>If hits aren't missed, calculate physical damages</li>
-	 * <li>Create 2 new hit tasks with Medium priority</li>
-	 * <li>Add those hits to the Server-Client packet Attack</li>
-	 * </ul>
-	 * @param attack Server->Client packet Attack in which the hit will be added
-	 * @param target The Creature targeted
-	 * @param sAtk The Attack Speed of the attacker
-	 * @return True if hit 1 or hit 2 isn't missed
+	 * Launch a Dual wield attack.
+	 * @param attack : The {@link Attack} serverpacket in which {@link HitHolder}s will be added.
+	 * @param target : The targeted {@link Creature}.
+	 * @param sAtk : The Attack Speed of the attacker.
+	 * @return An array of generated {@link HitHolder}s.
 	 */
-	private boolean doAttackHitByDual(Attack attack, Creature target, int sAtk)
+	private HitHolder[] doAttackHitByDual(Attack attack, Creature target, int sAtk)
 	{
-		int damage1 = 0;
-		int damage2 = 0;
-		byte shld1 = 0;
-		byte shld2 = 0;
-		boolean crit1 = false;
-		boolean crit2 = false;
-		
-		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
-		if (!miss1)
+		final HitHolder[] hits = new HitHolder[]
 		{
-			shld1 = Formulas.calcShldUse(_actor, target, null);
-			crit1 = Formulas.calcCrit(_actor, target, null);
-			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
-			damage1 /= 2;
-		}
+			getHitHolder(attack, target, true),
+			getHitHolder(attack, target, true)
+		};
 		
-		final boolean miss2 = Formulas.calcHitMiss(_actor, target);
-		if (!miss2)
-		{
-			shld2 = Formulas.calcShldUse(_actor, target, null);
-			crit2 = Formulas.calcCrit(_actor, target, null);
-			damage2 = (int) Formulas.calcPhysDam(_actor, target, null, shld2, crit2, attack.soulshot);
-			damage2 /= 2;
-		}
+		setAttackTask(hits, WeaponType.DUAL, sAtk / 2);
 		
-		setAttackTask(new HitHolder[]
-		{
-			new HitHolder(target, damage1, crit1, miss1, shld1),
-			new HitHolder(target, damage2, crit2, miss2, shld2)
-		}, WeaponType.DUAL, sAtk / 2);
+		_attackTask = ThreadPool.schedule(this::onHitTimer, sAtk / 2);
 		
-		_attackTask = ThreadPool.schedule(() -> onHitTimer(), sAtk / 2);
-		
-		attack.hit(attack.createHit(target, damage1, miss1, crit1, shld1), attack.createHit(target, damage2, miss2, crit2, shld2));
-		
-		return (!miss1 || !miss2);
+		return hits;
 	}
 	
 	/**
-	 * Launch a Pole attack.<BR>
-	 * <B><U> Actions</U> :</B>
-	 * <ul>
-	 * <li>Get all visible objects in a spherical area near the Creature to obtain possible targets</li>
-	 * <li>If possible target is the Creature targeted, launch a simple attack against it</li>
-	 * <li>If possible target isn't the Creature targeted but is attackable, launch a simple attack against it</li>
-	 * </ul>
-	 * @param attack Server->Client packet Attack in which the hit will be added
-	 * @param target The Creature targeted
-	 * @param sAtk The Attack Speed of the attacker
-	 * @return True if one hit isn't missed
+	 * Launch a Pole attack.
+	 * @param attack : The {@link Attack} serverpacket in which {@link HitHolder}s will be added.
+	 * @param target : The targeted {@link Creature}.
+	 * @param sAtk : The Attack Speed of the attacker.
+	 * @return An array of generated {@link HitHolder}s.
 	 */
-	private boolean doAttackHitByPole(Attack attack, Creature target, int sAtk)
+	private HitHolder[] doAttackHitByPole(Attack attack, Creature target, int sAtk)
 	{
-		final int maxRadius = _actor.getStatus().getPhysicalAttackRange();
-		final int maxAngleDiff = (int) _actor.getStatus().calcStat(Stats.POWER_ATTACK_ANGLE, 120, null, null);
-		final boolean canHitPlayable = target instanceof Playable;
-		// Get the number of targets (-1 because the main target is already used)
-		final int attackRandomCountMax = (int) _actor.getStatus().calcStat(Stats.ATTACK_COUNT_MAX, 0, null, null) - 1;
 		final ArrayList<HitHolder> hitHolders = new ArrayList<>();
-		final HitHolder firstAttack = getHitHolder(attack, target);
+		hitHolders.add(getHitHolder(attack, target, false));
 		
-		hitHolders.add(firstAttack);
+		final int maxAttackedCount;
+		if (_actor.getFirstEffect(EffectType.POLEARM_TARGET_SINGLE) != null)
+			maxAttackedCount = 1;
+		else
+			maxAttackedCount = (int) _actor.getStatus().calcStat(Stats.ATTACK_COUNT_MAX, 0, null, null);
 		
-		boolean isHit = firstAttack._miss;
-		int attackcount = 0;
-		
-		for (final Creature obj : _actor.getKnownTypeInRadius(Creature.class, maxRadius))
+		if (maxAttackedCount > 1)
 		{
-			if (obj == target)
-				continue;
+			final int maxAngleDiff = (int) _actor.getStatus().calcStat(Stats.POWER_ATTACK_ANGLE, 120, null, null);
+			final boolean isMainTargetPlayable = target instanceof Playable;
 			
-			if (!_actor.isFacing(obj, maxAngleDiff))
-				continue;
+			int attackedCount = 1;
 			
-			if (_actor instanceof Playable && obj.isAttackableBy(_actor) && obj.isAttackableWithoutForceBy((Playable) _actor))
+			for (Creature knownCreature : _actor.getKnownTypeInRadius(Creature.class, _actor.getStatus().getPhysicalAttackRange()))
 			{
-				if (obj instanceof Playable && (obj.isInsideZone(ZoneId.PEACE) || !canHitPlayable))
+				if (knownCreature == target)
 					continue;
 				
-				attackcount++;
-				if (attackcount > attackRandomCountMax)
+				if (!_actor.isFacing(knownCreature, maxAngleDiff))
+					continue;
+				
+				if (!knownCreature.isAttackableBy(_actor))
+					continue;
+				
+				if (_actor instanceof Playable && knownCreature instanceof Playable && (knownCreature.isInsideZone(ZoneId.PEACE) || !isMainTargetPlayable || !knownCreature.isAttackableWithoutForceBy((Playable) _actor)))
+					continue;
+				
+				attackedCount++;
+				if (attackedCount > maxAttackedCount)
 					break;
 				
-				final HitHolder nextAttack = getHitHolder(attack, obj);
-				hitHolders.add(nextAttack);
-				
-				isHit |= nextAttack._miss;
-			}
-			
-			if (_actor instanceof Attackable && obj.isAttackableBy(_actor))
-			{
-				attackcount++;
-				if (attackcount > attackRandomCountMax)
-					break;
-				
-				final HitHolder nextAttack = getHitHolder(attack, obj);
-				hitHolders.add(nextAttack);
-				
-				isHit |= nextAttack._miss;
+				hitHolders.add(getHitHolder(attack, knownCreature, false));
 			}
 		}
 		
-		setAttackTask(hitHolders.toArray(new HitHolder[] {}), WeaponType.POLE, sAtk);
-		_attackTask = ThreadPool.schedule(() -> onHitTimer(), sAtk);
+		final HitHolder[] hits = hitHolders.toArray(new HitHolder[] {});
 		
-		for (HitHolder hitHolder : hitHolders)
-			attack.hit(attack.createHit(hitHolder._target, hitHolder._damage, hitHolder._miss, hitHolder._crit, hitHolder._shld));
+		setAttackTask(hits, WeaponType.POLE, sAtk);
 		
-		return isHit;
+		_attackTask = ThreadPool.schedule(this::onHitTimer, sAtk);
+		
+		return hits;
 	}
 	
 	/**
-	 * Launch a simple attack.<BR>
-	 * <BR>
-	 * <B><U> Actions</U> :</B>
-	 * <ul>
-	 * <li>Calculate if hit is missed or not</li>
-	 * <li>If hit isn't missed, calculate if shield defense is efficient</li>
-	 * <li>If hit isn't missed, calculate if hit is critical</li>
-	 * <li>If hit isn't missed, calculate physical damages</li>
-	 * <li>Create a new hit task with Medium priority</li>
-	 * <li>Add this hit to the Server-Client packet Attack</li>
-	 * </ul>
-	 * @param attack Server->Client packet Attack in which the hit will be added
-	 * @param target The Creature targeted
-	 * @param sAtk The Attack Speed of the attacker
-	 * @return True if the hit isn't missed
+	 * Launch a simple attack.
+	 * @param attack : The {@link Attack} serverpacket in which {@link HitHolder}s will be added.
+	 * @param target : The targeted {@link Creature}.
+	 * @param sAtk : The Attack Speed of the attacker.
+	 * @return An array of generated {@link HitHolder}s.
 	 */
-	private boolean doAttackHitSimple(Attack attack, Creature target, int sAtk)
+	private HitHolder[] doAttackHitSimple(Attack attack, Creature target, int sAtk)
 	{
-		int damage1 = 0;
-		byte shld1 = 0;
-		boolean crit1 = false;
-		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
-		if (!miss1)
+		final HitHolder[] hits = new HitHolder[]
 		{
-			shld1 = Formulas.calcShldUse(_actor, target, null);
-			crit1 = Formulas.calcCrit(_actor, target, null);
-			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
-		}
+			getHitHolder(attack, target, false)
+		};
 		
-		setAttackTask(new HitHolder[]
-		{
-			new HitHolder(target, damage1, crit1, miss1, shld1)
-		}, WeaponType.ETC, sAtk);
+		setAttackTask(hits, WeaponType.ETC, sAtk);
 		
-		_attackTask = ThreadPool.schedule(() -> onHitTimer(), sAtk);
+		_attackTask = ThreadPool.schedule(this::onHitTimer, sAtk);
 		
-		attack.hit(attack.createHit(target, damage1, miss1, crit1, shld1));
-		
-		return !miss1;
+		return hits;
 	}
 	
-	private HitHolder getHitHolder(Attack attack, Creature target)
+	/**
+	 * @param attack : The {@link Attack} serverpacket in which {@link HitHolder}s will be added.
+	 * @param target : The targeted {@link Creature}.
+	 * @param isSplit : If true, damages will be split in 2. Used for dual wield attacks.
+	 * @return a new {@link HitHolder} with generated damage, shield resistance, critical and miss informations.
+	 */
+	private HitHolder getHitHolder(Attack attack, Creature target, boolean isSplit)
 	{
-		int damage1 = 0;
-		byte shld1 = 0;
-		boolean crit1 = false;
+		int damage = 0;
+		byte shld = 0;
+		boolean crit = false;
 		
-		final boolean miss1 = Formulas.calcHitMiss(_actor, target);
-		if (!miss1)
+		final boolean miss = Formulas.calcHitMiss(_actor, target);
+		if (!miss)
 		{
-			shld1 = Formulas.calcShldUse(_actor, target, null);
-			crit1 = Formulas.calcCrit(_actor, target, null);
-			damage1 = (int) Formulas.calcPhysDam(_actor, target, null, shld1, crit1, attack.soulshot);
+			shld = Formulas.calcShldUse(_actor, target, null);
+			crit = Formulas.calcCrit(_actor, target, null);
+			damage = (int) Formulas.calcPhysDam(_actor, target, null, shld, crit, attack.soulshot);
+			
+			if (isSplit)
+				damage /= 2;
 		}
 		
-		return new HitHolder(target, damage1, crit1, miss1, shld1);
+		return new HitHolder(target, damage, crit, miss, shld);
 	}
 	
 	/**
@@ -573,13 +487,13 @@ public class CreatureAttack<T extends Creature>
 	 */
 	public final void stop()
 	{
-		clearAttackTask(true);
-		
 		if (_attackTask != null)
 		{
 			_attackTask.cancel(false);
 			_attackTask = null;
 		}
+		
+		clearAttackTask(true);
 		
 		_actor.getAI().tryToActive();
 		_actor.getAI().clientActionFailed();
@@ -590,7 +504,7 @@ public class CreatureAttack<T extends Creature>
 	 */
 	public void interrupt()
 	{
-		if (_isAttackingNow)
+		if (isAttackingNow())
 		{
 			stop();
 			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.ATTACK_FAILED));
@@ -599,37 +513,35 @@ public class CreatureAttack<T extends Creature>
 	
 	private void setAttackTask(HitHolder[] hitHolders, WeaponType weaponType, int afterAttackDelay)
 	{
+		_isAttackingNow = true;
+		_isBowCoolingDown = (weaponType == WeaponType.BOW);
 		_hitHolders = hitHolders;
 		_weaponType = weaponType;
 		_afterAttackDelay = afterAttackDelay;
-		_isAttackingNow = true;
-		_isBow = (weaponType == WeaponType.BOW);
-		_isBowCoolingDown = _isBow;
 	}
 	
 	private void clearAttackTask(boolean clearBowCooldown)
 	{
-		_hitHolders = null;
-		_weaponType = null;
-		_afterAttackDelay = 0;
 		_isAttackingNow = false;
-		_isBow = false;
 		
 		if (clearBowCooldown)
 			_isBowCoolingDown = false;
 	}
 	
-	static class HitHolder
+	public static class HitHolder
 	{
-		Creature _target;
-		int _damage;
-		boolean _crit;
-		boolean _miss;
-		byte _shld;
+		public Creature _target;
+		public int _targetId;
+		public int _damage;
+		public boolean _crit;
+		public boolean _miss;
+		public byte _shld;
+		public int _flags;
 		
 		public HitHolder(Creature target, int damage, boolean crit, boolean miss, byte shld)
 		{
 			_target = target;
+			_targetId = target.getObjectId();
 			_damage = damage;
 			_crit = crit;
 			_shld = shld;

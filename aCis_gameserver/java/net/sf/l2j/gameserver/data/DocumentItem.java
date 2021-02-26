@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.skills.conditions.Condition;
@@ -15,9 +15,6 @@ import net.sf.l2j.gameserver.skills.conditions.Condition;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-/**
- * @author mkizub, JIV
- */
 public final class DocumentItem extends DocumentBase
 {
 	public class NewItem
@@ -25,7 +22,7 @@ public final class DocumentItem extends DocumentBase
 		public int id;
 		public String type;
 		public String name;
-		public StatsSet set;
+		public StatSet set;
 		public int currentLevel;
 		public Item item;
 	}
@@ -39,7 +36,7 @@ public final class DocumentItem extends DocumentBase
 	}
 	
 	@Override
-	protected StatsSet getStatsSet()
+	protected StatSet getStatSet()
 	{
 		return _currentItem.set;
 	}
@@ -94,7 +91,7 @@ public final class DocumentItem extends DocumentBase
 		_currentItem.id = itemId;
 		_currentItem.name = itemName;
 		_currentItem.type = className;
-		_currentItem.set = new StatsSet();
+		_currentItem.set = new StatSet();
 		_currentItem.set.set("item_id", itemId);
 		_currentItem.set.set("name", itemName);
 		
@@ -148,7 +145,7 @@ public final class DocumentItem extends DocumentBase
 			return; // item is already created
 		try
 		{
-			Constructor<?> c = Class.forName("net.sf.l2j.gameserver.model.item.kind." + _currentItem.type).getConstructor(StatsSet.class);
+			Constructor<?> c = Class.forName("net.sf.l2j.gameserver.model.item.kind." + _currentItem.type).getConstructor(StatSet.class);
 			_currentItem.item = (Item) c.newInstance(_currentItem.set);
 		}
 		catch (Exception e)

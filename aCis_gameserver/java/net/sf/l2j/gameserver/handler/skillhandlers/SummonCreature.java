@@ -14,7 +14,7 @@ import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
-import net.sf.l2j.gameserver.model.location.Location;
+import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class SummonCreature implements ISkillHandler
@@ -68,11 +68,12 @@ public class SummonCreature implements ISkillHandler
 		pet.setTitle(player.getName());
 		pet.startFeed();
 		
-		final Location spawnLoc = activeChar.getPosition().clone();
-		spawnLoc.addStrictOffset(30);
-		spawnLoc.set(GeoEngine.getInstance().getValidLocation(activeChar.getPosition(), spawnLoc));
+		final SpawnLocation spawnLoc = activeChar.getPosition().clone();
+		spawnLoc.addStrictOffset(40);
+		spawnLoc.setHeadingTo(activeChar.getPosition());
+		spawnLoc.set(GeoEngine.getInstance().getValidLocation(activeChar, spawnLoc));
 		
-		pet.spawnMe(spawnLoc, activeChar.getHeading());
+		pet.spawnMe(spawnLoc);
 		pet.getAI().setFollowStatus(true);
 	}
 	

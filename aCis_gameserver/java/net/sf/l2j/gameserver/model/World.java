@@ -31,15 +31,15 @@ public final class World
 	// Map dimensions
 	public static final int TILE_SIZE = 32768;
 	public static final int WORLD_X_MIN = (TILE_X_MIN - 20) * TILE_SIZE;
-	public static final int WORLD_X_MAX = (TILE_X_MAX - 19) * TILE_SIZE;
+	public static final int WORLD_X_MAX = (TILE_X_MAX - 19) * TILE_SIZE - 1;
 	public static final int WORLD_Y_MIN = (TILE_Y_MIN - 18) * TILE_SIZE;
-	public static final int WORLD_Y_MAX = (TILE_Y_MAX - 17) * TILE_SIZE;
+	public static final int WORLD_Y_MAX = (TILE_Y_MAX - 17) * TILE_SIZE - 1;
 	public static final int WORLD_Z_MAX = 16410;
 	
 	// Regions and offsets
-	private static final int REGION_SIZE = 2048;
-	private static final int REGIONS_X = (WORLD_X_MAX - WORLD_X_MIN) / REGION_SIZE;
-	private static final int REGIONS_Y = (WORLD_Y_MAX - WORLD_Y_MIN) / REGION_SIZE;
+	public static final int REGION_SIZE = 2048;
+	public static final int REGIONS_X = (WORLD_X_MAX - WORLD_X_MIN + 1) / REGION_SIZE;
+	public static final int REGIONS_Y = (WORLD_Y_MAX - WORLD_Y_MIN + 1) / REGION_SIZE;
 	private static final int REGION_X_OFFSET = Math.abs(WORLD_X_MIN / REGION_SIZE);
 	private static final int REGION_Y_OFFSET = Math.abs(WORLD_Y_MIN / REGION_SIZE);
 	
@@ -47,26 +47,26 @@ public final class World
 	private final Map<Integer, Pet> _pets = new ConcurrentHashMap<>();
 	private final Map<Integer, Player> _players = new ConcurrentHashMap<>();
 	
-	private final WorldRegion[][] _worldRegions = new WorldRegion[REGIONS_X + 1][REGIONS_Y + 1];
+	private final WorldRegion[][] _worldRegions = new WorldRegion[REGIONS_X][REGIONS_Y];
 	
 	protected World()
 	{
-		for (int i = 0; i <= REGIONS_X; i++)
+		for (int x = 0; x < REGIONS_X; x++)
 		{
-			for (int j = 0; j <= REGIONS_Y; j++)
-				_worldRegions[i][j] = new WorldRegion(i, j);
+			for (int y = 0; y < REGIONS_Y; y++)
+				_worldRegions[x][y] = new WorldRegion(x, y);
 		}
 		
-		for (int x = 0; x <= REGIONS_X; x++)
+		for (int x = 0; x < REGIONS_X; x++)
 		{
-			for (int y = 0; y <= REGIONS_Y; y++)
+			for (int y = 0; y < REGIONS_Y; y++)
 			{
-				for (int a = -1; a <= 1; a++)
+				for (int ix = -1; ix <= 1; ix++)
 				{
-					for (int b = -1; b <= 1; b++)
+					for (int iy = -1; iy <= 1; iy++)
 					{
-						if (validRegion(x + a, y + b))
-							_worldRegions[x + a][y + b].addSurroundingRegion(_worldRegions[x][y]);
+						if (validRegion(x + ix, y + iy))
+							_worldRegions[x + ix][y + iy].addSurroundingRegion(_worldRegions[x][y]);
 					}
 				}
 			}
@@ -170,9 +170,9 @@ public final class World
 	 */
 	public WorldRegion getRegion(ZoneType zone)
 	{
-		for (int i = 0; i <= REGIONS_X; i++)
+		for (int i = 0; i < REGIONS_X; i++)
 		{
-			for (int j = 0; j <= REGIONS_Y; j++)
+			for (int j = 0; j < REGIONS_Y; j++)
 			{
 				final WorldRegion region = _worldRegions[i][j];
 				if (region.containsZone(zone.getId()))
@@ -197,7 +197,7 @@ public final class World
 	 */
 	private static boolean validRegion(int x, int y)
 	{
-		return (x >= 0 && x <= REGIONS_X && y >= 0 && y <= REGIONS_Y);
+		return (x >= 0 && x < REGIONS_X && y >= 0 && y < REGIONS_Y);
 	}
 	
 	/**
@@ -206,9 +206,9 @@ public final class World
 	public void deleteVisibleNpcSpawns()
 	{
 		LOGGER.info("Deleting all visible NPCs.");
-		for (int i = 0; i <= REGIONS_X; i++)
+		for (int i = 0; i < REGIONS_X; i++)
 		{
-			for (int j = 0; j <= REGIONS_Y; j++)
+			for (int j = 0; j < REGIONS_Y; j++)
 			{
 				for (WorldObject obj : _worldRegions[i][j].getObjects())
 				{
@@ -250,6 +250,30 @@ public final class World
 	public static void announceToOnlinePlayers(String text, boolean critical)
 	{
 		toAllOnlinePlayers(new CreatureSay((critical) ? SayType.CRITICAL_ANNOUNCE : SayType.ANNOUNCEMENT, null, text));
+	}
+	
+	/**
+	 * Verify if a x/y coordinate is out of {@link World} valid coordinates.
+	 * @param x : The X coordinate to test.
+	 * @param y : The Y coordinate to test.
+	 * @return True if the tested x/y coordinates are out of {@link World} valid coordinates, false otherwise.
+	 */
+	public static boolean isOutOfWorld(int x, int y)
+	{
+		return isOutOfWorld(x, x, y, y);
+	}
+	
+	/**
+	 * Verify if tested coordinates are out of {@link World} valid coordinates.
+	 * @param minX : The minimum X coordinate to test.
+	 * @param maxX : The maximum X coordinate to test.
+	 * @param minY : The minimum Y coordinate to test.
+	 * @param maxY : The maximum Y coordinate to test.
+	 * @return True if the tested coordinates are out of {@link World} valid coordinates, false otherwise.
+	 */
+	public static boolean isOutOfWorld(int minX, int maxX, int minY, int maxY)
+	{
+		return minX < WORLD_X_MIN || maxX > WORLD_X_MAX || minY < WORLD_Y_MIN || maxY > WORLD_Y_MAX;
 	}
 	
 	public static World getInstance()

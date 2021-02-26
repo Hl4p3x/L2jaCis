@@ -9,17 +9,15 @@ import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 public final class AttackRequest extends L2GameClientPacket
 {
 	private int _objectId;
-	@SuppressWarnings("unused")
-	private int _originX, _originY, _originZ;
 	private boolean _isShiftAction;
 	
 	@Override
 	protected void readImpl()
 	{
 		_objectId = readD();
-		_originX = readD();
-		_originY = readD();
-		_originZ = readD();
+		readD(); // originX
+		readD(); // originY
+		readD(); // originZ
 		_isShiftAction = readC() != 0;
 	}
 	

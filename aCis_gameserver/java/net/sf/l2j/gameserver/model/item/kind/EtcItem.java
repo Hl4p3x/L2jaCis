@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.item.kind;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.EtcItemType;
 import net.sf.l2j.gameserver.model.itemcontainer.PcInventory;
@@ -15,7 +15,7 @@ public final class EtcItem extends Item
 	private EtcItemType _type;
 	private final int _reuseDelay;
 	
-	public EtcItem(StatsSet set)
+	public EtcItem(StatSet set)
 	{
 		super(set);
 		
@@ -27,10 +27,8 @@ public final class EtcItem extends Item
 			case summon_soulshot:
 			case summon_spiritshot:
 			case spiritshot:
-			{
 				_type = EtcItemType.SHOT;
 				break;
-			}
 		}
 		
 		_type1 = Item.TYPE1_ITEM_QUESTITEM_ADENA;

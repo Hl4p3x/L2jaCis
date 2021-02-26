@@ -3,9 +3,10 @@ package net.sf.l2j.gameserver.handler.targethandlers;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.handler.ITargetHandler;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.instance.Pet;
 import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public class TargetCorpsePet implements ITargetHandler
@@ -19,53 +20,32 @@ public class TargetCorpsePet implements ITargetHandler
 	@Override
 	public Creature[] getTargetList(Creature caster, Creature target, L2Skill skill)
 	{
-		if (target != null && target.isDead())
+		return new Creature[]
 		{
-			final Pet targetPet;
-			if (target instanceof Pet)
-				targetPet = (Pet) target;
-			else
-				targetPet = null;
-			
-			boolean condGood = true;
-			final Player player = (Player) caster;
-			if (targetPet != null)
-			{
-				if (targetPet.getOwner() != player)
-				{
-					if (targetPet.getOwner().isReviveRequested())
-					{
-						if (targetPet.getOwner().isRevivingPet())
-							player.sendPacket(SystemMessageId.RES_HAS_ALREADY_BEEN_PROPOSED);
-						else
-							player.sendPacket(SystemMessageId.CANNOT_RES_PET2);
-						
-						condGood = false;
-					}
-				}
-			}
-			
-			if (condGood)
-				return new Creature[]
-				{
-					target
-				};
-			
-		}
-		
-		return EMPTY_TARGET_ARRAY;
+			target
+		};
 	}
 	
 	@Override
 	public Creature getFinalTarget(Creature caster, Creature target, L2Skill skill)
 	{
-		if (!(caster instanceof Player))
-			return null;
+		return target;
+	}
+	
+	@Override
+	public boolean meetCastConditions(Playable caster, Creature target, L2Skill skill, boolean isCtrlPressed)
+	{
+		if (!target.isDead())
+		{
+			caster.sendPacket(SystemMessageId.INVALID_TARGET);
+			return false;
+		}
 		
-		final Creature summon = caster.getSummon();
-		if (summon == null || !summon.isDead())
-			return null;
-		
-		return summon;
+		if (!(target instanceof Pet))
+		{
+			caster.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
+			return false;
+		}
+		return true;
 	}
 }

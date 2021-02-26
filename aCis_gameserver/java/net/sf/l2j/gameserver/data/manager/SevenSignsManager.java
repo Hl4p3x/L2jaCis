@@ -8,10 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.pool.ThreadPool;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.SkillTable;
@@ -87,7 +87,7 @@ public class SevenSignsManager
 	protected int _duskFestivalScore;
 	protected CabalType _previousWinner;
 	
-	private final Map<Integer, StatsSet> _playersData = new HashMap<>();
+	private final Map<Integer, StatSet> _playersData = new HashMap<>();
 	private final Map<SealType, CabalType> _sealOwners = new HashMap<>();
 	private final Map<SealType, Integer> _duskScores = new HashMap<>();
 	private final Map<SealType, Integer> _dawnScores = new HashMap<>();
@@ -501,7 +501,7 @@ public class SevenSignsManager
 	{
 		int cabalMembers = 0;
 		
-		for (StatsSet set : _playersData.values())
+		for (StatSet set : _playersData.values())
 			if (set.getEnum("cabal", CabalType.class) == cabal)
 				cabalMembers++;
 			
@@ -510,7 +510,7 @@ public class SevenSignsManager
 	
 	public int getPlayerStoneContrib(int objectId)
 	{
-		final StatsSet set = _playersData.get(objectId);
+		final StatSet set = _playersData.get(objectId);
 		if (set == null)
 			return 0;
 		
@@ -519,7 +519,7 @@ public class SevenSignsManager
 	
 	public int getPlayerContribScore(int objectId)
 	{
-		final StatsSet set = _playersData.get(objectId);
+		final StatSet set = _playersData.get(objectId);
 		if (set == null)
 			return 0;
 		
@@ -528,7 +528,7 @@ public class SevenSignsManager
 	
 	public int getPlayerAdenaCollect(int objectId)
 	{
-		final StatsSet set = _playersData.get(objectId);
+		final StatSet set = _playersData.get(objectId);
 		if (set == null)
 			return 0;
 		
@@ -537,7 +537,7 @@ public class SevenSignsManager
 	
 	public SealType getPlayerSeal(int objectId)
 	{
-		final StatsSet set = _playersData.get(objectId);
+		final StatSet set = _playersData.get(objectId);
 		if (set == null)
 			return SealType.NONE;
 		
@@ -546,7 +546,7 @@ public class SevenSignsManager
 	
 	public CabalType getPlayerCabal(int objectId)
 	{
-		final StatsSet set = _playersData.get(objectId);
+		final StatSet set = _playersData.get(objectId);
 		if (set == null)
 			return CabalType.NORMAL;
 		
@@ -567,7 +567,7 @@ public class SevenSignsManager
 				{
 					final int objectId = rs.getInt("char_obj_id");
 					
-					final StatsSet set = new StatsSet();
+					final StatSet set = new StatSet();
 					set.set("char_obj_id", objectId);
 					set.set("cabal", Enum.valueOf(CabalType.class, rs.getString("cabal")));
 					set.set("seal", Enum.valueOf(SealType.class, rs.getString("seal")));
@@ -626,7 +626,7 @@ public class SevenSignsManager
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_PLAYER))
 		{
-			for (StatsSet set : _playersData.values())
+			for (StatSet set : _playersData.values())
 			{
 				ps.setString(1, set.getString("cabal"));
 				ps.setString(2, set.getString("seal"));
@@ -688,7 +688,7 @@ public class SevenSignsManager
 	 */
 	protected void resetPlayerData()
 	{
-		for (StatsSet set : _playersData.values())
+		for (StatSet set : _playersData.values())
 		{
 			set.set("cabal", CabalType.NORMAL);
 			set.set("seal", SealType.NONE);
@@ -706,7 +706,7 @@ public class SevenSignsManager
 	 */
 	public CabalType setPlayerInfo(int objectId, CabalType cabal, SealType seal)
 	{
-		StatsSet set = _playersData.get(objectId);
+		StatSet set = _playersData.get(objectId);
 		if (set != null)
 		{
 			set.set("cabal", cabal);
@@ -714,7 +714,7 @@ public class SevenSignsManager
 		}
 		else
 		{
-			set = new StatsSet();
+			set = new StatSet();
 			set.set("char_obj_id", objectId);
 			set.set("cabal", cabal);
 			set.set("seal", seal);
@@ -756,7 +756,7 @@ public class SevenSignsManager
 	 */
 	public int getAncientAdenaReward(int objectId)
 	{
-		StatsSet set = _playersData.get(objectId);
+		StatSet set = _playersData.get(objectId);
 		int rewardAmount = set.getInteger("ancient_adena_amount");
 		
 		set.set("red_stones", 0);
@@ -778,7 +778,7 @@ public class SevenSignsManager
 	 */
 	public int addPlayerStoneContrib(int objectId, int blueCount, int greenCount, int redCount)
 	{
-		StatsSet set = _playersData.get(objectId);
+		StatSet set = _playersData.get(objectId);
 		
 		int contribScore = calcScore(blueCount, greenCount, redCount);
 		int totalAncientAdena = set.getInteger("ancient_adena_amount") + contribScore;
@@ -994,7 +994,7 @@ public class SevenSignsManager
 			if (player.isGM() || !player.isIn7sDungeon())
 				continue;
 			
-			final StatsSet set = _playersData.get(player.getObjectId());
+			final StatSet set = _playersData.get(player.getObjectId());
 			if (set != null)
 			{
 				final CabalType playerCabal = set.getEnum("cabal", CabalType.class);

@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.model.location;
 
 import java.util.Calendar;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.data.manager.SevenSignsManager;
 import net.sf.l2j.gameserver.enums.SealType;
@@ -21,7 +21,7 @@ public class Teleport extends Location
 	private final int _priceCount;
 	private final int _castleId;
 	
-	public Teleport(StatsSet set)
+	public Teleport(StatSet set)
 	{
 		super(set.getInteger("x"), set.getInteger("y"), set.getInteger("z"));
 		

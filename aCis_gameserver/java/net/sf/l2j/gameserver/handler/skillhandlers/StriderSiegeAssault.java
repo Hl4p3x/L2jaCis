@@ -37,17 +37,9 @@ public class StriderSiegeAssault implements ISkillHandler
 			return;
 		
 		final boolean crit = Formulas.calcCrit(activeChar, door, skill);
-		
-		int damage = 0;
-		if (!crit && (skill.getCondition() & L2Skill.COND_CRIT) != 0)
-			damage = 0;
-		else
-		{
-			final boolean ss = activeChar.isChargedShot(ShotType.SOULSHOT);
-			final byte shld = Formulas.calcShldUse(activeChar, door, skill);
-			
-			damage = (int) Formulas.calcPhysDam(activeChar, door, skill, shld, crit, ss);
-		}
+		final boolean ss = activeChar.isChargedShot(ShotType.SOULSHOT);
+		final byte shld = Formulas.calcShldUse(activeChar, door, skill);
+		final int damage = (int) Formulas.calcPhysDam(activeChar, door, skill, shld, crit, ss);
 		
 		if (damage > 0)
 		{

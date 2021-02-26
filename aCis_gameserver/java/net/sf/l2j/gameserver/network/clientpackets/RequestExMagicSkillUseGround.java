@@ -1,8 +1,8 @@
 package net.sf.l2j.gameserver.network.clientpackets;
 
+import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.location.Location;
-import net.sf.l2j.gameserver.network.serverpackets.ValidateLocation;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 public final class RequestExMagicSkillUseGround extends L2GameClientPacket
@@ -32,21 +32,15 @@ public final class RequestExMagicSkillUseGround extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		// Get the current player
 		final Player player = getClient().getPlayer();
 		if (player == null)
 			return;
 		
-		// Get the L2Skill template corresponding to the skillID received from the client
 		final L2Skill skill = player.getSkill(_skillId);
-		if (skill == null)
+		if (skill == null || skill.getTargetType() != SkillTargetType.GROUND)
 			return;
 		
-		player.setCurrentSkillWorldPosition(new Location(_x, _y, _z));
-		
-		// normally magicskilluse packet turns char client side but for these skills, it doesn't (even with correct target)
-		player.getPosition().setHeadingTo(_x, _y);
-		player.broadcastPacket(new ValidateLocation(player));
+		player.getCast().getSignetLocation().set(_x, _y, GeoEngine.getInstance().getHeight(_x, _y, _z));
 		
 		player.getAI().tryToCast(player, skill, _ctrlPressed, _shiftPressed, 0);
 	}

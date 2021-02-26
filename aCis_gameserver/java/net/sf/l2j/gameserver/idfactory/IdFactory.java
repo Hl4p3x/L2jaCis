@@ -262,9 +262,17 @@ public class IdFactory
 				cleanCount += stmt.executeUpdate("DELETE FROM items WHERE items.owner_id NOT IN (SELECT obj_Id FROM characters) AND items.owner_id NOT IN (SELECT clan_id FROM clan_data);");
 				
 				// Forum related
-				cleanCount += stmt.executeUpdate("DELETE FROM forums WHERE forums.forum_owner_id NOT IN (SELECT clan_id FROM clan_data) AND forums.forum_parent=2;");
-				cleanCount += stmt.executeUpdate("DELETE FROM topic WHERE topic.topic_forum_id NOT IN (SELECT forum_id FROM forums);");
-				cleanCount += stmt.executeUpdate("DELETE FROM posts WHERE posts.post_forum_id NOT IN (SELECT forum_id FROM forums);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_forum WHERE bbs_forum.type='CLAN' AND bbs_forum.owner_id NOT IN (SELECT clan_id FROM clan_data);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_forum WHERE bbs_forum.type='MEMO' AND bbs_forum.owner_id NOT IN (SELECT obj_Id FROM characters);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_topic WHERE bbs_topic.forum_id NOT IN (SELECT id FROM bbs_forum);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_post WHERE bbs_post.forum_id NOT IN (SELECT id FROM bbs_forum);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_post WHERE bbs_post.topic_id NOT IN (SELECT id FROM bbs_topic);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_favorite WHERE bbs_favorite.player_id NOT IN (SELECT obj_Id FROM characters);");
+				cleanCount += stmt.executeUpdate("DELETE FROM bbs_mail WHERE bbs_mail.receiver_id NOT IN (SELECT obj_Id FROM characters);");
+				
+				// Petition
+				cleanCount += stmt.executeUpdate("DELETE FROM petition WHERE petition.petitioner_oid NOT IN (SELECT obj_Id FROM characters);");
+				cleanCount += stmt.executeUpdate("DELETE FROM petition_message WHERE petition_message.petition_oid NOT IN (SELECT oid FROM petition);");
 				
 				stmt.executeUpdate("UPDATE clan_data SET auction_bid_at = 0 WHERE auction_bid_at NOT IN (SELECT clanhall_id FROM auctions);");
 				stmt.executeUpdate("UPDATE clan_data SET new_leader_id = 0 WHERE new_leader_id NOT IN (SELECT obj_Id FROM characters);");

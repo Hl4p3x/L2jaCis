@@ -1,7 +1,7 @@
 package net.sf.l2j.gameserver.skills;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 public final class ChanceCondition
 {
@@ -23,7 +23,7 @@ public final class ChanceCondition
 	public static final int EVT_ON_ACTION_TIME = 32768;
 	public static final int EVT_ON_EXIT = 65536;
 	
-	public static enum TriggerType
+	public enum TriggerType
 	{
 		// You hit an enemy
 		ON_HIT(1),
@@ -82,7 +82,7 @@ public final class ChanceCondition
 		_chance = chance;
 	}
 	
-	public static ChanceCondition parse(StatsSet set)
+	public static ChanceCondition parse(StatSet set)
 	{
 		final TriggerType trigger = set.getEnum("chanceType", TriggerType.class, null);
 		final int chance = set.getInteger("activationChance", -1);

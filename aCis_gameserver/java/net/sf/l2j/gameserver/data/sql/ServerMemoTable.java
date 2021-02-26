@@ -4,90 +4,71 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+import net.sf.l2j.commons.data.MemoSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 
-import net.sf.l2j.gameserver.model.memo.AbstractMemo;
-
 /**
- * A global, server-size, container for variables of any type, which can be then saved/restored upon server restart. It extends {@link AbstractMemo}.
+ * A global, server-size, container for variables of any type, which can be then saved/restored upon server restart. It extends {@link MemoSet}.
  */
-@SuppressWarnings("serial")
-public class ServerMemoTable extends AbstractMemo
+public class ServerMemoTable extends MemoSet
 {
+	private static final long serialVersionUID = 1L;
+	
 	private static final CLogger LOGGER = new CLogger(ServerMemoTable.class.getName());
 	
-	private static final String SELECT_QUERY = "SELECT * FROM server_memo";
-	private static final String DELETE_QUERY = "DELETE FROM server_memo";
-	private static final String INSERT_QUERY = "INSERT INTO server_memo (var, value) VALUES (?, ?)";
+	private static final String SELECT_MEMOS = "SELECT * FROM server_memo";
+	private static final String DELETE_MEMO = "DELETE FROM server_memo WHERE var = ?";
+	private static final String INSERT_OR_UPDATE_MEMO = "INSERT INTO server_memo (var, value) VALUES (?, ?) ON DUPLICATE KEY UPDATE value = VALUES(value)";
 	
 	protected ServerMemoTable()
 	{
-		restoreMe();
-	}
-	
-	@Override
-	public boolean restoreMe()
-	{
 		// Restore previous variables.
 		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(SELECT_QUERY);
+			PreparedStatement ps = con.prepareStatement(SELECT_MEMOS);
 			ResultSet rs = ps.executeQuery())
 		{
 			while (rs.next())
-				set(rs.getString("var"), rs.getString("value"));
+				put(rs.getString("var"), rs.getString("value"));
 		}
 		catch (Exception e)
 		{
 			LOGGER.error("Couldn't restore server variables.", e);
-			return false;
-		}
-		finally
-		{
-			compareAndSetChanges(true, false);
 		}
 		LOGGER.info("Loaded {} server variables.", size());
-		return true;
 	}
 	
 	@Override
-	public boolean storeMe()
+	protected void onSet(String key, String value)
 	{
-		// No changes, nothing to store.
-		if (!hasChanges())
-			return false;
-		
-		try (Connection con = ConnectionPool.getConnection())
+		// Insert memo, on duplicate update it.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(INSERT_OR_UPDATE_MEMO))
 		{
-			// Clear previous entries.
-			try (PreparedStatement ps = con.prepareStatement(DELETE_QUERY))
-			{
-				ps.executeUpdate();
-			}
-			
-			// Insert all variables.
-			try (PreparedStatement ps = con.prepareStatement(INSERT_QUERY))
-			{
-				for (Entry<String, Object> entry : entrySet())
-				{
-					ps.setString(1, entry.getKey());
-					ps.setString(2, String.valueOf(entry.getValue()));
-					ps.addBatch();
-				}
-				ps.executeBatch();
-			}
+			ps.setString(1, key);
+			ps.setString(2, value);
+			ps.execute();
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Couldn't save server variables to database.", e);
-			return false;
+			LOGGER.error("Couldn't set {} server memo.", e, key);
 		}
-		finally
+	}
+	
+	@Override
+	protected void onUnset(String key)
+	{
+		// Clear memo.
+		try (Connection con = ConnectionPool.getConnection();
+			PreparedStatement ps = con.prepareStatement(DELETE_MEMO))
 		{
-			compareAndSetChanges(true, false);
+			ps.setString(1, key);
+			ps.execute();
 		}
-		LOGGER.info("Stored {} server variables.", size());
-		return true;
+		catch (Exception e)
+		{
+			LOGGER.error("Couldn't unset {} server memo.", e, key);
+		}
 	}
 	
 	public static final ServerMemoTable getInstance()

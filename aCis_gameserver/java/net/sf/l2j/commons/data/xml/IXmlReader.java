@@ -20,8 +20,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.holder.IntIntHolder;
 import net.sf.l2j.gameserver.model.location.Location;
@@ -304,10 +304,10 @@ public interface IXmlReader
 		return parseEnum(attrs.getNamedItem(name), clazz, defaultValue);
 	}
 	
-	default StatsSet parseAttributes(Node node)
+	default StatSet parseAttributes(Node node)
 	{
 		final NamedNodeMap attrs = node.getAttributes();
-		final StatsSet map = new StatsSet();
+		final StatSet map = new StatSet();
 		for (int i = 0; i < attrs.getLength(); i++)
 		{
 			final Node att = attrs.item(i);
@@ -316,7 +316,7 @@ public interface IXmlReader
 		return map;
 	}
 	
-	default void addAttributes(StatsSet set, NamedNodeMap attrs)
+	default void addAttributes(StatSet set, NamedNodeMap attrs)
 	{
 		for (int i = 0; i < attrs.getLength(); i++)
 		{
@@ -334,20 +334,16 @@ public interface IXmlReader
 			switch (parameters_node.getNodeName().toLowerCase())
 			{
 				case "param":
-				{
 					parameters.put(parseString(attrs, "name"), parseString(attrs, "value"));
 					break;
-				}
+					
 				case "skill":
-				{
 					parameters.put(parseString(attrs, "name"), new IntIntHolder(parseInteger(attrs, "id"), parseInteger(attrs, "level")));
 					break;
-				}
+					
 				case "location":
-				{
 					parameters.put(parseString(attrs, "name"), new SpawnLocation(parseInteger(attrs, "x"), parseInteger(attrs, "y"), parseInteger(attrs, "z"), parseInteger(attrs, "heading", 0)));
 					break;
-				}
 			}
 		}
 		return parameters;

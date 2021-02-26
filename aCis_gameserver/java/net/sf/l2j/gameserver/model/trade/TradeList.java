@@ -9,6 +9,7 @@ import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.enums.StatusType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.WorldObject;
+import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
@@ -18,10 +19,11 @@ import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
-public class TradeList
+public class TradeList extends CopyOnWriteArrayList<TradeItem>
 {
+	private static final long serialVersionUID = 1L;
+	
 	private final Player _owner;
-	private final List<TradeItem> _items = new CopyOnWriteArrayList<>();
 	
 	private Player _partner;
 	private String _title;
@@ -35,14 +37,15 @@ public class TradeList
 		_owner = owner;
 	}
 	
+	@Override
+	public String toString()
+	{
+		return "TradeList [_owner=" + _owner + ", _partner=" + _partner + ", _title=" + _title + ", _packaged=" + _packaged + ", _confirmed=" + _confirmed + ", _locked=" + _locked + "]";
+	}
+	
 	public Player getOwner()
 	{
 		return _owner;
-	}
-	
-	public void setPartner(Player partner)
-	{
-		_partner = partner;
 	}
 	
 	public Player getPartner()
@@ -50,9 +53,9 @@ public class TradeList
 		return _partner;
 	}
 	
-	public void setTitle(String title)
+	public void setPartner(Player partner)
 	{
-		_title = title;
+		_partner = partner;
 	}
 	
 	public String getTitle()
@@ -60,14 +63,9 @@ public class TradeList
 		return _title;
 	}
 	
-	public boolean isLocked()
+	public void setTitle(String title)
 	{
-		return _locked;
-	}
-	
-	public boolean isConfirmed()
-	{
-		return _confirmed;
+		_title = title;
 	}
 	
 	public boolean isPackaged()
@@ -80,49 +78,44 @@ public class TradeList
 		_packaged = value;
 	}
 	
-	/**
-	 * Retrieves items from TradeList
-	 * @return an array consisting of items.
-	 */
-	public List<TradeItem> getItems()
+	public boolean isConfirmed()
 	{
-		return _items;
+		return _confirmed;
+	}
+	
+	public boolean isLocked()
+	{
+		return _locked;
 	}
 	
 	/**
-	 * Returns the list of items in inventory available for transaction
-	 * @param inventory The inventory to make checks on.
-	 * @return ItemInstance : items in inventory
+	 * @param inventory : The {@link PcInventory} to test.
+	 * @return A cloned {@link List} of this {@link TradeList} adjusted to {@link PcInventory} available items.
 	 */
 	public List<TradeItem> getAvailableItems(PcInventory inventory)
 	{
-		List<TradeItem> list = new ArrayList<>();
-		for (TradeItem item : _items)
-		{
-			item = new TradeItem(item, item.getCount(), item.getPrice());
-			inventory.adjustAvailableItem(item);
-			list.add(item);
-		}
+		final List<TradeItem> list = new ArrayList<>(this);
+		list.forEach(ti -> inventory.adjustAvailableItem(ti));
 		return list;
 	}
 	
 	/**
-	 * Adjust available item from Inventory by the one in this list
-	 * @param item : ItemInstance to be adjusted
-	 * @return TradeItem representing adjusted item
+	 * Create a {@link TradeItem} based on an existing {@link ItemInstance}.
+	 * @param item : The {@link ItemInstance} to test.
+	 * @return A {@link TradeItem} based on {@link ItemInstance}.
 	 */
 	public TradeItem adjustAvailableItem(ItemInstance item)
 	{
 		if (item.isStackable())
 		{
-			for (TradeItem exclItem : _items)
+			for (TradeItem tradeItem : this)
 			{
-				if (exclItem.getItem().getItemId() == item.getItemId())
+				if (tradeItem.getItem().getItemId() == item.getItemId())
 				{
-					if (item.getCount() <= exclItem.getCount())
+					if (item.getCount() <= tradeItem.getCount())
 						return null;
 					
-					return new TradeItem(item, item.getCount() - exclItem.getCount(), item.getReferencePrice());
+					return new TradeItem(item, item.getCount() - tradeItem.getCount(), item.getReferencePrice());
 				}
 			}
 		}
@@ -130,52 +123,22 @@ public class TradeList
 	}
 	
 	/**
-	 * Adjust ItemRequest by corresponding item in this list using its <b>ObjectId</b>
-	 * @param item : ItemRequest to be adjusted
-	 */
-	public void adjustItemRequest(ItemRequest item)
-	{
-		for (TradeItem filtItem : _items)
-		{
-			if (filtItem.getObjectId() == item.getObjectId())
-			{
-				if (filtItem.getCount() < item.getCount())
-					item.setCount(filtItem.getCount());
-				
-				return;
-			}
-		}
-		item.setCount(0);
-	}
-	
-	/**
-	 * Add simplified item to TradeList
-	 * @param objectId : int
-	 * @param count : int
-	 * @return
-	 */
-	public TradeItem addItem(int objectId, int count)
-	{
-		return addItem(objectId, count, 0);
-	}
-	
-	/**
-	 * Add item to TradeList
-	 * @param objectId : int
-	 * @param count : int
-	 * @param price : int
-	 * @return
+	 * Create a {@link TradeItem} based on an existing {@link ItemInstance}, and add it to this {@link TradeList}.
+	 * @param objectId : The {@link WorldObject} objectId to test.
+	 * @param count : The amount of newly formed {@link TradeItem}.
+	 * @param price : The price of newly formed {@link TradeItem}.
+	 * @return A {@link TradeItem} based on {@link ItemInstance}, which is itself retrieved from its objectId from {@link World#getObject(int)}.
 	 */
 	public synchronized TradeItem addItem(int objectId, int count, int price)
 	{
 		if (isLocked())
 			return null;
 		
-		WorldObject o = World.getInstance().getObject(objectId);
-		if (!(o instanceof ItemInstance))
+		final WorldObject object = World.getInstance().getObject(objectId);
+		if (!(object instanceof ItemInstance))
 			return null;
 		
-		ItemInstance item = (ItemInstance) o;
+		final ItemInstance item = (ItemInstance) object;
 		
 		if (!item.isTradable() || item.isQuestItem())
 			return null;
@@ -189,34 +152,35 @@ public class TradeList
 		if ((Integer.MAX_VALUE / count) < price)
 			return null;
 		
-		for (TradeItem checkitem : _items)
+		for (TradeItem checkitem : this)
 		{
 			if (checkitem.getObjectId() == objectId)
 				return null;
 		}
 		
-		TradeItem titem = new TradeItem(item, count, price);
-		_items.add(titem);
+		final TradeItem tradeItem = new TradeItem(item, count, price);
+		add(tradeItem);
 		
-		// If Player has already confirmed this trade, invalidate the confirmation
+		// If Player has already confirmed this trade, invalidate the confirmation.
 		invalidateConfirmation();
-		return titem;
+		
+		return tradeItem;
 	}
 	
 	/**
-	 * Add item to TradeList
-	 * @param itemId : int
-	 * @param count : int
-	 * @param price : int
-	 * @param enchant
-	 * @return
+	 * Create a {@link TradeItem} based on itemId, and add it to this {@link TradeList}.
+	 * @param itemId : The itemId of newly formed {@link TradeItem}.
+	 * @param count : The amount of newly formed {@link TradeItem}.
+	 * @param price : The price of newly formed {@link TradeItem}.
+	 * @param enchant : The enchant value of newly formed {@link TradeItem}.
+	 * @return A {@link TradeItem} based on itemId.
 	 */
 	public synchronized TradeItem addItemByItemId(int itemId, int count, int price, int enchant)
 	{
 		if (isLocked())
 			return null;
 		
-		Item item = ItemData.getInstance().getTemplate(itemId);
+		final Item item = ItemData.getInstance().getTemplate(itemId);
 		if (item == null)
 			return null;
 		
@@ -229,144 +193,163 @@ public class TradeList
 		if ((Integer.MAX_VALUE / count) < price)
 			return null;
 		
-		TradeItem titem = new TradeItem(item, count, price, enchant);
-		_items.add(titem);
+		final TradeItem tradeItem = new TradeItem(item, count, price, enchant);
+		add(tradeItem);
 		
-		// If Player has already confirmed this trade, invalidate the confirmation
+		// If Player has already confirmed this trade, invalidate the confirmation.
 		invalidateConfirmation();
-		return titem;
+		
+		return tradeItem;
 	}
 	
 	/**
-	 * Remove item from TradeList
-	 * @param objectId : int
-	 * @param itemId : int
-	 * @param count : int
-	 * @return
+	 * Remove or decrease amount of a {@link TradeItem} from this {@link TradeList}, by either its objectId or itemId.
+	 * @param objectId : The objectId to test.
+	 * @param itemId : The itemId ot test.
+	 * @param count : The amount to remove.
 	 */
-	public synchronized TradeItem removeItem(int objectId, int itemId, int count)
+	public synchronized void removeItem(int objectId, int itemId, int count)
 	{
 		if (isLocked())
-			return null;
+			return;
 		
-		for (TradeItem titem : _items)
+		for (TradeItem tradeItem : this)
 		{
-			if (titem.getObjectId() == objectId || titem.getItem().getItemId() == itemId)
+			if (tradeItem.getObjectId() == objectId || tradeItem.getItem().getItemId() == itemId)
 			{
-				// If Partner has already confirmed this trade, invalidate the confirmation
+				// If Partner has already confirmed this trade, invalidate the confirmation.
 				if (_partner != null)
 				{
 					TradeList partnerList = _partner.getActiveTradeList();
 					if (partnerList == null)
-						return null;
+						break;
 					
 					partnerList.invalidateConfirmation();
 				}
 				
-				// Reduce item count or complete item
-				if (count != -1 && titem.getCount() > count)
-					titem.setCount(titem.getCount() - count);
+				// Reduce item count or complete item.
+				if (count != -1 && tradeItem.getCount() > count)
+					tradeItem.setCount(tradeItem.getCount() - count);
 				else
-					_items.remove(titem);
+					remove(tradeItem);
 				
-				return titem;
+				break;
 			}
 		}
-		return null;
 	}
 	
 	/**
-	 * Update items in TradeList according their quantity in owner inventory
+	 * Update {@link TradeItem}s from this {@link TradeList} according to their quantity in owner inventory.
 	 */
 	public synchronized void updateItems()
 	{
-		for (TradeItem titem : _items)
+		for (TradeItem tradeItem : this)
 		{
-			ItemInstance item = _owner.getInventory().getItemByObjectId(titem.getObjectId());
-			if (item == null || titem.getCount() < 1)
-				removeItem(titem.getObjectId(), -1, -1);
-			else if (item.getCount() < titem.getCount())
-				titem.setCount(item.getCount());
+			final ItemInstance item = _owner.getInventory().getItemByObjectId(tradeItem.getObjectId());
+			if (item == null || tradeItem.getCount() < 1)
+				removeItem(tradeItem.getObjectId(), -1, -1);
+			else if (item.getCount() < tradeItem.getCount())
+				tradeItem.setCount(item.getCount());
 		}
 	}
 	
 	/**
-	 * Lockes TradeList, no further changes are allowed
+	 * Lock this {@link TradeList}, meaning than no further changes are allowed.
 	 */
 	public void lock()
 	{
 		_locked = true;
 	}
 	
-	/**
-	 * Clears item list
-	 */
+	@Override
 	public synchronized void clear()
 	{
-		_items.clear();
+		super.clear();
+		
 		_locked = false;
 	}
 	
 	/**
-	 * Confirms TradeList
-	 * @return : boolean
+	 * Confirm this {@link TradeList}, cancelling the trade if checks aren't properly passed (distance, items manipulation, etc).<br>
+	 * <br>
+	 * In case partner already confirmed its {@link TradeList}, then proceed to the exchange. Otherwise confirm this {@link TradeList}.
 	 */
-	public boolean confirm()
+	public void confirm()
 	{
+		// The trade is already confirmed, don't process further.
 		if (_confirmed)
-			return true; // Already confirmed
-			
-		// If Partner has already confirmed this trade, proceed exchange
-		if (_partner != null)
+			return;
+		
+		if (_partner == null)
 		{
-			TradeList partnerList = _partner.getActiveTradeList();
-			if (partnerList == null)
-				return false;
-			
-			// Synchronization order to avoid deadlock
-			TradeList sync1, sync2;
-			if (getOwner().getObjectId() > partnerList.getOwner().getObjectId())
+			_confirmed = true;
+			return;
+		}
+		
+		final TradeList partnerList = _partner.getActiveTradeList();
+		if (partnerList == null)
+		{
+			_owner.cancelActiveTrade();
+			return;
+		}
+		
+		// Synchronization order to avoid deadlock
+		TradeList sync1;
+		TradeList sync2;
+		
+		if (getOwner().getObjectId() > partnerList.getOwner().getObjectId())
+		{
+			sync1 = partnerList;
+			sync2 = this;
+		}
+		else
+		{
+			sync1 = this;
+			sync2 = partnerList;
+		}
+		
+		synchronized (sync1)
+		{
+			synchronized (sync2)
 			{
-				sync1 = partnerList;
-				sync2 = this;
-			}
-			else
-			{
-				sync1 = this;
-				sync2 = partnerList;
-			}
-			
-			synchronized (sync1)
-			{
-				synchronized (sync2)
+				_confirmed = true;
+				
+				// If partner has already confirmed this trade, proceed to the exchange.
+				if (partnerList.isConfirmed())
 				{
-					_confirmed = true;
-					if (partnerList.isConfirmed())
+					// Lock both TradeLists.
+					partnerList.lock();
+					lock();
+					
+					// Test the validity of the trade.
+					if (!validate(_partner, true) || !partnerList.validate(_owner, true))
 					{
-						partnerList.lock();
-						lock();
-						
-						if (!partnerList.validate())
-							return false;
-						
-						if (!validate())
-							return false;
-						
-						doExchange(partnerList);
+						_owner.cancelActiveTrade();
+						return;
 					}
-					else
-						_partner.onTradeConfirm(_owner);
+					
+					// We passed all tests ; finally exchange.
+					doExchange(partnerList);
+				}
+				// Otherwise, we are the first to try to confirm the trade.
+				else
+				{
+					// Test the validity of the trade.
+					if (!validate(_partner, false) || !partnerList.validate(_owner, false))
+					{
+						_owner.cancelActiveTrade();
+						return;
+					}
+					
+					// Test is passed ; confirm our TradeList.
+					_partner.onTradeConfirm(_owner);
 				}
 			}
 		}
-		else
-			_confirmed = true;
-		
-		return _confirmed;
 	}
 	
 	/**
-	 * Cancels TradeList confirmation
+	 * Cancel {@link TradeList} confirmation.
 	 */
 	public void invalidateConfirmation()
 	{
@@ -374,45 +357,54 @@ public class TradeList
 	}
 	
 	/**
-	 * Validates TradeList with owner inventory
-	 * @return true if ok, false otherwise.
+	 * Test the validity of this {@link TradeList}.
+	 * @param partner : The {@link Player} partner to test.
+	 * @param isCheckingItems : If True, we also check item manipulation.
+	 * @return True if all tests passed, false otherwise.
 	 */
-	private boolean validate()
+	private boolean validate(Player partner, boolean isCheckingItems)
 	{
-		// Check for Owner validity
+		// Check owner validity.
 		if (_owner == null || World.getInstance().getPlayer(_owner.getObjectId()) == null)
 			return false;
 		
-		// Check for Item validity
-		for (TradeItem titem : _items)
+		// Check partner validity.
+		if (partner == null || !_owner.isIn3DRadius(partner, Npc.INTERACTION_DISTANCE))
+			return false;
+		
+		// Check item validity.
+		if (isCheckingItems)
 		{
-			ItemInstance item = _owner.checkItemManipulation(titem.getObjectId(), titem.getCount());
-			if (item == null)
-				return false;
+			for (TradeItem tradeItem : this)
+			{
+				final ItemInstance item = _owner.checkItemManipulation(tradeItem.getObjectId(), tradeItem.getCount());
+				if (item == null)
+					return false;
+			}
 		}
 		return true;
 	}
 	
 	/**
-	 * Transfers all TradeItems from inventory to partner
-	 * @param partner
-	 * @param ownerIU
-	 * @param partnerIU
-	 * @return true if ok, false otherwise.
+	 * Transfer all {@link TradeItem}s of this {@link TradeList} from {@link Player} owner inventory to {@link Player} partner.
+	 * @param partner : The {@link Player} used as partner.
+	 * @param ownerIU : The owner {@link InventoryUpdate} packet, used to refresh owner client-side inventory.
+	 * @param partnerIU : The partner {@link InventoryUpdate} packet, used to refresh partner client-side inventory.
+	 * @return True if all {@link TradeItem}s were successfully transfered, or false otherwise.
 	 */
 	private boolean transferItems(Player partner, InventoryUpdate ownerIU, InventoryUpdate partnerIU)
 	{
-		for (TradeItem titem : _items)
+		for (TradeItem tradeItem : this)
 		{
-			ItemInstance oldItem = _owner.getInventory().getItemByObjectId(titem.getObjectId());
+			final ItemInstance oldItem = _owner.getInventory().getItemByObjectId(tradeItem.getObjectId());
 			if (oldItem == null)
 				return false;
 			
-			ItemInstance newItem = _owner.getInventory().transferItem("Trade", titem.getObjectId(), titem.getCount(), partner.getInventory(), _owner, _partner);
+			final ItemInstance newItem = _owner.getInventory().transferItem("Trade", tradeItem.getObjectId(), tradeItem.getCount(), partner.getInventory(), _owner, _partner);
 			if (newItem == null)
 				return false;
 			
-			// Add changes to inventory update packets
+			// Add changes to InventoryUpdate packets.
 			if (ownerIU != null)
 			{
 				if (oldItem.getCount() > 0 && oldItem != newItem)
@@ -423,7 +415,7 @@ public class TradeList
 			
 			if (partnerIU != null)
 			{
-				if (newItem.getCount() > titem.getCount())
+				if (newItem.getCount() > tradeItem.getCount())
 					partnerIU.addModifiedItem(newItem);
 				else
 					partnerIU.addNewItem(newItem);
@@ -433,112 +425,76 @@ public class TradeList
 	}
 	
 	/**
-	 * Count items slots
-	 * @param partner
-	 * @return
+	 * Proceed to the transfer of items, if all tests successfully passed.
+	 * @param partnerTradeList : The {@link TradeList} of the {@link Player} partner.
 	 */
-	public int countItemsSlots(Player partner)
+	private void doExchange(TradeList partnerTradeList)
 	{
-		int slots = 0;
+		boolean isSuccessful = true;
 		
-		for (TradeItem item : _items)
+		// Check weight integrity.
+		if (!_owner.getInventory().validateTradeListWeight(partnerTradeList) || !partnerTradeList.getOwner().getInventory().validateTradeListWeight(this))
 		{
-			if (item == null)
-				continue;
+			isSuccessful = false;
 			
-			Item template = ItemData.getInstance().getTemplate(item.getItem().getItemId());
-			if (template == null)
-				continue;
-			
-			if (!template.isStackable())
-				slots += item.getCount();
-			else if (partner.getInventory().getItemByItemId(item.getItem().getItemId()) == null)
-				slots++;
+			_owner.sendPacket(SystemMessageId.WEIGHT_LIMIT_EXCEEDED);
+			partnerTradeList.getOwner().sendPacket(SystemMessageId.WEIGHT_LIMIT_EXCEEDED);
 		}
-		return slots;
-	}
-	
-	/**
-	 * @return weight of items in tradeList
-	 */
-	public int calcItemsWeight()
-	{
-		int weight = 0;
-		
-		for (TradeItem item : _items)
+		// Check inventory slots integrity.
+		else if (!_owner.getInventory().validateTradeListCapacity(partnerTradeList) || !partnerTradeList.getOwner().getInventory().validateTradeListCapacity(this))
 		{
-			if (item == null)
-				continue;
+			isSuccessful = false;
 			
-			Item template = ItemData.getInstance().getTemplate(item.getItem().getItemId());
-			if (template == null)
-				continue;
-			
-			weight += item.getCount() * template.getWeight();
+			_owner.sendPacket(SystemMessageId.SLOTS_FULL);
+			partnerTradeList.getOwner().sendPacket(SystemMessageId.SLOTS_FULL);
 		}
-		return Math.min(weight, Integer.MAX_VALUE);
-	}
-	
-	/**
-	 * Proceeds with trade
-	 * @param partnerList
-	 */
-	private void doExchange(TradeList partnerList)
-	{
-		boolean success = false;
-		
-		// check weight and slots
-		if ((!getOwner().getInventory().validateWeight(partnerList.calcItemsWeight())) || !(partnerList.getOwner().getInventory().validateWeight(calcItemsWeight())))
+		// Check if both TradeLists were empty.
+		else if (isEmpty() && partnerTradeList.isEmpty())
 		{
-			partnerList.getOwner().sendPacket(SystemMessageId.WEIGHT_LIMIT_EXCEEDED);
-			getOwner().sendPacket(SystemMessageId.WEIGHT_LIMIT_EXCEEDED);
+			isSuccessful = false;
 		}
-		else if ((!getOwner().getInventory().validateCapacity(partnerList.countItemsSlots(getOwner()))) || (!partnerList.getOwner().getInventory().validateCapacity(countItemsSlots(partnerList.getOwner()))))
-		{
-			partnerList.getOwner().sendPacket(SystemMessageId.SLOTS_FULL);
-			getOwner().sendPacket(SystemMessageId.SLOTS_FULL);
-		}
+		// All tests passed, it's a success.
 		else
 		{
-			// Prepare inventory update packet
+			// Prepare InventoryUpdate packet.
 			InventoryUpdate ownerIU = new InventoryUpdate();
 			InventoryUpdate partnerIU = new InventoryUpdate();
 			
-			// Transfer items
-			partnerList.transferItems(getOwner(), partnerIU, ownerIU);
-			transferItems(partnerList.getOwner(), ownerIU, partnerIU);
+			// Transfer items.
+			partnerTradeList.transferItems(_owner, partnerIU, ownerIU);
+			transferItems(partnerTradeList.getOwner(), ownerIU, partnerIU);
 			
-			// Send inventory update packet
+			// Send InventoryUpdate packet.
 			_owner.sendPacket(ownerIU);
 			_partner.sendPacket(partnerIU);
 			
-			// Update current load as well
-			StatusUpdate playerSU = new StatusUpdate(_owner);
-			playerSU.addAttribute(StatusType.CUR_LOAD, _owner.getCurrentWeight());
-			_owner.sendPacket(playerSU);
-			playerSU = new StatusUpdate(_partner);
-			playerSU.addAttribute(StatusType.CUR_LOAD, _partner.getCurrentWeight());
-			_partner.sendPacket(playerSU);
+			// Update current load aswell.
+			StatusUpdate su = new StatusUpdate(_owner);
+			su.addAttribute(StatusType.CUR_LOAD, _owner.getCurrentWeight());
+			_owner.sendPacket(su);
 			
-			success = true;
+			su = new StatusUpdate(_partner);
+			su.addAttribute(StatusType.CUR_LOAD, _partner.getCurrentWeight());
+			_partner.sendPacket(su);
 		}
-		// Finish the trade
-		partnerList.getOwner().onTradeFinish(success);
-		getOwner().onTradeFinish(success);
+		
+		// Finish the trade.
+		_owner.onTradeFinish(isSuccessful);
+		partnerTradeList.getOwner().onTradeFinish(isSuccessful);
 	}
 	
 	/**
-	 * Buy items from this PrivateStore list
-	 * @param player
-	 * @param items
-	 * @return true if successful, false otherwise.
+	 * Buy items from this {@link TradeList}.
+	 * @param player : The {@link Player} who tries to buy an item.
+	 * @param items : The {@link Set} of {@link ItemRequest} to test.
+	 * @return True if all checks passed and the buy was successful, or false otherwise.
 	 */
 	public synchronized boolean privateStoreBuy(Player player, Set<ItemRequest> items)
 	{
 		if (_locked)
 			return false;
 		
-		if (!validate())
+		if (!validate(player, true))
 		{
 			lock();
 			return false;
@@ -558,20 +514,22 @@ public class TradeList
 		{
 			boolean found = false;
 			
-			for (TradeItem ti : _items)
+			for (TradeItem tradeItem : this)
 			{
-				if (ti.getObjectId() == item.getObjectId())
+				if (tradeItem.getObjectId() == item.getObjectId())
 				{
-					if (ti.getPrice() == item.getPrice())
+					if (tradeItem.getPrice() == item.getPrice())
 					{
-						if (ti.getCount() < item.getCount())
-							item.setCount(ti.getCount());
+						if (tradeItem.getCount() < item.getCount())
+							item.setCount(tradeItem.getCount());
+						
 						found = true;
 					}
 					break;
 				}
 			}
-			// item with this objectId and price not found in tradelist
+			
+			// The item with this objectId and price wasn't found in this TradeList, set its count to 0 or if packaged, return false directly.
 			if (!found)
 			{
 				if (isPackaged())
@@ -581,7 +539,7 @@ public class TradeList
 				continue;
 			}
 			
-			// check for overflow in the single item
+			// Integer overflow check for the single item.
 			if ((Integer.MAX_VALUE / item.getCount()) < item.getPrice())
 			{
 				lock();
@@ -590,25 +548,27 @@ public class TradeList
 			
 			totalPrice += item.getCount() * item.getPrice();
 			
-			// check for overflow of the total price
+			// Integer overflow check for the total price.
 			if (Integer.MAX_VALUE < totalPrice || totalPrice < 0)
 			{
 				lock();
 				return false;
 			}
 			
-			// Check if requested item is available for manipulation
-			ItemInstance oldItem = _owner.checkItemManipulation(item.getObjectId(), item.getCount());
+			// Check if requested item is available for manipulation.
+			final ItemInstance oldItem = _owner.checkItemManipulation(item.getObjectId(), item.getCount());
 			if (oldItem == null || !oldItem.isTradable())
 			{
 				lock();
 				return false;
 			}
 			
-			Item template = ItemData.getInstance().getTemplate(item.getItemId());
+			final Item template = ItemData.getInstance().getTemplate(item.getItemId());
 			if (template == null)
 				continue;
+			
 			weight += item.getCount() * template.getWeight();
+			
 			if (!template.isStackable())
 				slots += item.getCount();
 			else if (playerInventory.getItemByItemId(item.getItemId()) == null)
@@ -633,7 +593,7 @@ public class TradeList
 			return false;
 		}
 		
-		// Prepare inventory update packets
+		// Prepare InventoryUpdate packets.
 		final InventoryUpdate ownerIU = new InventoryUpdate();
 		final InventoryUpdate playerIU = new InventoryUpdate();
 		
@@ -649,14 +609,14 @@ public class TradeList
 		
 		boolean ok = true;
 		
-		// Transfer items
+		// Transfer items.
 		for (ItemRequest item : items)
 		{
 			if (item.getCount() == 0)
 				continue;
 			
-			// Check if requested item is available for manipulation
-			ItemInstance oldItem = _owner.checkItemManipulation(item.getObjectId(), item.getCount());
+			// Check if requested item is available for manipulation.
+			final ItemInstance oldItem = _owner.checkItemManipulation(item.getObjectId(), item.getCount());
 			if (oldItem == null)
 			{
 				lock();
@@ -664,8 +624,8 @@ public class TradeList
 				break;
 			}
 			
-			// Proceed with item transfer
-			ItemInstance newItem = ownerInventory.transferItem("PrivateStore", item.getObjectId(), item.getCount(), playerInventory, _owner, player);
+			// Proceed with item transfer.
+			final ItemInstance newItem = ownerInventory.transferItem("PrivateStore", item.getObjectId(), item.getCount(), playerInventory, _owner, player);
 			if (newItem == null)
 			{
 				ok = false;
@@ -673,60 +633,61 @@ public class TradeList
 			}
 			removeItem(item.getObjectId(), -1, item.getCount());
 			
-			// Add changes to inventory update packets
+			// Add changes to InventoryUpdate packets.
 			if (oldItem.getCount() > 0 && oldItem != newItem)
 				ownerIU.addModifiedItem(oldItem);
 			else
 				ownerIU.addRemovedItem(oldItem);
+			
 			if (newItem.getCount() > item.getCount())
 				playerIU.addModifiedItem(newItem);
 			else
 				playerIU.addNewItem(newItem);
 			
-			// Send messages about the transaction to both players
+			// Send messages about the transaction to both players.
 			if (newItem.isStackable())
 			{
-				SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S3_S2_S);
-				msg.addString(player.getName());
-				msg.addItemName(newItem.getItemId());
-				msg.addNumber(item.getCount());
-				_owner.sendPacket(msg);
+				SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S3_S2_S);
+				sm.addString(player.getName());
+				sm.addItemName(newItem.getItemId());
+				sm.addNumber(item.getCount());
+				_owner.sendPacket(sm);
 				
-				msg = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S3_S2_S_FROM_S1);
-				msg.addString(_owner.getName());
-				msg.addItemName(newItem.getItemId());
-				msg.addNumber(item.getCount());
-				player.sendPacket(msg);
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S3_S2_S_FROM_S1);
+				sm.addString(_owner.getName());
+				sm.addItemName(newItem.getItemId());
+				sm.addNumber(item.getCount());
+				player.sendPacket(sm);
 			}
 			else if (newItem.getEnchantLevel() > 0)
 			{
-				SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2_S3);
-				msg.addString(player.getName());
-				msg.addNumber(newItem.getEnchantLevel());
-				msg.addItemName(newItem.getItemId());
-				_owner.sendPacket(msg);
+				SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2_S3);
+				sm.addString(player.getName());
+				sm.addNumber(newItem.getEnchantLevel());
+				sm.addItemName(newItem.getItemId());
+				_owner.sendPacket(sm);
 				
-				msg = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_S3_FROM_S1);
-				msg.addString(_owner.getName());
-				msg.addNumber(newItem.getEnchantLevel());
-				msg.addItemName(newItem.getItemId());
-				player.sendPacket(msg);
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_S3_FROM_S1);
+				sm.addString(_owner.getName());
+				sm.addNumber(newItem.getEnchantLevel());
+				sm.addItemName(newItem.getItemId());
+				player.sendPacket(sm);
 			}
 			else
 			{
-				SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2);
-				msg.addString(player.getName());
-				msg.addItemName(newItem.getItemId());
-				_owner.sendPacket(msg);
+				SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2);
+				sm.addString(player.getName());
+				sm.addItemName(newItem.getItemId());
+				_owner.sendPacket(sm);
 				
-				msg = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_FROM_S1);
-				msg.addString(_owner.getName());
-				msg.addItemName(newItem.getItemId());
-				player.sendPacket(msg);
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_FROM_S1);
+				sm.addString(_owner.getName());
+				sm.addItemName(newItem.getItemId());
+				player.sendPacket(sm);
 			}
 		}
 		
-		// Send inventory update packet
+		// Send InventoryUpdate packets.
 		_owner.sendPacket(ownerIU);
 		player.sendPacket(playerIU);
 		
@@ -736,10 +697,10 @@ public class TradeList
 	/**
 	 * Sell items to this PrivateStore list
 	 * @param player
-	 * @param items
+	 * @param itemRequests
 	 * @return true if successful, false otherwise.
 	 */
-	public synchronized boolean privateStoreSell(Player player, ItemRequest[] items)
+	public synchronized boolean privateStoreSell(Player player, ItemRequest[] itemRequests)
 	{
 		if (_locked)
 			return false;
@@ -752,48 +713,45 @@ public class TradeList
 		final PcInventory ownerInventory = _owner.getInventory();
 		final PcInventory playerInventory = player.getInventory();
 		
-		// Prepare inventory update packet
+		// Prepare InventoryUpdate packets.
 		final InventoryUpdate ownerIU = new InventoryUpdate();
 		final InventoryUpdate playerIU = new InventoryUpdate();
 		
 		long totalPrice = 0;
 		
-		for (ItemRequest item : items)
+		for (ItemRequest itemRequest : itemRequests)
 		{
-			// searching item in tradelist using itemId
 			boolean found = false;
 			
-			for (TradeItem ti : _items)
+			for (TradeItem tradeItem : this)
 			{
-				if (ti.getItem().getItemId() == item.getItemId())
+				if (tradeItem.getItem().getItemId() == itemRequest.getItemId())
 				{
-					// price should be the same
-					if (ti.getPrice() == item.getPrice())
+					if (tradeItem.getPrice() == itemRequest.getPrice())
 					{
-						// if requesting more than available - decrease count
-						if (ti.getCount() < item.getCount())
-							item.setCount(ti.getCount());
+						if (tradeItem.getCount() < itemRequest.getCount())
+							itemRequest.setCount(tradeItem.getCount());
 						
-						found = item.getCount() > 0;
+						found = itemRequest.getCount() > 0;
 					}
 					break;
 				}
 			}
-			// not found any item in the tradelist with same itemId and price
-			// maybe another player already sold this item ?
+			
+			// The item with this itemid and price wasn't found in this TradeList, continue.
 			if (!found)
 				continue;
 			
-			// check for overflow in the single item
-			if ((Integer.MAX_VALUE / item.getCount()) < item.getPrice())
+			// Integer overflow check for the single item.
+			if ((Integer.MAX_VALUE / itemRequest.getCount()) < itemRequest.getPrice())
 			{
 				lock();
 				break;
 			}
 			
-			long _totalPrice = totalPrice + item.getCount() * item.getPrice();
+			long _totalPrice = totalPrice + itemRequest.getCount() * itemRequest.getPrice();
 			
-			// check for overflow of the total price
+			// Integer overflow check for the total price.
 			if (Integer.MAX_VALUE < _totalPrice || _totalPrice < 0)
 			{
 				lock();
@@ -803,94 +761,97 @@ public class TradeList
 			if (ownerInventory.getAdena() < _totalPrice)
 				continue;
 			
-			// Check if requested item is available for manipulation
-			int objectId = item.getObjectId();
-			ItemInstance oldItem = player.checkItemManipulation(objectId, item.getCount());
-			// private store - buy use same objectId for buying several non-stackable items
+			int objectId = itemRequest.getObjectId();
+			
+			// Check if requested item is available for manipulation.
+			ItemInstance oldItem = player.checkItemManipulation(objectId, itemRequest.getCount());
+			
+			// Private store - buy use same objectId for buying several non-stackable items.
 			if (oldItem == null)
 			{
 				// searching other items using same itemId
-				oldItem = playerInventory.getItemByItemId(item.getItemId());
+				oldItem = playerInventory.getItemByItemId(itemRequest.getItemId());
 				if (oldItem == null)
 					continue;
 				
 				objectId = oldItem.getObjectId();
-				oldItem = player.checkItemManipulation(objectId, item.getCount());
+				oldItem = player.checkItemManipulation(objectId, itemRequest.getCount());
 				if (oldItem == null)
 					continue;
 			}
 			
-			if (oldItem.getItemId() != item.getItemId() || oldItem.getEnchantLevel() != item.getEnchantLevel())
+			if (oldItem.getItemId() != itemRequest.getItemId() || oldItem.getEnchantLevel() != itemRequest.getEnchantLevel())
 				return false;
 			
 			if (!oldItem.isTradable())
 				continue;
 			
-			// Proceed with item transfer
-			ItemInstance newItem = playerInventory.transferItem("PrivateStore", objectId, item.getCount(), ownerInventory, player, _owner);
+			// Proceed with item transfer.
+			ItemInstance newItem = playerInventory.transferItem("PrivateStore", objectId, itemRequest.getCount(), ownerInventory, player, _owner);
 			if (newItem == null)
 				continue;
 			
-			removeItem(-1, item.getItemId(), item.getCount());
+			removeItem(-1, itemRequest.getItemId(), itemRequest.getCount());
 			ok = true;
 			
-			// increase total price only after successful transaction
+			// Increase total price only after successful transaction.
 			totalPrice = _totalPrice;
 			
-			// Add changes to inventory update packets
+			// Add changes to InventoryUpdate packets.
 			if (oldItem.getCount() > 0 && oldItem != newItem)
 				playerIU.addModifiedItem(oldItem);
 			else
 				playerIU.addRemovedItem(oldItem);
-			if (newItem.getCount() > item.getCount())
+			
+			if (newItem.getCount() > itemRequest.getCount())
 				ownerIU.addModifiedItem(newItem);
 			else
 				ownerIU.addNewItem(newItem);
 			
-			// Send messages about the transaction to both players
+			// Send messages about the transaction to both players.
 			if (newItem.isStackable())
 			{
-				SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S3_S2_S_FROM_S1);
-				msg.addString(player.getName());
-				msg.addItemName(newItem.getItemId());
-				msg.addNumber(item.getCount());
-				_owner.sendPacket(msg);
+				SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S3_S2_S_FROM_S1);
+				sm.addString(player.getName());
+				sm.addItemName(newItem.getItemId());
+				sm.addNumber(itemRequest.getCount());
+				_owner.sendPacket(sm);
 				
-				msg = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S3_S2_S);
-				msg.addString(_owner.getName());
-				msg.addItemName(newItem.getItemId());
-				msg.addNumber(item.getCount());
-				player.sendPacket(msg);
+				sm = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S3_S2_S);
+				sm.addString(_owner.getName());
+				sm.addItemName(newItem.getItemId());
+				sm.addNumber(itemRequest.getCount());
+				player.sendPacket(sm);
 			}
 			else if (newItem.getEnchantLevel() > 0)
 			{
-				SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_S3_FROM_S1);
-				msg.addString(player.getName());
-				msg.addNumber(newItem.getEnchantLevel());
-				msg.addItemName(newItem.getItemId());
-				_owner.sendPacket(msg);
+				SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_S3_FROM_S1);
+				sm.addString(player.getName());
+				sm.addNumber(newItem.getEnchantLevel());
+				sm.addItemName(newItem.getItemId());
+				_owner.sendPacket(sm);
 				
-				msg = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2_S3);
-				msg.addString(_owner.getName());
-				msg.addNumber(newItem.getEnchantLevel());
-				msg.addItemName(newItem.getItemId());
-				player.sendPacket(msg);
+				sm = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2_S3);
+				sm.addString(_owner.getName());
+				sm.addNumber(newItem.getEnchantLevel());
+				sm.addItemName(newItem.getItemId());
+				player.sendPacket(sm);
 			}
 			else
 			{
-				SystemMessage msg = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_FROM_S1);
-				msg.addString(player.getName());
-				msg.addItemName(newItem.getItemId());
-				_owner.sendPacket(msg);
+				SystemMessage sm = SystemMessage.getSystemMessage(SystemMessageId.PURCHASED_S2_FROM_S1);
+				sm.addString(player.getName());
+				sm.addItemName(newItem.getItemId());
+				_owner.sendPacket(sm);
 				
-				msg = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2);
-				msg.addString(_owner.getName());
-				msg.addItemName(newItem.getItemId());
-				player.sendPacket(msg);
+				sm = SystemMessage.getSystemMessage(SystemMessageId.S1_PURCHASED_S2);
+				sm.addString(_owner.getName());
+				sm.addItemName(newItem.getItemId());
+				player.sendPacket(sm);
 			}
 		}
 		
-		// Transfer adena
+		// Transfer adena.
 		if (totalPrice > 0)
 		{
 			if (totalPrice > ownerInventory.getAdena())
@@ -904,9 +865,9 @@ public class TradeList
 			playerIU.addItem(playerInventory.getAdenaInstance());
 		}
 		
+		// Send InventoryUpdate packets.
 		if (ok)
 		{
-			// Send inventory update packet
 			_owner.sendPacket(ownerIU);
 			player.sendPacket(playerIU);
 		}

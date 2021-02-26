@@ -17,32 +17,27 @@ public class AdminManor implements IAdminCommandHandler
 	};
 	
 	@Override
-	public boolean useAdminCommand(String command, Player activeChar)
+	public void useAdminCommand(String command, Player player)
 	{
 		if (command.startsWith("admin_manor"))
 		{
-			final CastleManorManager manor = CastleManorManager.getInstance();
-			
-			final NpcHtmlMessage msg = new NpcHtmlMessage(0);
-			msg.setFile("data/html/admin/manor.htm");
-			msg.replace("%status%", manor.getCurrentModeName());
-			msg.replace("%change%", manor.getNextModeChange());
+			final NpcHtmlMessage html = new NpcHtmlMessage(0);
+			html.setFile("data/html/admin/manor.htm");
+			html.replace("%status%", CastleManorManager.getInstance().getCurrentModeName());
+			html.replace("%change%", CastleManorManager.getInstance().getNextModeChange());
 			
 			final StringBuilder sb = new StringBuilder(3400);
-			for (Castle c : CastleManager.getInstance().getCastles())
+			for (Castle castle : CastleManager.getInstance().getCastles())
 			{
-				StringUtil.append(sb, "<tr><td width=110>Name:</td><td width=160><font color=008000>" + c.getName() + "</font></td></tr>");
-				StringUtil.append(sb, "<tr><td>Current period cost:</td><td><font color=FF9900>", StringUtil.formatNumber(manor.getManorCost(c.getCastleId(), false)), " Adena</font></td></tr>");
-				StringUtil.append(sb, "<tr><td>Next period cost:</td><td><font color=FF9900>", StringUtil.formatNumber(manor.getManorCost(c.getCastleId(), true)), " Adena</font></td></tr>");
+				StringUtil.append(sb, "<tr><td width=110>Name:</td><td width=160><font color=008000>" + castle.getName() + "</font></td></tr>");
+				StringUtil.append(sb, "<tr><td>Current period cost:</td><td><font color=FF9900>", StringUtil.formatNumber(CastleManorManager.getInstance().getManorCost(castle.getCastleId(), false)), " Adena</font></td></tr>");
+				StringUtil.append(sb, "<tr><td>Next period cost:</td><td><font color=FF9900>", StringUtil.formatNumber(CastleManorManager.getInstance().getManorCost(castle.getCastleId(), true)), " Adena</font></td></tr>");
 				StringUtil.append(sb, "<tr><td>&nbsp;</td></tr>");
 			}
-			msg.replace("%castleInfo%", sb.toString());
-			activeChar.sendPacket(msg);
+			html.replace("%castleInfo%", sb.toString());
 			
-			sb.setLength(0);
+			player.sendPacket(html);
 		}
-		
-		return true;
 	}
 	
 	@Override

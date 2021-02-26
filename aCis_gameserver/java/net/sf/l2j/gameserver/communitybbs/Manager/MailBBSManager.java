@@ -1,4 +1,4 @@
-package net.sf.l2j.gameserver.communitybbs.Manager;
+package net.sf.l2j.gameserver.communitybbs.manager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.sf.l2j.commons.lang.StringUtil;
 import net.sf.l2j.commons.pool.ConnectionPool;
 
+import net.sf.l2j.gameserver.communitybbs.model.Mail;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
 import net.sf.l2j.gameserver.enums.MailType;
@@ -26,48 +27,36 @@ import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 
 public class MailBBSManager extends BaseBBSManager
 {
-	private static final String SELECT_CHAR_MAILS = "SELECT * FROM character_mail WHERE charId = ? ORDER BY letterId ASC";
-	private static final String INSERT_NEW_MAIL = "INSERT INTO character_mail (charId, letterId, senderId, location, recipientNames, subject, message, sentDate, unread) VALUES (?,?,?,?,?,?,?,?,?)";
-	private static final String DELETE_MAIL = "DELETE FROM character_mail WHERE letterId = ?";
-	private static final String MARK_MAIL_READ = "UPDATE character_mail SET unread = 0 WHERE letterId = ?";
-	private static final String SET_MAIL_LOC = "UPDATE character_mail SET location = ? WHERE letterId = ?";
-	private static final String SELECT_LAST_ID = "SELECT letterId FROM character_mail ORDER BY letterId DESC LIMIT 1";
-	private static final String GET_GM_STATUS = "SELECT accesslevel FROM characters WHERE obj_Id = ?";
+	private static final String SELECT_MAILS = "SELECT * FROM bbs_mail ORDER BY id ASC";
+	private static final String INSERT_MAIL = "INSERT INTO bbs_mail (id,receiver_id,sender_id,location,recipients,subject,message,sent_date,is_unread) VALUES (?,?,?,?,?,?,?,?,?)";
+	private static final String DELETE_MAIL = "DELETE FROM bbs_mail WHERE id=?";
+	private static final String UPDATE_MAIL_AS_READ = "UPDATE bbs_mail SET is_unread=0 WHERE id=?";
+	private static final String UPDATE_MAIL_LOCATION = "UPDATE bbs_mail SET location=? WHERE id=?";
 	
 	private final Map<Integer, Set<Mail>> _mails = new ConcurrentHashMap<>();
 	
-	private int _lastId = 0;
-	
-	public class Mail
-	{
-		int charId;
-		int mailId;
-		int senderId;
-		MailType location;
-		String recipientNames;
-		String subject;
-		String message;
-		Timestamp sentDate;
-		String sentDateString;
-		boolean unread;
-	}
+	private int _lastMailId = 0;
 	
 	protected MailBBSManager()
 	{
-		// Retrieve last used id.
 		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(SELECT_LAST_ID);
+			PreparedStatement ps = con.prepareStatement(SELECT_MAILS);
 			ResultSet rs = ps.executeQuery())
 		{
 			while (rs.next())
 			{
-				if (rs.getInt(1) > _lastId)
-					_lastId = rs.getInt(1);
+				final Set<Mail> mails = _mails.computeIfAbsent(rs.getInt("receiver_id"), m -> ConcurrentHashMap.newKeySet());
+				mails.add(new Mail(rs));
+				
+				// Calculate last used Mail id.
+				final int mailId = rs.getInt("id");
+				if (mailId > _lastMailId)
+					_lastMailId = mailId;
 			}
 		}
 		catch (Exception e)
 		{
-			LOGGER.error("Couldn't find the last mail id.", e);
+			LOGGER.error("Couldn't load mails.", e);
 		}
 	}
 	
@@ -106,19 +95,19 @@ public class MailBBSManager extends BaseBBSManager
 				if (action.equals("view"))
 				{
 					showMailView(player, mail);
-					if (mail.unread)
-						setMailToRead(player, mail.mailId);
+					if (mail.isUnread())
+						setMailAsRead(player, mail.getId());
 				}
 				else if (action.equals("reply"))
 					showWriteView(player, mail);
 				else if (action.equals("del"))
 				{
-					deleteMail(player, mail.mailId);
+					deleteMail(player, mail.getId());
 					showLastForum(player);
 				}
 				else if (action.equals("store"))
 				{
-					setMailLocation(player, mail.mailId, MailType.ARCHIVE);
+					setMailLocation(player, mail.getId(), MailType.ARCHIVE);
 					showMailList(player, 1, MailType.ARCHIVE);
 				}
 			}
@@ -148,57 +137,22 @@ public class MailBBSManager extends BaseBBSManager
 	
 	private synchronized int getNewMailId()
 	{
-		return ++_lastId;
+		return ++_lastMailId;
 	}
 	
-	private Set<Mail> getPlayerMails(int objectId)
+	private Set<Mail> getMails(int objectId)
 	{
-		Set<Mail> mails = _mails.get(objectId);
-		if (mails == null)
-		{
-			mails = ConcurrentHashMap.newKeySet();
-			
-			try (Connection con = ConnectionPool.getConnection();
-				PreparedStatement ps = con.prepareStatement(SELECT_CHAR_MAILS))
-			{
-				ps.setInt(1, objectId);
-				
-				try (ResultSet rs = ps.executeQuery())
-				{
-					while (rs.next())
-					{
-						final Mail mail = new Mail();
-						mail.charId = rs.getInt("charId");
-						mail.mailId = rs.getInt("letterId");
-						mail.senderId = rs.getInt("senderId");
-						mail.location = Enum.valueOf(MailType.class, rs.getString("location").toUpperCase());
-						mail.recipientNames = rs.getString("recipientNames");
-						mail.subject = rs.getString("subject");
-						mail.message = rs.getString("message");
-						mail.sentDate = rs.getTimestamp("sentDate");
-						mail.sentDateString = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(mail.sentDate);
-						mail.unread = rs.getInt("unread") != 0;
-						mails.add(mail);
-					}
-				}
-			}
-			catch (Exception e)
-			{
-				LOGGER.error("Couldn't load mail for player id : {}.", e, objectId);
-			}
-			_mails.put(objectId, mails);
-		}
-		return mails;
+		return _mails.computeIfAbsent(objectId, m -> ConcurrentHashMap.newKeySet());
 	}
 	
 	private Mail getMail(Player player, int mailId)
 	{
-		return getPlayerMails(player.getObjectId()).stream().filter(l -> l.mailId == mailId).findFirst().orElse(null);
+		return getMails(player.getObjectId()).stream().filter(l -> l.getId() == mailId).findFirst().orElse(null);
 	}
 	
 	public boolean checkIfUnreadMail(Player player)
 	{
-		return getPlayerMails(player.getObjectId()).stream().anyMatch(l -> l.unread);
+		return getMails(player.getObjectId()).stream().anyMatch(Mail::isUnread);
 	}
 	
 	private void showMailList(Player player, int page, MailType type)
@@ -215,20 +169,20 @@ public class MailBBSManager extends BaseBBSManager
 			
 			boolean byTitle = sType.equalsIgnoreCase("title");
 			
-			for (Mail mail : getPlayerMails(player.getObjectId()))
+			for (Mail mail : getMails(player.getObjectId()))
 			{
-				if (byTitle && mail.subject.toLowerCase().contains(search.toLowerCase()))
+				if (byTitle && mail.getSubject().toLowerCase().contains(search.toLowerCase()))
 					mails.add(mail);
 				else if (!byTitle)
 				{
-					String writer = getPlayerName(mail.senderId);
+					String writer = getPlayerName(mail.getSenderId());
 					if (writer.toLowerCase().contains(search.toLowerCase()))
 						mails.add(mail);
 				}
 			}
 		}
 		else
-			mails = getPlayerMails(player.getObjectId());
+			mails = getMails(player.getObjectId());
 		
 		final int countMails = getMailCount(player.getObjectId(), type, sType, search);
 		final int maxpage = getPagesCount(countMails);
@@ -239,7 +193,11 @@ public class MailBBSManager extends BaseBBSManager
 			page = 1;
 		
 		player.setMailPosition(page);
-		int index = 0, minIndex = 0, maxIndex = 0;
+		
+		int index = 0;
+		int minIndex = 0;
+		int maxIndex = 0;
+		
 		maxIndex = (page == 1 ? page * 9 : (page * 10) - 1);
 		minIndex = maxIndex - 9;
 		
@@ -254,7 +212,7 @@ public class MailBBSManager extends BaseBBSManager
 		final StringBuilder sb = new StringBuilder();
 		for (Mail mail : mails)
 		{
-			if (mail.location.equals(type))
+			if (mail.getMailType().equals(type))
 			{
 				if (index < minIndex)
 				{
@@ -265,17 +223,17 @@ public class MailBBSManager extends BaseBBSManager
 				if (index > maxIndex)
 					break;
 				
-				StringUtil.append(sb, "<table width=610><tr><td width=5></td><td width=150>", getPlayerName(mail.senderId), "</td><td width=300><a action=\"bypass _bbsmail;view;", mail.mailId, "\">");
+				StringUtil.append(sb, "<table width=610><tr><td width=5></td><td width=150>", getPlayerName(mail.getSenderId()), "</td><td width=300><a action=\"bypass _bbsmail;view;", mail.getId(), "\">");
 				
-				if (mail.unread)
+				if (mail.isUnread())
 					sb.append("<font color=\"LEVEL\">");
 				
-				sb.append(StringUtil.trim(mail.subject, 30)).append((mail.subject.length() > 30) ? "..." : "");
+				sb.append(StringUtil.trim(mail.getSubject(), 30)).append((mail.getSubject().length() > 30) ? "..." : "");
 				
-				if (mail.unread)
+				if (mail.isUnread())
 					sb.append("</font>");
 				
-				StringUtil.append(sb, "</a></td><td width=150>", mail.sentDateString, "</td><td width=5></td></tr></table><img src=\"L2UI.Squaregray\" width=610 height=1>");
+				StringUtil.append(sb, "</a></td><td width=150>", mail.getFormattedSentDate(), "</td><td width=5></td></tr></table><img src=\"L2UI.Squaregray\" width=610 height=1>");
 				index++;
 			}
 		}
@@ -356,16 +314,16 @@ public class MailBBSManager extends BaseBBSManager
 		
 		String content = HtmCache.getInstance().getHtm(CB_PATH + "mail/mail-show.htm");
 		
-		String link = mail.location.getBypass() + "&nbsp;&gt;&nbsp;" + mail.subject;
+		String link = mail.getMailType().getBypass() + "&nbsp;&gt;&nbsp;" + mail.getSubject();
 		content = content.replace("%maillink%", link);
 		
-		content = content.replace("%writer%", getPlayerName(mail.senderId));
-		content = content.replace("%sentDate%", mail.sentDateString);
-		content = content.replace("%receiver%", mail.recipientNames);
+		content = content.replace("%writer%", getPlayerName(mail.getSenderId()));
+		content = content.replace("%sentDate%", mail.getFormattedSentDate());
+		content = content.replace("%receiver%", mail.getRecipients());
 		content = content.replace("%delDate%", "Unknown");
-		content = content.replace("%title%", mail.subject.replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;"));
-		content = content.replace("%mes%", mail.message.replaceAll("\r\n", "<br>").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;"));
-		content = content.replace("%letterId%", mail.mailId + "");
+		content = content.replace("%title%", mail.getSubject().replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;"));
+		content = content.replace("%mes%", mail.getMessage().replaceAll("\r\n", "<br>").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;"));
+		content = content.replace("%mailId%", mail.getId() + "");
 		
 		separateAndSend(content, player);
 	}
@@ -380,13 +338,13 @@ public class MailBBSManager extends BaseBBSManager
 	{
 		String content = HtmCache.getInstance().getHtm(CB_PATH + "mail/mail-reply.htm");
 		
-		String link = mail.location.getBypass() + "&nbsp;&gt;&nbsp;<a action=\"bypass _bbsmail;view;" + mail.mailId + "\">" + mail.subject + "</a>&nbsp;&gt;&nbsp;";
+		String link = mail.getMailType().getBypass() + "&nbsp;&gt;&nbsp;<a action=\"bypass _bbsmail;view;" + mail.getId() + "\">" + mail.getSubject() + "</a>&nbsp;&gt;&nbsp;";
 		content = content.replace("%maillink%", link);
 		
-		content = content.replace("%recipients%", mail.senderId == player.getObjectId() ? mail.recipientNames : getPlayerName(mail.senderId));
-		content = content.replace("%letterId%", mail.mailId + "");
+		content = content.replace("%recipients%", mail.getSenderId() == player.getObjectId() ? mail.getRecipients() : getPlayerName(mail.getSenderId()));
+		content = content.replace("%mailId%", mail.getId() + "");
 		send1001(content, player);
-		send1002(player, " ", "Re: " + mail.subject, "0");
+		send1002(player, " ", "Re: " + mail.getSubject(), "0");
 	}
 	
 	public void sendMail(String recipients, String subject, String message, Player player)
@@ -398,7 +356,7 @@ public class MailBBSManager extends BaseBBSManager
 		final Timestamp ts = new Timestamp(currentDate - 86400000L);
 		
 		// Check sender mails based on previous timestamp. If more than 10 mails have been found for today, then cancel the use.
-		if (getPlayerMails(player.getObjectId()).stream().filter(l -> l.sentDate.after(ts) && l.location == MailType.SENTBOX).count() >= 10)
+		if (getMails(player.getObjectId()).stream().filter(l -> l.getSentDate().after(ts) && l.getMailType() == MailType.SENTBOX).count() >= 10)
 		{
 			player.sendPacket(SystemMessageId.NO_MORE_MESSAGES_TODAY);
 			return;
@@ -423,7 +381,7 @@ public class MailBBSManager extends BaseBBSManager
 		final String formattedTime = new SimpleDateFormat("yyyy-MM-dd HH:mm").format(time);
 		
 		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(INSERT_NEW_MAIL))
+			PreparedStatement ps = con.prepareStatement(INSERT_MAIL))
 		{
 			ps.setInt(3, player.getObjectId());
 			ps.setString(4, "inbox");
@@ -448,7 +406,7 @@ public class MailBBSManager extends BaseBBSManager
 				if (!player.isGM())
 				{
 					// Sender is a regular player, while recipient is a GM.
-					if (isGM(recipientId))
+					if (PlayerInfoTable.getInstance().getPlayerAccessLevel(recipientId) > 0)
 					{
 						player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANNOT_MAIL_GM_S1).addString(recipientName));
 						continue;
@@ -483,23 +441,11 @@ public class MailBBSManager extends BaseBBSManager
 				
 				final int id = getNewMailId();
 				
-				ps.setInt(1, recipientId);
-				ps.setInt(2, id);
+				ps.setInt(1, id);
+				ps.setInt(2, recipientId);
 				ps.addBatch();
 				
-				final Mail mail = new Mail();
-				mail.charId = recipientId;
-				mail.mailId = id;
-				mail.senderId = player.getObjectId();
-				mail.location = MailType.INBOX;
-				mail.recipientNames = recipients;
-				mail.subject = subject;
-				mail.message = message;
-				mail.sentDate = time;
-				mail.sentDateString = formattedTime;
-				mail.unread = true;
-				
-				getPlayerMails(recipientId).add(mail);
+				getMails(recipientId).add(new Mail(id, recipientId, player.getObjectId(), MailType.INBOX, recipients, subject, message, time, formattedTime, true));
 				
 				if (recipientPlayer != null)
 				{
@@ -515,8 +461,8 @@ public class MailBBSManager extends BaseBBSManager
 			{
 				final int id = getNewMailId();
 				
-				ps.setInt(1, player.getObjectId());
-				ps.setInt(2, id);
+				ps.setInt(1, id);
+				ps.setInt(2, player.getObjectId());
 				ps.setInt(3, player.getObjectId());
 				ps.setString(4, "sentbox");
 				ps.setString(5, recipients);
@@ -526,19 +472,7 @@ public class MailBBSManager extends BaseBBSManager
 				ps.setInt(9, 0);
 				ps.execute();
 				
-				final Mail mail = new Mail();
-				mail.charId = player.getObjectId();
-				mail.mailId = id;
-				mail.senderId = player.getObjectId();
-				mail.location = MailType.SENTBOX;
-				mail.recipientNames = recipients;
-				mail.subject = subject;
-				mail.message = message;
-				mail.sentDate = time;
-				mail.sentDateString = formattedTime;
-				mail.unread = false;
-				
-				getPlayerMails(player.getObjectId()).add(mail);
+				getMails(player.getObjectId()).add(new Mail(id, player.getObjectId(), player.getObjectId(), MailType.SENTBOX, recipients, subject, message, time, formattedTime, false));
 				
 				player.sendPacket(SystemMessageId.SENT_MAIL);
 			}
@@ -555,16 +489,16 @@ public class MailBBSManager extends BaseBBSManager
 		if (!type.equals("") && !search.equals(""))
 		{
 			boolean byTitle = type.equalsIgnoreCase("title");
-			for (Mail mail : getPlayerMails(objectId))
+			for (Mail mail : getMails(objectId))
 			{
-				if (!mail.location.equals(location))
+				if (!mail.getMailType().equals(location))
 					continue;
 				
-				if (byTitle && mail.subject.toLowerCase().contains(search.toLowerCase()))
+				if (byTitle && mail.getSubject().toLowerCase().contains(search.toLowerCase()))
 					count++;
 				else if (!byTitle)
 				{
-					String writer = getPlayerName(mail.senderId);
+					String writer = getPlayerName(mail.getSenderId());
 					if (writer.toLowerCase().contains(search.toLowerCase()))
 						count++;
 				}
@@ -572,9 +506,9 @@ public class MailBBSManager extends BaseBBSManager
 		}
 		else
 		{
-			for (Mail mail : getPlayerMails(objectId))
+			for (Mail mail : getMails(objectId))
 			{
-				if (mail.location.equals(location))
+				if (mail.getMailType().equals(location))
 					count++;
 			}
 		}
@@ -584,7 +518,7 @@ public class MailBBSManager extends BaseBBSManager
 	private void deleteMail(Player player, int mailId)
 	{
 		// Cleanup memory.
-		getPlayerMails(player.getObjectId()).removeIf(m -> m.mailId == mailId);
+		getMails(player.getObjectId()).removeIf(m -> m.getId() == mailId);
 		
 		// Cleanup database.
 		try (Connection con = ConnectionPool.getConnection();
@@ -599,14 +533,14 @@ public class MailBBSManager extends BaseBBSManager
 		}
 	}
 	
-	private void setMailToRead(Player player, int mailId)
+	private void setMailAsRead(Player player, int mailId)
 	{
 		final Mail mail = getMail(player, mailId);
 		if (mail != null)
-			mail.unread = false;
+			mail.setAsRead();
 		
 		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(MARK_MAIL_READ))
+			PreparedStatement ps = con.prepareStatement(UPDATE_MAIL_AS_READ))
 		{
 			ps.setInt(1, mailId);
 			ps.execute();
@@ -621,10 +555,10 @@ public class MailBBSManager extends BaseBBSManager
 	{
 		final Mail mail = getMail(player, mailId);
 		if (mail != null)
-			mail.location = location;
+			mail.setMailType(location);
 		
 		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(SET_MAIL_LOC))
+			PreparedStatement ps = con.prepareStatement(UPDATE_MAIL_LOCATION))
 		{
 			ps.setString(1, location.toString().toLowerCase());
 			ps.setInt(2, mailId);
@@ -634,34 +568,6 @@ public class MailBBSManager extends BaseBBSManager
 		{
 			LOGGER.error("Couldn't set mail #{} location.", e, mailId);
 		}
-	}
-	
-	private static String getPlayerName(int objectId)
-	{
-		final String name = PlayerInfoTable.getInstance().getPlayerName(objectId);
-		return (name == null) ? "Unknown" : name;
-	}
-	
-	private static boolean isGM(int objectId)
-	{
-		boolean isGM = false;
-		
-		try (Connection con = ConnectionPool.getConnection();
-			PreparedStatement ps = con.prepareStatement(GET_GM_STATUS))
-		{
-			ps.setInt(1, objectId);
-			
-			try (ResultSet rs = ps.executeQuery())
-			{
-				if (rs.next())
-					isGM = rs.getInt(1) > 0;
-			}
-		}
-		catch (Exception e)
-		{
-			LOGGER.error("Couldn't verify GM access for {}.", e, objectId);
-		}
-		return isGM;
 	}
 	
 	private boolean isInboxFull(int objectId)
@@ -675,6 +581,12 @@ public class MailBBSManager extends BaseBBSManager
 		final int type = player.getMailPosition() / 1000;
 		
 		showMailList(player, page, MailType.VALUES[type]);
+	}
+	
+	private static String getPlayerName(int objectId)
+	{
+		final String name = PlayerInfoTable.getInstance().getPlayerName(objectId);
+		return (name == null) ? "Unknown" : name;
 	}
 	
 	private static int getPagesCount(int mailCount)

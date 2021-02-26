@@ -178,14 +178,14 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	
 	/**
 	 * Sets the ownerID of the item
-	 * @param owner_id : int designating the ID of the owner
+	 * @param ownerId : int designating the ID of the owner
 	 */
-	public void setOwnerId(int owner_id)
+	public void setOwnerId(int ownerId)
 	{
-		if (owner_id == _ownerId)
+		if (ownerId == _ownerId)
 			return;
 		
-		_ownerId = owner_id;
+		_ownerId = ownerId;
 		_storedInDb = false;
 	}
 	
@@ -877,9 +877,6 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	 */
 	public final void dropMe(Creature dropper, int x, int y, int z)
 	{
-		// Validate Z.
-		final int locZ = GeoEngine.getInstance().getHeight(x, y, z + 20);
-		
 		ThreadPool.execute(() ->
 		{
 			// Set the dropper OID for sendInfo show correct dropping animation.
@@ -889,7 +886,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 			World.getInstance().removeObject(this);
 			
 			// Validate location and spawn.
-			spawnMe(GeoEngine.getInstance().getValidLocation(dropper, x, y, locZ));
+			spawnMe(GeoEngine.getInstance().getValidLocation(dropper, x, y, z));
 			ItemsOnGroundTaskManager.getInstance().add(this, dropper);
 			
 			// Set the dropper OID back to 0, so sendInfo show item on ground.
@@ -904,10 +901,9 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 	 */
 	public final void dropMe(Creature dropper, int offset)
 	{
-		// Create drop location and validate Z.
+		// Create drop location.
 		final Location loc = dropper.getPosition().clone();
 		loc.addRandomOffset(offset);
-		loc.setZ(GeoEngine.getInstance().getHeight(loc.getX(), loc.getY(), loc.getZ() + 20));
 		
 		ThreadPool.execute(() ->
 		{
@@ -947,7 +943,7 @@ public final class ItemInstance extends WorldObject implements Runnable, Compara
 			final Player actor = player.getActingPlayer();
 			if (actor != null)
 			{
-				final QuestState qs = actor.getQuestState("Tutorial");
+				final QuestState qs = actor.getQuestList().getQuestState("Tutorial");
 				if (qs != null)
 					qs.getQuest().notifyEvent("CE" + _itemId + "", null, actor);
 			}

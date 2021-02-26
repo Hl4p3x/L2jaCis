@@ -7,7 +7,12 @@ public class HennaItemUnequipInfo extends L2GameServerPacket
 {
 	private final Henna _henna;
 	private final int _adena;
-	private final int _int, _str, _con, _men, _dex, _wit;
+	private final int _int;
+	private final int _str;
+	private final int _con;
+	private final int _men;
+	private final int _dex;
+	private final int _wit;
 	
 	public HennaItemUnequipInfo(Henna henna, Player player)
 	{

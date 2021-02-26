@@ -1,24 +1,22 @@
 package net.sf.l2j.gameserver.skills.effects;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import net.sf.l2j.gameserver.data.SkillTable;
+import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.model.actor.Creature;
+import net.sf.l2j.gameserver.model.actor.instance.Door;
 import net.sf.l2j.gameserver.model.actor.instance.EffectPoint;
-import net.sf.l2j.gameserver.network.SystemMessageId;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillLaunched;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
-import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.skills.l2skills.L2SkillSignet;
 
 public class EffectSignet extends AbstractEffect
 {
-	private L2Skill _skill;
 	private EffectPoint _actor;
-	private boolean _srcInArena;
 	
 	public EffectSignet(EffectTemplate template, L2Skill skill, Creature effected, Creature effector)
 	{
@@ -34,43 +32,28 @@ public class EffectSignet extends AbstractEffect
 	@Override
 	public boolean onStart()
 	{
-		_skill = SkillTable.getInstance().getInfo(((L2SkillSignet) getSkill()).effectId, getSkill().getLevel());
+		if (!(_skill instanceof L2SkillSignet))
+			return false;
+		
 		_actor = (EffectPoint) getEffected();
-		_srcInArena = getEffector().isInArena();
 		return true;
 	}
 	
 	@Override
 	public boolean onActionTime()
 	{
-		if (_skill == null)
+		final List<Creature> list = _actor.getKnownTypeInRadius(Creature.class, _skill.getSkillRadius(), creature -> !creature.isDead() && !(creature instanceof Door) && !creature.isInsideZone(ZoneId.PEACE));
+		if (list.isEmpty())
 			return true;
 		
-		final int mpConsume = _skill.getMpConsume();
-		if (mpConsume > getEffector().getStatus().getMp())
+		final L2Skill signetSkill = SkillTable.getInstance().getInfo(((L2SkillSignet) _skill).effectId, _skill.getLevel());
+		final Creature[] targets = list.toArray(new Creature[list.size()]);
+		for (Creature creature : targets)
 		{
-			getEffector().sendPacket(SystemMessage.getSystemMessage(SystemMessageId.SKILL_REMOVED_DUE_LACK_MP));
-			return false;
+			signetSkill.getEffects(_actor, creature);
+			_actor.broadcastPacket(new MagicSkillUse(_actor, creature, signetSkill.getId(), signetSkill.getLevel(), 0, 0));
 		}
-		
-		getEffector().getStatus().reduceMp(mpConsume);
-		
-		List<Creature> targets = new ArrayList<>();
-		for (Creature cha : _actor.getKnownTypeInRadius(Creature.class, getSkill().getSkillRadius()))
-		{
-			// isSignetOffensiveSkill only really checks for Day of Doom, the other signets ahve different Effects
-			if (_skill.isSignetOffensiveSkill() && !L2Skill.checkForAreaOffensiveSkills(getEffector(), cha, _skill, true, _srcInArena))
-				continue;
-			
-			// there doesn't seem to be a visible effect with MagicSkillLaunched packet...
-			_actor.broadcastPacket(new MagicSkillUse(_actor, cha, _skill.getId(), _skill.getLevel(), 0, 0));
-			
-			targets.add(cha);
-		}
-		
-		if (!targets.isEmpty())
-			getEffector().getCast().callSkill(_skill, targets.toArray(new Creature[targets.size()]));
-		
+		_actor.broadcastPacket(new MagicSkillLaunched(_actor, signetSkill, targets));
 		return true;
 	}
 	

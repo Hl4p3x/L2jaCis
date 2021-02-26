@@ -1,29 +1,30 @@
 package net.sf.l2j.gameserver.enums;
 
 import net.sf.l2j.gameserver.model.group.CommandChannel;
+import net.sf.l2j.gameserver.network.NpcStringId;
 
 /**
  * Related informations regarding boss.
  */
 public enum BossInfoType
 {
-	AQ(29001, "[(Queen Ant)  # %s's Command Channel has looting rights.]", "[(Queen Ant) Looting rules are no longer active.]", 36),
-	CORE(29006, "[(Core)  # %s's Command Channel has looting rights.]", "[(Core) Looting rules are no longer active.]", 36),
-	ORFEN(29014, "[(Orfen)  # %s's Command Channel has looting rights.]", "[(Orfen) Looting rules are no longer active.]", 36),
-	ZAKEN(29022, "[(Zaken)  # %s's Command Channel has looting rights.]", "[(Zaken) Looting rules are no longer active.]", 36),
-	REGULAR(0, "[# %s's Command Channel has looting rights.]", "[Looting rules are no longer active.]", 18),
-	BAIUM(29020, "[# %s's Command Channel has looting rights.]", "[Looting rules are no longer active.]", 36),
-	ANTHARAS(29019, "[# %s's Command Channel has looting rights.]", "[Looting rules are no longer active.]", 225),
-	VALAKAS(29028, "[# %s's Command Channel has looting rights.]", "[Looting rules are no longer active.]", 36);
+	AQ(29001, NpcStringId.ID_1800001, NpcStringId.ID_1800005, 36),
+	CORE(29006, NpcStringId.ID_1800002, NpcStringId.ID_1800006, 36),
+	ORFEN(29014, NpcStringId.ID_1800003, NpcStringId.ID_1800007, 36),
+	ZAKEN(29022, NpcStringId.ID_1800004, NpcStringId.ID_1800008, 36),
+	REGULAR(0, NpcStringId.ID_1800009, NpcStringId.ID_1800010, 18),
+	BAIUM(29020, NpcStringId.ID_1800009, NpcStringId.ID_1800010, 36),
+	ANTHARAS(29019, NpcStringId.ID_1800009, NpcStringId.ID_1800010, 225),
+	VALAKAS(29028, NpcStringId.ID_1800009, NpcStringId.ID_1800010, 36);
 	
 	public static final BossInfoType[] VALUES = values();
 	
 	private final int _npcId;
-	private final String _ccRightsMsg;
-	private final String _ccNoRightsMsg;
+	private final NpcStringId _ccRightsMsg;
+	private final NpcStringId _ccNoRightsMsg;
 	private final int _requiredMembersAmount;
 	
-	private BossInfoType(int npcId, String ccRightsMsg, String ccNoRightsMsg, int requiredMembersAmount)
+	private BossInfoType(int npcId, NpcStringId ccRightsMsg, NpcStringId ccNoRightsMsg, int requiredMembersAmount)
 	{
 		_npcId = npcId;
 		_ccRightsMsg = ccRightsMsg;
@@ -36,12 +37,12 @@ public enum BossInfoType
 		return _npcId;
 	}
 	
-	public String getCcRightsMsg()
+	public NpcStringId getCcRightsMsg()
 	{
 		return _ccRightsMsg;
 	}
 	
-	public String getCcNoRightsMsg()
+	public NpcStringId getCcNoRightsMsg()
 	{
 		return _ccNoRightsMsg;
 	}

@@ -94,7 +94,7 @@ public class CharSelectInfo extends L2GameServerPacket
 			
 			writeD(slot.getKarma());
 			writeD(slot.getPkKills());
-			writeD(slot.getPvPKills());
+			writeD(slot.getPvpKills());
 			
 			writeD(0x00);
 			writeD(0x00);
@@ -201,7 +201,7 @@ public class CharSelectInfo extends L2GameServerPacket
 					slot.setCurrentMp(rs.getDouble("curmp"));
 					slot.setKarma(rs.getInt("karma"));
 					slot.setPkKills(rs.getInt("pkkills"));
-					slot.setPvPKills(rs.getInt("pvpkills"));
+					slot.setPvpKills(rs.getInt("pvpkills"));
 					slot.setFace(rs.getInt("face"));
 					slot.setHairStyle(rs.getInt("hairstyle"));
 					slot.setHairColor(rs.getInt("haircolor"));

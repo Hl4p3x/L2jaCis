@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.SkillTable;
 import net.sf.l2j.gameserver.model.MinionData;
@@ -51,7 +51,7 @@ public class NpcData implements IXmlReader
 			final NamedNodeMap attrs = npcNode.getAttributes();
 			final int npcId = parseInteger(attrs, "id");
 			final int templateId = attrs.getNamedItem("idTemplate") == null ? npcId : parseInteger(attrs, "idTemplate");
-			final StatsSet set = new StatsSet();
+			final StatSet set = new StatSet();
 			set.set("id", npcId);
 			set.set("idTemplate", templateId);
 			set.set("name", parseString(attrs, "name"));
@@ -133,7 +133,7 @@ public class NpcData implements IXmlReader
 				final Map<Integer, PetDataEntry> entries = new HashMap<>();
 				forEach(petdataNode, "stat", statNode ->
 				{
-					final StatsSet petSet = parseAttributes(statNode);
+					final StatSet petSet = parseAttributes(statNode);
 					entries.put(petSet.getInteger("level"), new PetDataEntry(petSet));
 				});
 				set.set("petData", entries);

@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.geoengine.geodata;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import net.sf.l2j.gameserver.enums.GeoType;
@@ -14,16 +12,16 @@ public class BlockFlat extends ABlock
 	/**
 	 * Creates FlatBlock.
 	 * @param bb : Input byte buffer.
-	 * @param format : GeoFormat specifying format of loaded data.
+	 * @param type : The type of loaded geodata.
 	 */
-	public BlockFlat(ByteBuffer bb, GeoType format)
+	public BlockFlat(ByteBuffer bb, GeoType type)
 	{
 		// Get height and nswe.
 		_height = bb.getShort();
-		_nswe = format != GeoType.L2D ? 0x0F : (byte) (0xFF);
+		_nswe = GeoStructure.CELL_FLAG_ALL;
 		
 		// Read dummy data.
-		if (format == GeoType.L2OFF)
+		if (type == GeoType.L2OFF)
 			bb.getShort();
 	}
 	
@@ -75,22 +73,5 @@ public class BlockFlat extends ABlock
 	public final byte getNswe(int index, IGeoObject ignore)
 	{
 		return _nswe;
-	}
-	
-	@Override
-	public final void setNswe(int index, byte nswe)
-	{
-		_nswe = nswe;
-	}
-	
-	@Override
-	public final void saveBlock(BufferedOutputStream stream) throws IOException
-	{
-		// Write block type.
-		stream.write(GeoStructure.TYPE_FLAT_L2D);
-		
-		// Write height.
-		stream.write((byte) (_height & 0x00FF));
-		stream.write((byte) (_height >> 8));
 	}
 }

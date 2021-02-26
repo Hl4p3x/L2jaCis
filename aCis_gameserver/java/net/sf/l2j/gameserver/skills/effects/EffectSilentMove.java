@@ -17,19 +17,6 @@ public class EffectSilentMove extends AbstractEffect
 	}
 	
 	@Override
-	public boolean onStart()
-	{
-		super.onStart();
-		return true;
-	}
-	
-	@Override
-	public void onExit()
-	{
-		super.onExit();
-	}
-	
-	@Override
 	public EffectType getEffectType()
 	{
 		return EffectType.SILENT_MOVE;

@@ -210,8 +210,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="200" />
         <set name="skillType" val="BLOW" />
-        <set name="condition" val="16" />
         <set name="hitTime" val="2000" />
         <set name="reuseDelay" val="10000" />
 		<set name="magicLvl" val="#magicLvl" />
@@ -526,8 +526,8 @@
 		<set name="mpConsume" val="#mpConsume" />
 		<set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-		<set name="condition" val="16" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
 		<set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
 		<set name="skillType" val="BLOW" />
@@ -543,8 +543,8 @@
 		<set name="mpConsume" val="#mpConsume" />
 		<set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-		<set name="condition" val="16" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
 		<set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
 		<set name="skillType" val="BLOW" />
@@ -560,8 +560,8 @@
 		<set name="mpConsume" val="#mpConsume" />
 		<set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-		<set name="condition" val="16" />
 		<set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
 		<set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
 		<set name="skillType" val="BLOW" />
@@ -577,8 +577,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />
@@ -594,8 +594,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="1150" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />
@@ -851,8 +851,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="670" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />
@@ -868,8 +868,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="670" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />
@@ -885,8 +885,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="670" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />
@@ -902,8 +902,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="670" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />
@@ -919,8 +919,8 @@
         <set name="mpConsume" val="#mpConsume" />
         <set name="power" val="#power" />
 		<set name="magicLvl" val="#magicLvl" />
-        <set name="condition" val="16" />
         <set name="target" val="ONE" />
+		<set name="baseLandRate" val="670" />
         <set name="hitTime" val="830" />
 		<set name="coolTime" val="660" />
         <set name="skillType" val="BLOW" />

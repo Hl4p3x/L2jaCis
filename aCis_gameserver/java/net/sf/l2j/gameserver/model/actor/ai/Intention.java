@@ -107,7 +107,7 @@ public class Intention
 		_finalTarget = finalTarget;
 		
 		_skill = skill;
-		_loc = loc;
+		_loc = (loc == null) ? null : loc.clone();
 		_boat = boat;
 		
 		_isCtrlPressed = isCtrlPressed;

@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
 
@@ -20,7 +20,7 @@ public class Fish
 	private final int _waitTime;
 	private final int _combatTime;
 	
-	public Fish(StatsSet set)
+	public Fish(StatSet set)
 	{
 		_id = set.getInteger("id");
 		_level = set.getInteger("level");

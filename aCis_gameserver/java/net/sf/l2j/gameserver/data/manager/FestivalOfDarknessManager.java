@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
@@ -3131,7 +3131,7 @@ public class FestivalOfDarknessManager
 	private Map<Integer, Integer> _dawnFestivalScores = new HashMap<>();
 	private Map<Integer, Integer> _duskFestivalScores = new HashMap<>();
 	
-	private Map<Integer, Map<Integer, StatsSet>> _festivalData = new HashMap<>();
+	private Map<Integer, Map<Integer, StatSet>> _festivalData = new HashMap<>();
 	
 	protected FestivalOfDarknessManager()
 	{
@@ -3212,7 +3212,7 @@ public class FestivalOfDarknessManager
 					int festivalId = rs.getInt("festivalId");
 					final String cabal = rs.getString("cabal");
 					
-					final StatsSet set = new StatsSet();
+					final StatSet set = new StatSet();
 					set.set("festivalId", festivalId);
 					set.set("cabal", Enum.valueOf(CabalType.class, cabal));
 					set.set("cycle", festivalCycle);
@@ -3223,7 +3223,7 @@ public class FestivalOfDarknessManager
 					if (cabal.equalsIgnoreCase("dawn"))
 						festivalId += FESTIVAL_COUNT;
 					
-					Map<Integer, StatsSet> map = _festivalData.get(festivalCycle);
+					Map<Integer, StatSet> map = _festivalData.get(festivalCycle);
 					if (map == null)
 						map = new HashMap<>();
 					
@@ -3263,9 +3263,9 @@ public class FestivalOfDarknessManager
 			PreparedStatement ps = con.prepareStatement(UPDATE);
 			PreparedStatement ps2 = con.prepareStatement(INSERT))
 		{
-			for (Map<Integer, StatsSet> map : _festivalData.values())
+			for (Map<Integer, StatSet> map : _festivalData.values())
 			{
-				for (StatsSet set : map.values())
+				for (StatSet set : map.values())
 				{
 					final int festivalCycle = set.getInteger("cycle");
 					final int festivalId = set.getInteger("festivalId");
@@ -3308,7 +3308,7 @@ public class FestivalOfDarknessManager
 	{
 		for (int i = 0; i < FESTIVAL_COUNT; i++)
 		{
-			final StatsSet set = getOverallHighestScoreData(i);
+			final StatSet set = getOverallHighestScoreData(i);
 			if (set != null)
 			{
 				for (String playerName : set.getString("members").split(","))
@@ -3382,7 +3382,7 @@ public class FestivalOfDarknessManager
 		_duskFestivalScores.clear();
 		
 		// Set up a new data set for the current cycle of festivals
-		Map<Integer, StatsSet> map = new HashMap<>();
+		Map<Integer, StatSet> map = new HashMap<>();
 		
 		for (int i = 0; i < FESTIVAL_COUNT * 2; i++)
 		{
@@ -3391,8 +3391,8 @@ public class FestivalOfDarknessManager
 			if (i >= FESTIVAL_COUNT)
 				festivalId -= FESTIVAL_COUNT;
 			
-			// Create a new StatsSet with "default" data for Dusk
-			StatsSet set = new StatsSet();
+			// Create a new StatSet with "default" data for Dusk
+			StatSet set = new StatSet();
 			set.set("festivalId", festivalId);
 			set.set("cycle", _signsCycle);
 			set.set("date", "0");
@@ -3625,15 +3625,13 @@ public class FestivalOfDarknessManager
 	}
 	
 	/**
-	 * Returns a stats set containing the highest score <b>this cycle</b> for the the specified cabal and associated festival ID.
-	 * @param oracle
-	 * @param festivalId
-	 * @return StatsSet festivalDat
+	 * @param oracle : The {@link CabalType} to test.
+	 * @param festivalId : The festival id to test.
+	 * @return The {@link StatSet} containing the highest score <b>this cycle</b> for the the specified {@link CabalType} and festival id.
 	 */
-	public final StatsSet getHighestScoreData(CabalType oracle, int festivalId)
+	public final StatSet getHighestScoreData(CabalType oracle, int festivalId)
 	{
 		int offsetId = festivalId;
-		
 		if (oracle == CabalType.DAWN)
 			offsetId += 5;
 		
@@ -3641,18 +3639,17 @@ public class FestivalOfDarknessManager
 	}
 	
 	/**
-	 * Returns a stats set containing the highest ever recorded score data for the specified festival.
-	 * @param festivalId
-	 * @return StatsSet result
+	 * @param festivalId : The festival id to test.
+	 * @return The {@link StatSet} containing the highest ever recorded score data for the specified festival id.
 	 */
-	public final StatsSet getOverallHighestScoreData(int festivalId)
+	public final StatSet getOverallHighestScoreData(int festivalId)
 	{
-		StatsSet set = null;
+		StatSet set = null;
 		int highestScore = 0;
 		
-		for (Map<Integer, StatsSet> map : _festivalData.values())
+		for (Map<Integer, StatSet> map : _festivalData.values())
 		{
-			for (StatsSet setToTest : map.values())
+			for (StatSet setToTest : map.values())
 			{
 				int currFestID = setToTest.getInteger("festivalId");
 				int festivalScore = setToTest.getInteger("score");
@@ -3704,7 +3701,7 @@ public class FestivalOfDarknessManager
 			_duskFestivalScores.put(festivalId, offeringScore);
 		}
 		
-		StatsSet set = getHighestScoreData(oracle, festivalId);
+		StatSet set = getHighestScoreData(oracle, festivalId);
 		
 		// Check if this is the highest score for this level range so far for the player's cabal.
 		if (offeringScore > thisCabalHighScore)
@@ -3781,14 +3778,14 @@ public class FestivalOfDarknessManager
 		if (SevenSignsManager.getInstance().getPlayerCabal(player.getObjectId()) != SevenSignsManager.getInstance().getWinningCabal())
 			return 0;
 		
-		final Map<Integer, StatsSet> map = _festivalData.get(_signsCycle);
+		final Map<Integer, StatSet> map = _festivalData.get(_signsCycle);
 		if (map == null)
 			return 0;
 		
 		final String playerName = player.getName();
 		
 		int playerBonus = 0;
-		for (StatsSet set : map.values())
+		for (StatSet set : map.values())
 		{
 			final String members = set.getString("members");
 			if (members.indexOf(playerName) > -1)

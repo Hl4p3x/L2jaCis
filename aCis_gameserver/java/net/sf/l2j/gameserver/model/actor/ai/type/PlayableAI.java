@@ -30,7 +30,7 @@ public abstract class PlayableAI extends CreatureAI
 				final L2Skill skill = _currentIntention.getSkill();
 				final Creature target = _currentIntention.getFinalTarget();
 				
-				if (skill.nextActionIsAttack() && getActor().canKeepAttacking(target))
+				if (skill.nextActionIsAttack() && target.isAttackableWithoutForceBy(getActor()))
 					doAttackIntention(target, _currentIntention.isCtrlPressed(), _currentIntention.isShiftPressed());
 				else
 					doActiveIntention();

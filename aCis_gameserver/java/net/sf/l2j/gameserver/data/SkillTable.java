@@ -1,6 +1,7 @@
 package net.sf.l2j.gameserver.data;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -36,6 +37,8 @@ public class SkillTable
 		1326,
 		1327
 	};
+	
+	private static final L2Skill[] _clanSkills = new L2Skill[22];
 	
 	public static SkillTable getInstance()
 	{
@@ -86,6 +89,12 @@ public class SkillTable
 		
 		for (int i = 0; i < _nobleSkills.length; i++)
 			_nobleSkills[i] = getInfo(_nobleSkillsId[i], 1);
+		
+		for (int i = 0; i < _clanSkills.length; i++)
+		{
+			final int skillId = 370 + i;
+			_clanSkills[i] = getInfo(skillId, getMaxLevel(skillId));
+		}
 	}
 	
 	public void reload()
@@ -94,6 +103,11 @@ public class SkillTable
 		_skillMaxLevel.clear();
 		
 		load();
+	}
+	
+	public Collection<L2Skill> getSkills()
+	{
+		return _skills.values();
 	}
 	
 	/**
@@ -124,8 +138,7 @@ public class SkillTable
 	
 	public int getMaxLevel(int skillId)
 	{
-		final Integer maxLevel = _skillMaxLevel.get(skillId);
-		return (maxLevel != null) ? maxLevel : 0;
+		return _skillMaxLevel.getOrDefault(skillId, 0);
 	}
 	
 	/**
@@ -165,11 +178,15 @@ public class SkillTable
 		return _nobleSkills;
 	}
 	
+	public static L2Skill[] getClanSkills()
+	{
+		return _clanSkills;
+	}
+	
 	/**
 	 * Enum to hold some important references to frequently used (hardcoded) skills in core
-	 * @author DrHouse
 	 */
-	public static enum FrequentSkill
+	public enum FrequentSkill
 	{
 		LUCKY(194, 1),
 		BLESSING_OF_PROTECTION(5182, 1),

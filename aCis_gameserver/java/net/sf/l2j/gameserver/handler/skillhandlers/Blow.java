@@ -11,7 +11,6 @@ import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
 import net.sf.l2j.gameserver.skills.Formulas;
 import net.sf.l2j.gameserver.skills.L2Skill;
-import net.sf.l2j.gameserver.skills.basefuncs.Func;
 
 public class Blow implements ISkillHandler
 {
@@ -37,21 +36,7 @@ public class Blow implements ISkillHandler
 			if (target.isAlikeDead())
 				continue;
 			
-			int successChance = 60;
-			if (activeChar.isBehind(target))
-				successChance = 70;
-			else if (activeChar.isInFrontOf(target))
-				successChance = 50;
-			
-			// If skill requires Crit or skill requires behind, calculate chance based on DEX, Position and on self BUFF
-			boolean success = true;
-			if ((skill.getCondition() & L2Skill.COND_BEHIND) != 0)
-				success = (successChance == 70);
-			
-			if ((skill.getCondition() & L2Skill.COND_CRIT) != 0)
-				success = (success && Formulas.calcBlow(activeChar, target, successChance));
-			
-			if (success)
+			if (Formulas.calcBlowRate(activeChar, target, skill))
 			{
 				// Calculate skill evasion.
 				if (Formulas.calcPhysicalSkillEvasion(target, skill))
@@ -95,20 +80,7 @@ public class Blow implements ISkillHandler
 				
 				// Critical check, modified with STR bonus.
 				if (Formulas.calcCrit(skill.getBaseCritRate() * 10 * Formulas.getSTRBonus(activeChar)))
-				{
 					damage *= 2;
-					
-					// Vicious Stance is special after C5, and only for BLOW skills.
-					if (damage > 1)
-					{
-						final AbstractEffect vicious = activeChar.getFirstEffect(312);
-						if (vicious != null)
-						{
-							for (Func func : vicious.getStatFuncs())
-								damage = (int) func.calc(activeChar, target, skill, damage, damage);
-						}
-					}
-				}
 				
 				target.reduceCurrentHp(damage, activeChar, skill);
 				
@@ -131,9 +103,9 @@ public class Blow implements ISkillHandler
 				
 				// Send damage message.
 				activeChar.sendDamageMessage(target, (int) damage, false, true, false);
+				
+				activeChar.setChargedShot(ShotType.SOULSHOT, skill.isStaticReuse());
 			}
-			else
-				activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.ATTACK_FAILED));
 			
 			// Possibility of a lethal strike
 			Formulas.calcLethalHit(activeChar, target, skill);
@@ -146,7 +118,6 @@ public class Blow implements ISkillHandler
 				
 				skill.getEffectsSelf(activeChar);
 			}
-			activeChar.setChargedShot(ShotType.SOULSHOT, skill.isStaticReuse());
 		}
 	}
 	

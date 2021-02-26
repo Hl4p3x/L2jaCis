@@ -33,7 +33,7 @@ public final class AnswerTradeRequest extends L2GameClientPacket
 		if (partner == null || World.getInstance().getPlayer(partner.getObjectId()) == null)
 		{
 			// Trade partner not found, cancel trade
-			player.sendPacket(new SendTradeDone(0));
+			player.sendPacket(SendTradeDone.FAIL_STATIC_PACKET);
 			player.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
 			player.setActiveRequester(null);
 			return;

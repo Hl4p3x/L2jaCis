@@ -1,8 +1,10 @@
 package net.sf.l2j.gameserver.network.serverpackets;
 
+import net.sf.l2j.gameserver.handler.admincommandhandlers.AdminMovieMaker.Sequence;
+
 public class SpecialCamera extends L2GameServerPacket
 {
-	private final int _id;
+	private final int _objectId;
 	private final int _dist;
 	private final int _yaw;
 	private final int _pitch;
@@ -13,23 +15,14 @@ public class SpecialCamera extends L2GameServerPacket
 	private final int _widescreen;
 	private final int _unknown;
 	
-	public SpecialCamera(int id, int dist, int yaw, int pitch, int time, int duration)
+	public SpecialCamera(Sequence sequence)
 	{
-		_id = id;
-		_dist = dist;
-		_yaw = yaw;
-		_pitch = pitch;
-		_time = time;
-		_duration = duration;
-		_turn = 0;
-		_rise = 0;
-		_widescreen = 0;
-		_unknown = 0;
+		this(sequence._objectId, sequence._dist, sequence._yaw, sequence._pitch, sequence._time, sequence._duration, sequence._turn, sequence._rise, sequence._widescreen, 0);
 	}
 	
-	public SpecialCamera(int id, int dist, int yaw, int pitch, int time, int duration, int turn, int rise, int widescreen, int unk)
+	public SpecialCamera(int objectId, int dist, int yaw, int pitch, int time, int duration, int turn, int rise, int widescreen, int unknown)
 	{
-		_id = id;
+		_objectId = objectId;
 		_dist = dist;
 		_yaw = yaw;
 		_pitch = pitch;
@@ -38,14 +31,14 @@ public class SpecialCamera extends L2GameServerPacket
 		_turn = turn;
 		_rise = rise;
 		_widescreen = widescreen;
-		_unknown = unk;
+		_unknown = unknown;
 	}
 	
 	@Override
 	public void writeImpl()
 	{
 		writeC(0xc7);
-		writeD(_id);
+		writeD(_objectId);
 		writeD(_dist);
 		writeD(_yaw);
 		writeD(_pitch);

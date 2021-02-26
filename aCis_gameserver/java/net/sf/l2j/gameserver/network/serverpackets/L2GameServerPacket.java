@@ -22,9 +22,9 @@ public abstract class L2GameServerPacket extends SendablePacket<GameClient>
 		{
 			writeImpl();
 		}
-		catch (Throwable t)
+		catch (Exception e)
 		{
-			LOGGER.error("Failed writing {} for {}. ", t, getType(), getClient().toString());
+			LOGGER.error("Failed writing {} for {}. ", e, getType(), getClient().toString());
 		}
 	}
 	

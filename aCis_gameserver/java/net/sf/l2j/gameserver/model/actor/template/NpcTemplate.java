@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.util.ArraysUtil;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.data.manager.ClanHallManager;
@@ -34,7 +34,6 @@ public class NpcTemplate extends CreatureTemplate
 	private boolean _usingServerSideName;
 	private final String _title;
 	private boolean _usingServerSideTitle;
-	private final boolean _cantBeChampionMonster;
 	private final byte _level;
 	private final int _exp;
 	private final int _sp;
@@ -71,7 +70,7 @@ public class NpcTemplate extends CreatureTemplate
 	private ClanHall _clanHall;
 	private SiegableHall _siegableHall;
 	
-	public NpcTemplate(StatsSet set)
+	public NpcTemplate(StatSet set)
 	{
 		super(set);
 		
@@ -82,7 +81,6 @@ public class NpcTemplate extends CreatureTemplate
 		_usingServerSideName = set.getBool("usingServerSideName", false);
 		_title = set.getString("title", "");
 		_usingServerSideTitle = set.getBool("usingServerSideTitle", false);
-		_cantBeChampionMonster = _title.equalsIgnoreCase("Quest Monster") || isType("Chest");
 		_level = set.getByte("level", (byte) 1);
 		_exp = set.getInteger("exp", 0);
 		_sp = set.getInteger("sp", 0);
@@ -195,11 +193,6 @@ public class NpcTemplate extends CreatureTemplate
 	public boolean isUsingServerSideTitle()
 	{
 		return _usingServerSideTitle;
-	}
-	
-	public boolean cantBeChampion()
-	{
-		return _cantBeChampionMonster;
 	}
 	
 	public byte getLevel()
@@ -538,7 +531,7 @@ public class NpcTemplate extends CreatureTemplate
 	 */
 	public List<Quest> getEventQuests(ScriptEventType type)
 	{
-		return _questEvents.get(type);
+		return _questEvents.getOrDefault(type, Collections.emptyList());
 	}
 	
 	/**

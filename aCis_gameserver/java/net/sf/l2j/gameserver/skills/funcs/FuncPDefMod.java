@@ -4,6 +4,8 @@ import net.sf.l2j.gameserver.enums.Paperdoll;
 import net.sf.l2j.gameserver.enums.skills.Stats;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
+import net.sf.l2j.gameserver.model.item.kind.Item;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.skills.basefuncs.Func;
 
@@ -25,16 +27,17 @@ public class FuncPDefMod extends Func
 		if (effector instanceof Player)
 		{
 			final Player player = (Player) effector;
-			final boolean isMage = player.isMageClass();
 			
 			if (player.getInventory().hasItemIn(Paperdoll.HEAD))
 				value -= 12;
 			
-			if (player.getInventory().hasItemIn(Paperdoll.CHEST))
-				value -= (isMage) ? 15 : 31;
+			final ItemInstance chestItem = player.getInventory().getItemFrom(Paperdoll.CHEST);
+			if (chestItem != null)
+				value -= (player.isMageClass()) ? 15 : 31;
 			
-			if (player.getInventory().hasItemIn(Paperdoll.LEGS))
-				value -= (isMage) ? 8 : 18;
+			final boolean isFullBody = chestItem != null && chestItem.getItem().getBodyPart() == Item.SLOT_FULL_ARMOR;
+			if (isFullBody || player.getInventory().hasItemIn(Paperdoll.LEGS))
+				value -= (player.isMageClass()) ? 8 : 18;
 			
 			if (player.getInventory().hasItemIn(Paperdoll.GLOVES))
 				value -= 8;

@@ -210,7 +210,7 @@ public abstract class ZoneType
 		
 		List<A> result = new ArrayList<>();
 		
-		for (WorldObject obj : _characters.values())
+		for (Creature obj : _characters.values())
 		{
 			if (type.isAssignableFrom(obj.getClass()))
 				result.add((A) obj);

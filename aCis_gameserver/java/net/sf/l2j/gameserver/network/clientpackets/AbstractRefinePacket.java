@@ -137,6 +137,7 @@ public abstract class AbstractRefinePacket extends L2GameClientPacket
 		// Check for item id
 		if (getGemStoneId(grade) != gemStones.getItemId())
 			return false;
+		
 		// Count must be greater or equal of required number
 		if (getGemStoneCount(grade) > gemStones.getCount())
 			return false;
@@ -259,8 +260,10 @@ public abstract class AbstractRefinePacket extends L2GameClientPacket
 			player.sendPacket(SystemMessageId.YOU_CANNOT_AUGMENT_ITEMS_WHILE_SITTING_DOWN);
 			return false;
 		}
+		
 		if (player.isCursedWeaponEquipped())
 			return false;
+		
 		if (player.isProcessingTransaction())
 			return false;
 		

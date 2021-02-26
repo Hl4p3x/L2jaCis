@@ -116,7 +116,7 @@ public final class Auctioneer extends Folk
 			showChatWindow(player);
 			return;
 		}
-		// Commands allowed for clan members with priviledges.
+		// Commands allowed for clan members with privileges.
 		else
 		{
 			final Clan clan = player.getClan();

@@ -16,7 +16,7 @@ public class PrivateStoreListSell extends L2GameServerPacket
 	{
 		_playerAdena = player.getAdena();
 		_storePlayer = storePlayer;
-		_items = _storePlayer.getSellList().getItems();
+		_items = _storePlayer.getSellList();
 		_packageSale = _storePlayer.getSellList().isPackaged();
 	}
 	

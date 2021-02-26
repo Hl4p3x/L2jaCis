@@ -13,7 +13,7 @@ public class GMViewQuestList extends L2GameServerPacket
 	
 	public GMViewQuestList(Player player)
 	{
-		_quests = player.getAllQuests(true);
+		_quests = player.getQuestList().getAllQuests(true);
 		_player = player;
 	}
 	
@@ -27,20 +27,12 @@ public class GMViewQuestList extends L2GameServerPacket
 		
 		for (Quest quest : _quests)
 		{
+			// Write quest id.
 			writeD(quest.getQuestId());
 			
-			final QuestState qs = _player.getQuestState(quest.getName());
-			if (qs == null)
-			{
-				writeD(0);
-				continue;
-			}
-			
-			final int flag = qs.getInt("__compltdStateFlags");
-			if (flag != 0)
-				writeD(flag);
-			else
-				writeD(qs.getInt("cond"));
+			// Write quest's flags or cond value, if active.
+			final QuestState qs = _player.getQuestList().getQuestState(quest.getQuestId());
+			writeD((qs == null) ? 0 : qs.getFlags());
 		}
 	}
 }

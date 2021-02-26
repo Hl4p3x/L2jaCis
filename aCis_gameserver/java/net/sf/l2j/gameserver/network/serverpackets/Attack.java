@@ -1,12 +1,8 @@
 package net.sf.l2j.gameserver.network.serverpackets;
 
-import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Player;
+import net.sf.l2j.gameserver.model.actor.attack.CreatureAttack.HitHolder;
 
-/**
- * format dddc dddh (ddc)
- */
 public class Attack extends L2GameServerPacket
 {
 	public static final int HITFLAG_USESS = 0x10;
@@ -14,48 +10,17 @@ public class Attack extends L2GameServerPacket
 	public static final int HITFLAG_SHLD = 0x40;
 	public static final int HITFLAG_MISS = 0x80;
 	
-	public class Hit
-	{
-		protected final int _targetId;
-		protected final int _damage;
-		protected int _flags;
-		
-		Hit(WorldObject target, int damage, boolean miss, boolean crit, byte shld)
-		{
-			_targetId = target.getObjectId();
-			_damage = damage;
-			
-			if (miss)
-			{
-				_flags = HITFLAG_MISS;
-				return;
-			}
-			
-			if (soulshot)
-				_flags = HITFLAG_USESS | _ssGrade;
-			
-			if (crit)
-				_flags |= HITFLAG_CRIT;
-			
-			if (shld > 0 && !(target instanceof Player && ((Player) target).isInOlympiadMode()))
-				_flags |= HITFLAG_SHLD;
-		}
-	}
-	
-	private final int _attackerObjId;
+	private final int _attackerId;
 	public final boolean soulshot;
 	public final int _ssGrade;
-	private final int _x, _y, _z;
-	private Hit[] _hits;
+	private final int _x;
+	private final int _y;
+	private final int _z;
+	private HitHolder[] _hits;
 	
-	/**
-	 * @param attacker The attacking Creature.
-	 * @param useShots True if soulshots are used.
-	 * @param ssGrade The grade of the soulshots.
-	 */
 	public Attack(Creature attacker, boolean useShots, int ssGrade)
 	{
-		_attackerObjId = attacker.getObjectId();
+		_attackerId = attacker.getObjectId();
 		soulshot = useShots;
 		_ssGrade = ssGrade;
 		_x = attacker.getX();
@@ -63,28 +28,36 @@ public class Attack extends L2GameServerPacket
 		_z = attacker.getZ();
 	}
 	
-	public Hit createHit(WorldObject target, int damage, boolean miss, boolean crit, byte shld)
+	public boolean processHits(HitHolder[] hits)
 	{
-		return new Hit(target, damage, miss, crit, shld);
-	}
-	
-	public void hit(Hit... hits)
-	{
-		if (_hits == null)
-		{
-			_hits = hits;
-			return;
-		}
+		_hits = hits;
 		
-		// this will only happen with pole attacks
-		Hit[] tmp = new Hit[hits.length + _hits.length];
-		System.arraycopy(_hits, 0, tmp, 0, _hits.length);
-		System.arraycopy(hits, 0, tmp, _hits.length, hits.length);
-		_hits = tmp;
+		boolean isHit = false;
+		
+		for (HitHolder hit : hits)
+		{
+			if (hit._miss)
+			{
+				hit._flags = HITFLAG_MISS;
+				continue;
+			}
+			
+			isHit = true;
+			
+			if (soulshot)
+				hit._flags = HITFLAG_USESS | _ssGrade;
+			
+			if (hit._crit)
+				hit._flags |= HITFLAG_CRIT;
+			
+			if (hit._shld > 0)
+				hit._flags |= HITFLAG_SHLD;
+		}
+		return isHit;
 	}
 	
 	/**
-	 * @return True if the Server-Client packet Attack contains at least 1 hit.
+	 * @return True if this {@link Attack} serverpacket is filled.
 	 */
 	public boolean hasHits()
 	{
@@ -96,7 +69,7 @@ public class Attack extends L2GameServerPacket
 	{
 		writeC(0x05);
 		
-		writeD(_attackerObjId);
+		writeD(_attackerId);
 		writeD(_hits[0]._targetId);
 		writeD(_hits[0]._damage);
 		writeC(_hits[0]._flags);
@@ -104,7 +77,7 @@ public class Attack extends L2GameServerPacket
 		writeD(_y);
 		writeD(_z);
 		writeH(_hits.length - 1);
-		// prevent sending useless packet while there is only one target.
+		
 		if (_hits.length > 1)
 		{
 			for (int i = 1; i < _hits.length; i++)

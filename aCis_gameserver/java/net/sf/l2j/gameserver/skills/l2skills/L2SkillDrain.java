@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.ShotType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
@@ -19,7 +19,7 @@ public class L2SkillDrain extends L2Skill
 	private final float _absorbPart;
 	private final int _absorbAbs;
 	
-	public L2SkillDrain(StatsSet set)
+	public L2SkillDrain(StatSet set)
 	{
 		super(set);
 		

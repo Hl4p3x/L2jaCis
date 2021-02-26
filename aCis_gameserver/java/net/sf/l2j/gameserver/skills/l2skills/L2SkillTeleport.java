@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.data.xml.MapRegionData;
 import net.sf.l2j.gameserver.data.xml.MapRegionData.TeleportType;
@@ -18,7 +18,7 @@ public class L2SkillTeleport extends L2Skill
 	private final String _recallType;
 	private final Location _loc;
 	
-	public L2SkillTeleport(StatsSet set)
+	public L2SkillTeleport(StatSet set)
 	{
 		super(set);
 		

@@ -698,14 +698,46 @@ public class PcInventory extends Inventory
 		return validateCapacity(slots);
 	}
 	
+	/**
+	 * @param tradeList : The {@link TradeList} to test.
+	 * @return True if the {@link TradeList} set as parameter can pass a {@link #validateCapacity(int)} check.
+	 */
+	public boolean validateTradeListCapacity(TradeList tradeList)
+	{
+		int slots = 0;
+		for (TradeItem tradeItem : tradeList)
+			slots += calculateUsedSlots(tradeItem.getItem(), tradeItem.getCount());
+		
+		return validateCapacity(slots);
+	}
+	
+	/**
+	 * @param template : The {@link Item} to test.
+	 * @param itemCount : The {@link Item} count to add.
+	 * @return The number of used slots for a given {@link Item}.
+	 */
+	private int calculateUsedSlots(Item template, int itemCount)
+	{
+		final ItemInstance item = getItemByItemId(template.getItemId());
+		if (item != null)
+			return (item.isStackable()) ? 0 : itemCount;
+		
+		return (template.isStackable()) ? 1 : itemCount;
+	}
+	
+	/**
+	 * @param itemId : The {@link Item} id to test.
+	 * @param itemCount : The {@link Item} count to add.
+	 * @return The number of used slots for a given {@link Item} id.
+	 */
 	private int calculateUsedSlots(int itemId, int itemCount)
 	{
 		final ItemInstance item = getItemByItemId(itemId);
 		if (item != null)
 			return (item.isStackable()) ? 0 : itemCount;
 		
-		final Item i = ItemData.getInstance().getTemplate(itemId);
-		return (i.isStackable()) ? 1 : itemCount;
+		final Item template = ItemData.getInstance().getTemplate(itemId);
+		return (template.isStackable()) ? 1 : itemCount;
 	}
 	
 	@Override
@@ -721,6 +753,19 @@ public class PcInventory extends Inventory
 	public boolean validateWeight(int weight)
 	{
 		return _totalWeight + weight <= _owner.getWeightLimit();
+	}
+	
+	/**
+	 * @param tradeList : The {@link TradeList} to test.
+	 * @return True if the {@link TradeList} set as parameter can pass a {@link #validateWeight(int)} check.
+	 */
+	public boolean validateTradeListWeight(TradeList tradeList)
+	{
+		int weight = 0;
+		for (TradeItem tradeItem : tradeList)
+			weight += tradeItem.getItem().getWeight() * tradeItem.getCount();
+		
+		return validateWeight(weight);
 	}
 	
 	@Override

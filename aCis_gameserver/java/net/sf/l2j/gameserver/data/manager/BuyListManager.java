@@ -45,20 +45,15 @@ public class BuyListManager implements IXmlReader
 		{
 			while (rs.next())
 			{
-				final int buyListId = rs.getInt("buylist_id");
-				final int itemId = rs.getInt("item_id");
-				final int count = rs.getInt("count");
-				final long nextRestockTime = rs.getLong("next_restock_time");
-				
-				final NpcBuyList buyList = _buyLists.get(buyListId);
+				final NpcBuyList buyList = _buyLists.get(rs.getInt("buylist_id"));
 				if (buyList == null)
 					continue;
 				
-				final Product product = buyList.getProductByItemId(itemId);
+				final Product product = buyList.get(rs.getInt("item_id"));
 				if (product == null)
 					continue;
 				
-				BuyListTaskManager.getInstance().test(product, count, nextRestockTime);
+				BuyListTaskManager.getInstance().test(product, rs.getInt("count"), rs.getLong("next_restock_time"));
 			}
 		}
 		catch (Exception e)
@@ -79,6 +74,12 @@ public class BuyListManager implements IXmlReader
 			forEach(buyListNode, "product", productNode -> buyList.addProduct(new Product(buyListId, parseAttributes(productNode))));
 			_buyLists.put(buyListId, buyList);
 		}));
+	}
+	
+	public void reload()
+	{
+		_buyLists.clear();
+		load();
 	}
 	
 	public NpcBuyList getBuyList(int listId)

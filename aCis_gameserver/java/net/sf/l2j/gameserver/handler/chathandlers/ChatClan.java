@@ -14,13 +14,13 @@ public class ChatClan implements IChatHandler
 	};
 	
 	@Override
-	public void handleChat(SayType type, Player activeChar, String target, String text)
+	public void handleChat(SayType type, Player player, String target, String text)
 	{
-		final Clan clan = activeChar.getClan();
+		final Clan clan = player.getClan();
 		if (clan == null)
 			return;
 		
-		clan.broadcastToOnlineMembers(new CreatureSay(activeChar, type, text));
+		clan.broadcastToOnlineMembers(new CreatureSay(player, type, text));
 	}
 	
 	@Override

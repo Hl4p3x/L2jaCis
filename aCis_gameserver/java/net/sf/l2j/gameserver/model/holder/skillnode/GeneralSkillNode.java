@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.model.holder.skillnode;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 /**
  * A datatype used by general skill types. It extends {@link SkillNode}.
@@ -9,7 +9,7 @@ public class GeneralSkillNode extends SkillNode
 {
 	private final int _cost;
 	
-	public GeneralSkillNode(StatsSet set)
+	public GeneralSkillNode(StatSet set)
 	{
 		super(set);
 		

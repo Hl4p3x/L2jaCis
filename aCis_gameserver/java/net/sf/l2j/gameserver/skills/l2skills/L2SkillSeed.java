@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.skills.EffectType;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
@@ -12,7 +12,7 @@ import net.sf.l2j.gameserver.skills.effects.EffectSeed;
 
 public class L2SkillSeed extends L2Skill
 {
-	public L2SkillSeed(StatsSet set)
+	public L2SkillSeed(StatSet set)
 	{
 		super(set);
 	}

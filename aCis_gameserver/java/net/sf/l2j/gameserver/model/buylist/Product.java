@@ -4,9 +4,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.model.item.kind.Item;
@@ -30,7 +30,7 @@ public class Product
 	
 	private AtomicInteger _count = null;
 	
-	public Product(int buyListId, StatsSet set)
+	public Product(int buyListId, StatSet set)
 	{
 		_buyListId = buyListId;
 		_item = ItemData.getInstance().getTemplate(set.getInteger("id"));

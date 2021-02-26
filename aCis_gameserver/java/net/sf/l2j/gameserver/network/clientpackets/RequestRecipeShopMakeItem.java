@@ -3,13 +3,12 @@ package net.sf.l2j.gameserver.network.clientpackets;
 import net.sf.l2j.commons.math.MathUtil;
 
 import net.sf.l2j.gameserver.data.xml.RecipeData;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.enums.actors.OperateType;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.craft.RecipeItemMaker;
 import net.sf.l2j.gameserver.model.item.Recipe;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 
 public final class RequestRecipeShopMakeItem extends L2GameClientPacket
@@ -30,7 +29,7 @@ public final class RequestRecipeShopMakeItem extends L2GameClientPacket
 	@Override
 	protected void runImpl()
 	{
-		if (!FloodProtectors.performAction(getClient(), Action.MANUFACTURE))
+		if (!getClient().performAction(FloodProtector.MANUFACTURE))
 			return;
 		
 		final Player player = getClient().getPlayer();

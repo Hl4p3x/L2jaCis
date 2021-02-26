@@ -90,7 +90,7 @@ public final class RequestBuyItem extends L2GameClientPacket
 		{
 			int price = -1;
 			
-			final Product product = buyList.getProductByItemId(i.getId());
+			final Product product = buyList.get(i.getId());
 			if (product == null)
 				return;
 			
@@ -156,7 +156,7 @@ public final class RequestBuyItem extends L2GameClientPacket
 		// Proceed the purchase
 		for (IntIntHolder i : _items)
 		{
-			final Product product = buyList.getProductByItemId(i.getId());
+			final Product product = buyList.get(i.getId());
 			if (product == null)
 				continue;
 			

@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import net.sf.l2j.commons.lang.StringUtil;
@@ -22,15 +21,16 @@ import net.sf.l2j.gameserver.network.serverpackets.SendMacroList;
 /**
  * An ordered container holding {@link Macro}s of a {@link Player}.
  */
-public class MacroList
+public class MacroList extends LinkedHashMap<Integer, Macro>
 {
+	private static final long serialVersionUID = 1L;
+	
 	private static final CLogger LOGGER = new CLogger(MacroList.class.getName());
 	
 	private static final String INSERT_MACRO = "REPLACE INTO character_macroses (char_obj_id,id,icon,name,descr,acronym,commands) values(?,?,?,?,?,?,?)";
 	private static final String DELETE_MACRO = "DELETE FROM character_macroses WHERE char_obj_id=? AND id=?";
 	private static final String LOAD_MACROS = "SELECT char_obj_id, id, icon, name, descr, acronym, commands FROM character_macroses WHERE char_obj_id=?";
 	
-	private final Map<Integer, Macro> _macros = new LinkedHashMap<>();
 	private final Player _owner;
 	
 	private int _revision;
@@ -50,12 +50,7 @@ public class MacroList
 	
 	public Macro[] getMacros()
 	{
-		return _macros.values().toArray(new Macro[_macros.size()]);
-	}
-	
-	public Macro getMacro(int id)
-	{
-		return _macros.get(id);
+		return values().toArray(new Macro[size()]);
 	}
 	
 	/**
@@ -68,14 +63,14 @@ public class MacroList
 		{
 			macro.id = _macroId++;
 			
-			while (_macros.get(macro.id) != null)
+			while (get(macro.id) != null)
 				macro.id = _macroId++;
 			
-			_macros.put(macro.id, macro);
+			put(macro.id, macro);
 		}
 		else
 		{
-			final Macro old = _macros.put(macro.id, macro);
+			final Macro old = put(macro.id, macro);
 			if (old != null)
 				deleteMacroFromDb(old);
 		}
@@ -89,11 +84,11 @@ public class MacroList
 	 */
 	public void deleteMacro(int id)
 	{
-		final Macro toRemove = _macros.get(id);
+		final Macro toRemove = get(id);
 		if (toRemove != null)
 			deleteMacroFromDb(toRemove);
 		
-		_macros.remove(id);
+		remove(id);
 		
 		// Delete all existing shortcuts refering to this macro id.
 		_owner.getShortcutList().deleteShortcuts(id, ShortcutType.MACRO);
@@ -179,7 +174,7 @@ public class MacroList
 	 */
 	public void restore()
 	{
-		_macros.clear();
+		super.clear();
 		
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(LOAD_MACROS))
@@ -218,7 +213,7 @@ public class MacroList
 					}
 					
 					final Macro macro = new Macro(id, icon, name, descr, acronym, commands.toArray(new MacroCmd[commands.size()]));
-					_macros.put(macro.id, macro);
+					put(macro.id, macro);
 				}
 			}
 		}

@@ -23,10 +23,19 @@ public class PlayableAttack<T extends Playable> extends CreatureAttack<T>
 		if (!super.canDoAttack(target))
 			return false;
 		
-		if (target instanceof Playable && target.isInsideZone(ZoneId.PEACE) && !_actor.getActingPlayer().getAccessLevel().allowPeaceAttack())
+		if (target instanceof Playable)
 		{
-			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_ATK_PEACEZONE));
-			return false;
+			if (_actor.isInsideZone(ZoneId.PEACE))
+			{
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.CANT_ATK_PEACEZONE));
+				return false;
+			}
+			
+			if (target.isInsideZone(ZoneId.PEACE))
+			{
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.TARGET_IN_PEACEZONE));
+				return false;
+			}
 		}
 		
 		return true;

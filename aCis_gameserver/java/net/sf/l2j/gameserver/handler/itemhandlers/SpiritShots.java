@@ -44,7 +44,7 @@ public class SpiritShots implements IItemHandler
 		}
 		
 		// Consume sps if player has enough of them
-		if (!player.destroyItemWithoutTrace("Consume", item.getObjectId(), weaponItem.getSpiritShotCount(), null, false))
+		if (!player.destroyItemWithoutTrace(item.getObjectId(), weaponItem.getSpiritShotCount()))
 		{
 			if (!player.disableAutoShot(item.getItemId()))
 				player.sendPacket(SystemMessageId.NOT_ENOUGH_SPIRITSHOTS);

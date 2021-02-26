@@ -5,8 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.holder.NewbieBuffHolder;
 
@@ -39,7 +39,7 @@ public class NewbieBuffData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "buff", buffNode ->
 		{
-			final StatsSet set = parseAttributes(buffNode);
+			final StatSet set = parseAttributes(buffNode);
 			final int lowerLevel = set.getInteger("lowerLevel");
 			if (set.getBool("isMagicClass"))
 			{
@@ -56,13 +56,13 @@ public class NewbieBuffData implements IXmlReader
 	}
 	
 	/**
-	 * @param isAlikeMage : If true, return buffs list associated to mage-alike classes.
+	 * @param isMage : If true, return buffs list associated to mage classes.
 	 * @param level : Filter the list by the given level.
 	 * @return The {@link List} of valid {@link NewbieBuffHolder}s for the given class type and level.
 	 */
-	public List<NewbieBuffHolder> getValidBuffs(boolean isAlikeMage, int level)
+	public List<NewbieBuffHolder> getValidBuffs(boolean isMage, int level)
 	{
-		return _buffs.stream().filter(b -> b.isMagicClassBuff() == isAlikeMage && level >= b.getLowerLevel() && level <= b.getUpperLevel()).collect(Collectors.toList());
+		return _buffs.stream().filter(b -> b.isMagicClassBuff() == isMage && level >= b.getLowerLevel() && level <= b.getUpperLevel()).collect(Collectors.toList());
 	}
 	
 	public int getLowestBuffLevel(boolean isMage)

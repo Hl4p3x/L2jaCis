@@ -188,7 +188,7 @@ public class Punishment
 			if (_timer > 0)
 			{
 				_task = ThreadPool.schedule(() -> setType(PunishmentType.NONE, 0), _timer);
-				_owner.sendMessage("You are still " + _type.getName() + " for " + Math.round(_timer / 60000f) + " minutes.");
+				_owner.sendMessage("You are still " + _type.getDescription() + " for " + Math.round(_timer / 60000f) + " minutes.");
 			}
 			
 			// If player escaped, put him back in jail.

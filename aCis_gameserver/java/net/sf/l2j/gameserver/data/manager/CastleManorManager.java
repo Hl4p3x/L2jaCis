@@ -15,11 +15,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
@@ -164,7 +164,7 @@ public class CastleManorManager implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "seed", seedNode ->
 		{
-			final StatsSet set = parseAttributes(seedNode);
+			final StatSet set = parseAttributes(seedNode);
 			_seeds.put(set.getInteger("id"), new Seed(set));
 		}));
 	}
@@ -231,7 +231,11 @@ public class CastleManorManager implements IXmlReader
 									count = 1;
 								
 								if (count > 0)
-									cwh.addItem("Manor", getSeedByCrop(crop.getId()).getMatureId(), count, null, null);
+								{
+									final Seed seed = getSeedByCrop(crop.getId());
+									if (seed != null)
+										cwh.addItem("Manor", seed.getMatureId(), count, null, null);
+								}
 							}
 							
 							// Reserved and not used money giving back to treasury
@@ -241,11 +245,11 @@ public class CastleManorManager implements IXmlReader
 					}
 					
 					// Change next period to current and prepare next period data
-					final List<SeedProduction> _nextProduction = _productionNext.get(castleId);
-					final List<CropProcure> _nextProcure = _procureNext.get(castleId);
+					final List<SeedProduction> nextProduction = _productionNext.get(castleId);
+					final List<CropProcure> nextProcure = _procureNext.get(castleId);
 					
-					_production.put(castleId, _nextProduction);
-					_procure.put(castleId, _nextProcure);
+					_production.put(castleId, nextProduction);
+					_procure.put(castleId, nextProcure);
 					
 					if (castle.getTreasury() < getManorCost(castleId, false))
 					{
@@ -254,13 +258,13 @@ public class CastleManorManager implements IXmlReader
 					}
 					else
 					{
-						final List<SeedProduction> production = new ArrayList<>(_nextProduction);
+						final List<SeedProduction> production = new ArrayList<>(nextProduction);
 						for (SeedProduction s : production)
 							s.setAmount(s.getStartAmount());
 						
 						_productionNext.put(castleId, production);
 						
-						final List<CropProcure> procure = new ArrayList<>(_nextProcure);
+						final List<CropProcure> procure = new ArrayList<>(nextProcure);
 						for (CropProcure cr : procure)
 							cr.setAmount(cr.getStartAmount());
 						
@@ -337,7 +341,7 @@ public class CastleManorManager implements IXmlReader
 		_procureNext.put(castleId, list);
 	}
 	
-	public final static void updateCurrentProduction(int castleId, Collection<SeedProduction> items)
+	public static final void updateCurrentProduction(int castleId, Collection<SeedProduction> items)
 	{
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_PRODUCTION))
@@ -357,7 +361,7 @@ public class CastleManorManager implements IXmlReader
 		}
 	}
 	
-	public final static void updateCurrentProcure(int castleId, Collection<CropProcure> items)
+	public static final void updateCurrentProcure(int castleId, Collection<CropProcure> items)
 	{
 		try (Connection con = ConnectionPool.getConnection();
 			PreparedStatement ps = con.prepareStatement(UPDATE_PROCURE))

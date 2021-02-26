@@ -187,7 +187,7 @@ public class SummonFriend implements ISkillHandler
 		
 		if (skill.getTargetConsumeId() > 0 && skill.getTargetConsume() > 0)
 		{
-			if (player.getInventory().getInventoryItemCount(skill.getTargetConsumeId(), -1) < skill.getTargetConsume())
+			if (player.getInventory().getItemCount(skill.getTargetConsumeId()) < skill.getTargetConsume())
 			{
 				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_REQUIRED_FOR_SUMMONING).addItemName(skill.getTargetConsumeId()));
 				return;

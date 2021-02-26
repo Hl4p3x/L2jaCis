@@ -1,15 +1,13 @@
 package net.sf.l2j.gameserver.model.actor.cast;
 
-import net.sf.l2j.gameserver.enums.ZoneId;
+import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.instance.Folk;
-import net.sf.l2j.gameserver.model.actor.instance.Guard;
-import net.sf.l2j.gameserver.model.actor.instance.Monster;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
 import net.sf.l2j.gameserver.skills.L2Skill;
 
 /**
@@ -69,6 +67,15 @@ public class PlayableCast<T extends Playable> extends CreatureCast<T>
 		if (!super.canDoCast(target, skill, isCtrlPressed, itemObjectId))
 			return false;
 		
+		if (!skill.checkCondition(_actor, target, false))
+			return false;
+		
+		if (_actor.getActingPlayer().isInOlympiadMode() && (skill.isHeroSkill() || skill.getSkillType() == SkillType.RESURRECT))
+		{
+			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.THIS_SKILL_IS_NOT_AVAILABLE_FOR_THE_OLYMPIAD_EVENT));
+			return false;
+		}
+		
 		// Check item consumption validity.
 		if (itemObjectId != 0 && _actor.getInventory().getItemByObjectId(itemObjectId) == null)
 		{
@@ -76,59 +83,16 @@ public class PlayableCast<T extends Playable> extends CreatureCast<T>
 			return false;
 		}
 		
-		if (skill.isOffensive())
+		if (skill.getItemConsumeId() > 0)
 		{
-			if (target instanceof Playable)
+			final ItemInstance requiredItems = _actor.getInventory().getItemByItemId(skill.getItemConsumeId());
+			if (requiredItems == null || requiredItems.getCount() < skill.getItemConsume())
 			{
-				final Playable playableTarget = (Playable) target;
-				
-				// Skills that have the playable as a target (Self, Aura, Area-Summon etc) are exempt from PvP checks
-				if (playableTarget.getActingPlayer() != _actor.getActingPlayer() && !_actor.getActingPlayer().canCastOffensiveSkillOnPlayable(playableTarget, skill, isCtrlPressed))
-				{
-					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-				
-				// Skills that have the playable as a target (Self, Aura, Area-Summon etc) can be used before olympiad starts
-				if (playableTarget.getActingPlayer() != _actor.getActingPlayer() && _actor.getActingPlayer().isInOlympiadMode() && !_actor.getActingPlayer().isOlympiadStart())
-				{
-					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-				
-				if (_actor.isInsideZone(ZoneId.PEACE) && !_actor.getActingPlayer().getAccessLevel().allowPeaceAttack())
-				{
-					_actor.sendPacket(SystemMessageId.CANT_ATK_PEACEZONE);
-					return false;
-				}
-			}
-			// You can damage Folk and Guard with CTRL, but nothing else.
-			else if (target instanceof Folk || target instanceof Guard)
-			{
-				if (!skill.isDamage() || !isCtrlPressed)
-				{
-					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-			}
-		}
-		else
-		{
-			if (target instanceof Playable)
-			{
-				if (!_actor.getActingPlayer().canCastBeneficialSkillOnPlayable((Playable) target, skill, isCtrlPressed))
-				{
-					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
-				}
-			}
-			else if (target instanceof Monster && !isCtrlPressed)
-			{
-				_actor.sendPacket(SystemMessageId.INVALID_TARGET);
+				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
 				return false;
 			}
 		}
 		
-		return true;
+		return skill.meetCastConditions(_actor, target, isCtrlPressed);
 	}
 }

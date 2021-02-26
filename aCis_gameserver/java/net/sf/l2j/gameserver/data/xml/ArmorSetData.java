@@ -5,8 +5,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.model.item.ArmorSet;
 
@@ -36,7 +36,7 @@ public class ArmorSetData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "armorset", armorsetNode ->
 		{
-			final StatsSet set = parseAttributes(armorsetNode);
+			final StatSet set = parseAttributes(armorsetNode);
 			_armorSets.put(set.getInteger("chest"), new ArmorSet(set));
 		}));
 	}

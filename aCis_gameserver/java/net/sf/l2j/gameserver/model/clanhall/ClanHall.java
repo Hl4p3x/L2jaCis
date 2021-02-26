@@ -9,11 +9,11 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.SpawnType;
@@ -74,7 +74,7 @@ public class ClanHall
 	private long _paidUntil;
 	private boolean _isPaid;
 	
-	public ClanHall(StatsSet set)
+	public ClanHall(StatSet set)
 	{
 		_id = set.getInteger("id");
 		_name = set.getString("name");

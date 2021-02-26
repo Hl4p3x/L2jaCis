@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
@@ -14,7 +13,6 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.enums.AiEventType;
 import net.sf.l2j.gameserver.enums.IntentionType;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
-import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.actors.NpcAiType;
 import net.sf.l2j.gameserver.enums.actors.NpcSkillType;
 import net.sf.l2j.gameserver.enums.skills.EffectType;
@@ -24,16 +22,10 @@ import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
-import net.sf.l2j.gameserver.model.actor.Npc;
-import net.sf.l2j.gameserver.model.actor.Playable;
 import net.sf.l2j.gameserver.model.actor.Player;
-import net.sf.l2j.gameserver.model.actor.Summon;
-import net.sf.l2j.gameserver.model.actor.instance.Door;
+import net.sf.l2j.gameserver.model.actor.container.npc.AggroInfo;
 import net.sf.l2j.gameserver.model.actor.instance.FestivalMonster;
-import net.sf.l2j.gameserver.model.actor.instance.FriendlyMonster;
-import net.sf.l2j.gameserver.model.actor.instance.Guard;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
-import net.sf.l2j.gameserver.model.actor.instance.RiftInvader;
 import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.scripting.Quest;
 import net.sf.l2j.gameserver.skills.AbstractEffect;
@@ -45,13 +37,10 @@ public class AttackableAI extends CreatureAI implements Runnable
 	
 	private final Set<Creature> _seenCreatures = ConcurrentHashMap.newKeySet();
 	
-	/** The L2Attackable AI task executed every 1s (call onEvtThink method) */
 	protected Future<?> _aiTask;
 	
-	/** The delay after wich the attacked is stopped */
 	protected long _attackTimeout;
 	
-	/** The L2Attackable aggro counter */
 	protected int _globalAggro;
 	
 	protected boolean _isInCombatMode;
@@ -61,7 +50,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		super(attackable);
 		
 		_attackTimeout = Long.MAX_VALUE;
-		_globalAggro = -10; // 10 seconds timeout of ATTACK after respawn
+		_globalAggro = -10;
 		_seenCreatures.clear();
 		_isInCombatMode = false;
 	}
@@ -85,7 +74,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 	protected void thinkIdle()
 	{
 		// If the region is active and actor isn't dead, set the intention as ACTIVE.
-		if (!_actor.isAlikeDead() && _actor.getRegion().isActive())
+		if (!_actor.isAlikeDead() && _actor.isInActiveRegion())
 		{
 			doActiveIntention();
 			return;
@@ -163,7 +152,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 	}
 	
 	@Override
-	public void onEvtAttacked(Creature attacker)
+	protected void onEvtAttacked(Creature attacker)
 	{
 		getActor().addAttacker(attacker);
 		
@@ -180,8 +169,8 @@ public class AttackableAI extends CreatureAI implements Runnable
 		// Calculate the attack timeout
 		_attackTimeout = System.currentTimeMillis() + MAX_ATTACK_TIMEOUT;
 		
-		// Add the target to the actor _aggroList or update hate if already present
-		me.addDamageHate(target, 0, aggro);
+		// Add the target to the AggroList or update hate if already present
+		me.getAggroList().addDamageHate(target, 0, aggro);
 		
 		// Set the Intention to ATTACK and make the character running, but only if the AI isn't disabled.
 		if (!me.isCoreAiDisabled() && !_isInCombatMode)
@@ -204,137 +193,32 @@ public class AttackableAI extends CreatureAI implements Runnable
 			}
 		}
 		
-		callFaction(me, target);
-	}
-	
-	protected void callFaction(Attackable me, Creature target)
-	{
 		// Faction check.
 		final String[] actorClans = me.getTemplate().getClans();
-		if (actorClans != null && me.getAttackByList().contains(target))
+		if (actorClans != null)
 		{
 			for (final Attackable called : me.getKnownTypeInRadius(Attackable.class, me.getTemplate().getClanRange()))
 			{
-				// Caller hasn't AI or is dead.
-				if (!called.hasAI() || called.isDead())
+				// Called hasn't AI, is dead, or got already target registered.
+				if (!called.hasAI() || called.isDead() || called.getAggroList().containsKey(target))
 					continue;
 				
 				// Caller clan doesn't correspond to the called clan.
 				if (!ArraysUtil.contains(actorClans, called.getTemplate().getClans()))
 					continue;
 				
-				// Called mob doesnt care about that type of caller id (the bitch !).
+				// Called ignores that type of caller id.
 				if (ArraysUtil.contains(called.getTemplate().getIgnoredIds(), me.getNpcId()))
 					continue;
 				
-				// Check if the WorldObject is inside the Faction Range of the actor
-				final IntentionType calledIntention = called.getAI().getCurrentIntention().getType();
-				if ((calledIntention == IntentionType.IDLE || calledIntention == IntentionType.ACTIVE || (calledIntention == IntentionType.MOVE_TO && !called.isRunning())) && GeoEngine.getInstance().canSeeTarget(me, called))
-				{
-					if (target instanceof Playable)
-					{
-						final List<Quest> scripts = called.getTemplate().getEventQuests(ScriptEventType.ON_FACTION_CALL);
-						if (scripts != null)
-						{
-							final Player player = target.getActingPlayer();
-							final boolean isSummon = target instanceof Summon;
-							
-							for (final Quest quest : scripts)
-								quest.notifyFactionCall(called, me, player, isSummon);
-						}
-					}
-					else
-					{
-						// TODO Clan calling onto an Attackable attacker?
-						called.addDamageHate(target, 0, me.getHating(target));
-						called.getAI().tryToAttack(target);
-					}
-				}
+				// Check if the Attackable is in the LoS of the caller.
+				if (!GeoEngine.getInstance().canSeeTarget(me, called))
+					continue;
+				
+				// Retrieve scripts associated to called Attackable and notify the faction call.
+				for (Quest quest : called.getTemplate().getEventQuests(ScriptEventType.ON_FACTION_CALL))
+					quest.notifyFactionCall(me, called, target);
 			}
-		}
-	}
-	
-	/**
-	 * @param target : The targeted Creature.
-	 * @return true if the {@link Creature} used as target is autoattackable.
-	 */
-	protected boolean autoAttackCondition(Creature target)
-	{
-		// Check if the target isn't null, a Door or dead.
-		if (target == null || target instanceof Door || target.isAlikeDead())
-			return false;
-		
-		final Attackable me = getActor();
-		
-		if (target instanceof Playable)
-		{
-			// Check if target is in the Aggro range
-			if (!me.isIn3DRadius(target, me.getTemplate().getAggroRange()))
-				return false;
-			
-			// Check if the AI isn't a Raid Boss, can See Silent Moving players and the target isn't in silent move mode
-			if (!(me.isRaidRelated()) && !(me.canSeeThroughSilentMove()) && ((Playable) target).isSilentMoving())
-				return false;
-			
-			// Check if the target is a Player
-			final Player targetPlayer = target.getActingPlayer();
-			if (targetPlayer != null)
-			{
-				// GM checks ; check if the target is invisible or got access level
-				if (targetPlayer.isGM() && (!targetPlayer.getAppearance().isVisible() || !targetPlayer.getAccessLevel().canTakeAggro()))
-					return false;
-				
-				// Check if player is an allied Varka.
-				if (ArraysUtil.contains(me.getTemplate().getClans(), "varka_silenos_clan") && targetPlayer.isAlliedWithVarka())
-					return false;
-				
-				// Check if player is an allied Ketra.
-				if (ArraysUtil.contains(me.getTemplate().getClans(), "ketra_orc_clan") && targetPlayer.isAlliedWithKetra())
-					return false;
-				
-				// check if the target is within the grace period for JUST getting up from fake death
-				if (targetPlayer.isRecentFakeDeath())
-					return false;
-				
-				if (me instanceof RiftInvader && targetPlayer.isInParty() && targetPlayer.getParty().isInDimensionalRift() && !targetPlayer.getParty().getDimensionalRift().isInCurrentRoomZone(me))
-					return false;
-			}
-		}
-		
-		if (me instanceof Guard)
-		{
-			// Check if the Playable target has karma.
-			if (target instanceof Playable && target.getActingPlayer().getKarma() > 0)
-				return GeoEngine.getInstance().canSeeTarget(me, target);
-			
-			// Check if the Monster target is aggressive.
-			if (target instanceof Monster && Config.GUARD_ATTACK_AGGRO_MOB)
-				return (((Monster) target).isAggressive() && GeoEngine.getInstance().canSeeTarget(me, target));
-			
-			return false;
-		}
-		else if (me instanceof FriendlyMonster)
-		{
-			// Check if the Playable target has karma.
-			if (target instanceof Playable && target.getActingPlayer().getKarma() > 0)
-				return GeoEngine.getInstance().canSeeTarget(me, target);
-			
-			return false;
-		}
-		else
-		{
-			if (target instanceof Attackable && me.isConfused())
-				return GeoEngine.getInstance().canSeeTarget(me, target);
-			
-			if (target instanceof Npc)
-				return false;
-			
-			// Depending on Config, do not allow mobs to attack players in PEACE zones, unless they are already following those players outside.
-			if (!Config.MOB_AGGRO_IN_PEACEZONE && target.isInsideZone(ZoneId.PEACE))
-				return false;
-			
-			// Check if the actor is Aggressive
-			return (me.isAggressive() && GeoEngine.getInstance().canSeeTarget(me, target));
 		}
 	}
 	
@@ -354,32 +238,16 @@ public class AttackableAI extends CreatureAI implements Runnable
 	
 	/**
 	 * Manage AI when not engaged in combat.
-	 * <ul>
-	 * <li>Update every 1s the _globalAggro counter to come close to 0</li>
-	 * <li>If the actor is Aggressive and can attack, add all autoAttackable Creature in its Aggro Range to its _aggroList, chose a target and order to attack it</li>
-	 * <li>If the actor is a Guard that can't attack, order to it to return to its home location</li>
-	 * <li>If the actor is a Monster that can't attack, order to it to random walk (1/100)</li>
-	 * </ul>
 	 */
 	protected void peaceMode()
 	{
 		final Attackable npc = getActor();
 		
-		// Update every 1s the _globalAggro counter to come close to 0
-		if (_globalAggro != 0)
-		{
-			if (_globalAggro < 0)
-				_globalAggro++;
-			else
-				_globalAggro--;
-		}
-		
 		if (_attackTimeout != Long.MAX_VALUE)
 			_attackTimeout = Long.MAX_VALUE;
-			
-		// Add all autoAttackable Creature in L2Attackable Aggro Range to its _aggroList with 0 damage and 1 hate
-		// A L2Attackable isn't aggressive during 10s after its spawn because _globalAggro is set to -10
-		if (_globalAggro >= 0 && !npc.isReturningToSpawnPoint())
+		
+		// An Attackable isn't aggressive during 10s after its spawn because _globalAggro is set to -10.
+		if (updateGlobalAggro() >= 0 && !npc.isReturningToSpawnPoint())
 		{
 			final List<Quest> scripts = npc.getTemplate().getEventQuests(ScriptEventType.ON_CREATURE_SEE);
 			
@@ -391,14 +259,15 @@ public class AttackableAI extends CreatureAI implements Runnable
 					continue;
 				
 				// ON_CREATURE_SEE implementation.
-				if (scripts != null)
+				if (!scripts.isEmpty())
 				{
+					final boolean isInRange = npc.isIn3DRadius(obj, 400);
 					if (_seenCreatures.contains(obj))
 					{
-						if (!npc.isIn3DRadius(obj, 400))
+						if (!isInRange)
 							_seenCreatures.remove(obj);
 					}
-					else if (npc.isIn3DRadius(obj, 400))
+					else if (isInRange)
 					{
 						_seenCreatures.add(obj);
 						
@@ -407,20 +276,21 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				
-				// For each Creature check if the obj is autoattackable and if not already hating it, add it.
-				if (autoAttackCondition(obj) && npc.getHating(obj) == 0)
-					npc.addDamageHate(obj, 0, 0);
+				// Check if the obj is autoattackable and if not already hating it, add it.
+				if (npc.canAutoAttack(obj) && npc.getAggroList().getHate(obj) == 0)
+					npc.getAggroList().addDamageHate(obj, 0, 0);
 				
 			}
 			
+			// TODO Review that section, maybe simply use _combatMode ?
 			if (!npc.isCoreAiDisabled())
 			{
-				// Chose a obj from its aggroList and order to attack the obj
-				final Creature target = (npc.isConfused()) ? getCurrentIntention().getFinalTarget() : npc.getMostHated();
+				// Choose a target from its aggroList.
+				final Creature target = (npc.isConfused()) ? getCurrentIntention().getFinalTarget() : npc.getAggroList().getMostHatedCreature();
 				if (target != null)
 				{
-					// Get the hate level of the L2Attackable against this Creature obj contained in _aggroList
-					if (npc.getHating(target) + _globalAggro > 0)
+					// Get the hate level of the Attackable against this Creature obj contained in _aggroList
+					if (npc.getAggroList().getHate(target) + _globalAggro > 0)
 					{
 						// Set the Creature movement type to run and send Server->Client packet ChangeMoveType to all others Player
 						npc.forceRunStance();
@@ -441,40 +311,25 @@ public class AttackableAI extends CreatureAI implements Runnable
 		if (canSelfBuff())
 			return;
 		
-		// Minions following leader
+		// Minions following leader.
 		final Attackable master = npc.getMaster();
 		if (master != null && !master.isAlikeDead())
 		{
-			if (!npc.getCast().isCastingNow())
+			if (master.isRunning())
+				npc.forceRunStance();
+			else
+				npc.forceWalkStance();
+			
+			final int maxOffset = (int) (100 + npc.getCollisionRadius() + master.getCollisionRadius());
+			if (npc.distance3D(master) > maxOffset)
 			{
-				final int offset = (int) (100 + npc.getCollisionRadius() + master.getCollisionRadius());
-				final int minRadius = (int) (master.getCollisionRadius() + 30);
+				final int minOffset = (int) (master.getCollisionRadius() + 30);
 				
-				if (master.isRunning())
-					npc.forceRunStance();
-				else
-					npc.forceWalkStance();
+				final Location loc = master.getPosition().clone();
+				loc.addRandomOffsetBetweenTwoValues(minOffset, maxOffset);
+				loc.set(GeoEngine.getInstance().getValidLocation(master, loc));
 				
-				if (npc.distance3D(master) > offset)
-				{
-					int x1 = Rnd.get(minRadius * 2, offset * 2); // x
-					int y1 = Rnd.get(x1, offset * 2); // distance
-					
-					y1 = (int) Math.sqrt(y1 * y1 - x1 * x1); // y
-					
-					if (x1 > offset + minRadius)
-						x1 = master.getX() + x1 - offset;
-					else
-						x1 = master.getX() - x1 + minRadius;
-					
-					if (y1 > offset + minRadius)
-						y1 = master.getY() + y1 - offset;
-					else
-						y1 = master.getY() - y1 + minRadius;
-					
-					// Move the actor to Location (x,y,z) server side AND client side by sending Server->Client packet CharMoveToLocation (broadcast)
-					npc.getAI().tryToMoveTo(new Location(x1, y1, master.getZ()), null);
-				}
+				npc.getAI().tryToMoveTo(loc, null);
 			}
 		}
 		else
@@ -489,14 +344,20 @@ public class AttackableAI extends CreatureAI implements Runnable
 		}
 	}
 	
+	public void setBackToPeace(int globalAggro)
+	{
+		getActor().getAggroList().clear();
+		
+		_isInCombatMode = false;
+		_globalAggro = globalAggro;
+		
+		tryToActive();
+		
+		getActor().forceWalkStance();
+	}
+	
 	/**
 	 * Manage AI when engaged in combat.
-	 * <ul>
-	 * <li>Update the attack timeout if actor is running.</li>
-	 * <li>If target is dead or timeout is expired, stop this attack and set the Intention to ACTIVE.</li>
-	 * <li>Call all WorldObject of its Faction inside the Faction Range.</li>
-	 * <li>Choose a target and order to attack it with magic skill or physical attack.</li>
-	 * </ul>
 	 */
 	protected void combatMode()
 	{
@@ -506,19 +367,30 @@ public class AttackableAI extends CreatureAI implements Runnable
 		if (npc.isCoreAiDisabled() || npc.isAfraid())
 			return;
 		
-		// Pickup attack target.
-		Creature target = npc.getMostHated();
-		
-		// If target doesn't exist, is too far or if timeout is expired.
-		if (target == null || _attackTimeout < System.currentTimeMillis() || !npc.isIn3DRadius(target, 2000))
+		// If timeout is expired or AggroList is empty, set back to peace immediately.
+		if (_attackTimeout < System.currentTimeMillis() || npc.getAggroList().isEmpty())
 		{
-			// Stop hating this target after the attack timeout or if target is dead
-			npc.stopHating(target);
-			_isInCombatMode = false;
-			
-			_globalAggro = -10;
-			tryToActive();
-			npc.forceWalkStance();
+			setBackToPeace(-10);
+			return;
+		}
+		
+		// Cleanup aggro list of bad entries.
+		npc.getAggroList().refresh();
+		
+		// Pickup most hated target.
+		final AggroInfo ai = npc.getAggroList().getMostHated();
+		if (ai == null)
+		{
+			setBackToPeace(-10);
+			return;
+		}
+		
+		Creature target = ai.getAttacker();
+		
+		// If target is too far, stop hating the current target. Do nothing for this round.
+		if (!npc.isIn3DRadius(target, 2000))
+		{
+			npc.getAggroList().stopHate(target);
 			return;
 		}
 		
@@ -684,7 +556,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 		{
 			// If distance is too big, choose another target.
 			if (dist > range)
-				target = targetReconsider(range, true);
+				target = npc.getAggroList().reconsiderTarget(range);
 			
 			// Any AI type, even healer or mage, will try to melee attack if it can't do anything else (desperate situation).
 			if (target != null)
@@ -752,7 +624,6 @@ public class AttackableAI extends CreatureAI implements Runnable
 		switch (sk.getSkillType())
 		{
 			case BUFF:
-			{
 				if (caster.getFirstEffect(sk) == null)
 				{
 					tryToCast(originalTarget, sk);
@@ -766,7 +637,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 				
 				if (sk.getTargetType() == SkillTargetType.ONE)
 				{
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(target, sk);
@@ -780,14 +651,12 @@ public class AttackableAI extends CreatureAI implements Runnable
 					return true;
 				}
 				break;
-			}
 			
 			case HEAL:
 			case HOT:
 			case HEAL_PERCENT:
 				// case HEAL_STATIC:
 			case BALANCE_LIFE:
-			{
 				// Minion case.
 				if (sk.getTargetType() != SkillTargetType.SELF)
 				{
@@ -844,14 +713,12 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				break;
-			}
 			
 			case DEBUFF:
 			case POISON:
 			case DOT:
 			case MDOT:
 			case BLEED:
-			{
 				if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !canAOE(sk, originalTarget) && !originalTarget.isDead() && distance <= range)
 				{
 					if (originalTarget.getFirstEffect(sk) == null)
@@ -876,7 +743,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 				}
 				else if (sk.getTargetType() == SkillTargetType.ONE)
 				{
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(originalTarget, sk);
@@ -884,10 +751,8 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				break;
-			}
 			
 			case SLEEP:
-			{
 				if (sk.getTargetType() == SkillTargetType.ONE)
 				{
 					if (!originalTarget.isDead() && distance <= range)
@@ -902,7 +767,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 						}
 					}
 					
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(originalTarget, sk);
@@ -924,12 +789,10 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				break;
-			}
 			
 			case ROOT:
 			case STUN:
 			case PARALYZE:
-			{
 				if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !canAOE(sk, originalTarget) && distance <= range)
 				{
 					if (originalTarget.getFirstEffect(sk) == null)
@@ -953,7 +816,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 				}
 				else if (sk.getTargetType() == SkillTargetType.ONE)
 				{
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(originalTarget, sk);
@@ -961,11 +824,9 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				break;
-			}
 			
 			case MUTE:
 			case FEAR:
-			{
 				if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !canAOE(sk, originalTarget) && distance <= range)
 				{
 					if (originalTarget.getFirstEffect(sk) == null)
@@ -990,7 +851,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 				}
 				else if (sk.getTargetType() == SkillTargetType.ONE)
 				{
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(originalTarget, sk);
@@ -998,11 +859,9 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				break;
-			}
 			
 			case CANCEL:
 			case NEGATE:
-			{
 				// decrease cancel probability
 				if (Rnd.get(50) != 0)
 					return true;
@@ -1015,7 +874,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 						return true;
 					}
 					
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(target, sk);
@@ -1037,10 +896,8 @@ public class AttackableAI extends CreatureAI implements Runnable
 					}
 				}
 				break;
-			}
 			
 			default:
-			{
 				if (!canAura(sk, originalTarget))
 				{
 					if (GeoEngine.getInstance().canSeeTarget(caster, originalTarget) && !originalTarget.isDead() && distance <= range)
@@ -1049,7 +906,7 @@ public class AttackableAI extends CreatureAI implements Runnable
 						return true;
 					}
 					
-					final Creature target = targetReconsider(sk.getCastRange(), true);
+					final Creature target = caster.getAggroList().reconsiderTarget(sk.getCastRange());
 					if (target != null)
 					{
 						tryToCast(target, sk);
@@ -1062,7 +919,6 @@ public class AttackableAI extends CreatureAI implements Runnable
 					tryToCast(originalTarget, sk);
 					return true;
 				}
-			}
 				break;
 		}
 		
@@ -1088,113 +944,21 @@ public class AttackableAI extends CreatureAI implements Runnable
 		return Rnd.get(100) < 10;
 	}
 	
-	/**
-	 * Method used when the actor can't attack his current target (immobilize state, for exemple).
-	 * <ul>
-	 * <li>If the actor got an hate list, pickup a new target from it.</li>
-	 * <li>If the actor didn't find a target on his hate list, check if he is aggro type and pickup a new target using his knownlist.</li>
-	 * </ul>
-	 * @param range The range to check (skill range for skill ; physical range for melee).
-	 * @param rangeCheck That boolean is used to see if a check based on the distance must be made (skill check).
-	 * @return The new Creature victim.
-	 */
-	protected Creature targetReconsider(int range, boolean rangeCheck)
-	{
-		final Attackable actor = getActor();
-		
-		// Verify first if aggro list is empty, if not search a victim following his aggro position.
-		if (!actor.getAggroList().isEmpty())
-		{
-			// Store aggro value && most hated, in order to add it to the random target we will choose.
-			final Creature previousMostHated = actor.getMostHated();
-			final int aggroMostHated = actor.getHating(previousMostHated);
-			
-			for (final Creature obj : actor.getHateList())
-			{
-				if (!autoAttackCondition(obj))
-					continue;
-				
-				if (rangeCheck)
-				{
-					// Verify the distance, -15 if the victim is moving, -15 if the npc is moving.
-					double dist = actor.distance2D(obj) - obj.getCollisionRadius();
-					if (actor.isMoving())
-						dist -= 15;
-					
-					if (obj.isMoving())
-						dist -= 15;
-					
-					if (dist > range)
-						continue;
-				}
-				
-				// Stop to hate the most hated.
-				actor.stopHating(previousMostHated);
-				
-				// Add previous most hated aggro to that new victim.
-				actor.addDamageHate(obj, 0, (aggroMostHated > 0) ? aggroMostHated : 2000);
-				return obj;
-			}
-		}
-		
-		// If hate list gave nothing, then verify first if the actor is aggressive, and then pickup a victim from his knownlist.
-		if (actor.isAggressive())
-		{
-			for (final Creature target : actor.getKnownTypeInRadius(Creature.class, actor.getTemplate().getAggroRange()))
-			{
-				if (!autoAttackCondition(target))
-					continue;
-				
-				if (rangeCheck)
-				{
-					// Verify the distance, -15 if the victim is moving, -15 if the npc is moving.
-					double dist = actor.distance2D(target) - target.getCollisionRadius();
-					if (actor.isMoving())
-						dist -= 15;
-					
-					if (target.isMoving())
-						dist -= 15;
-					
-					if (dist > range)
-						continue;
-				}
-				
-				// Only 1 aggro, as the hate list is supposed to be cleaned. Simulate an aggro range entrance.
-				actor.addDamageHate(target, 0, 1);
-				return target;
-			}
-		}
-		
-		// Return null if no new victim has been found.
-		return null;
-	}
-	
-	/**
-	 * Method used for chaotic mode (RBs / GBs and their minions).
-	 */
-	public void aggroReconsider()
-	{
-		final Attackable actor = getActor();
-		
-		// Don't bother with aggro lists lower or equal to 1.
-		if (actor.getHateList().size() <= 1)
-			return;
-		
-		// Choose a new victim, and make checks to see if it fits.
-		final Creature mostHated = actor.getMostHated();
-		final Creature target = Rnd.get(actor.getHateList().stream().filter(v -> autoAttackCondition(v)).collect(Collectors.toList()));
-		
-		if (target != null && mostHated != target)
-		{
-			// Add most hated aggro to the victim aggro.
-			actor.addDamageHate(target, 0, actor.getHating(mostHated));
-			tryToAttack(target);
-		}
-	}
-	
 	public void setGlobalAggro(int value)
 	{
 		_globalAggro = value;
+	}
+	
+	protected int updateGlobalAggro()
+	{
+		if (_globalAggro != 0)
+		{
+			if (_globalAggro < 0)
+				_globalAggro++;
+			else
+				_globalAggro--;
+		}
+		return _globalAggro;
 	}
 	
 	private boolean canSelfBuff()
@@ -1349,12 +1113,6 @@ public class AttackableAI extends CreatureAI implements Runnable
 	@Override
 	public boolean canScheduleAfter(IntentionType oldIntention, IntentionType newIntention)
 	{
-		if (newIntention == IntentionType.ACTIVE || newIntention == IntentionType.IDLE)
-			return false;
-		
-		if (oldIntention == IntentionType.ACTIVE || oldIntention == IntentionType.IDLE)
-			return false;
-		
-		return _isInCombatMode;
+		return false;
 	}
 }

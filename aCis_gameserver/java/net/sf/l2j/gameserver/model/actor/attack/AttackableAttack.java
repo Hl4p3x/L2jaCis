@@ -1,7 +1,5 @@
 package net.sf.l2j.gameserver.model.actor.attack;
 
-import java.util.List;
-
 import net.sf.l2j.gameserver.enums.ScriptEventType;
 import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -40,10 +38,8 @@ public class AttackableAttack extends CreatureAttack<Attackable>
 			final Player victim = target.getActingPlayer();
 			if (victim != null)
 			{
-				final List<Quest> scripts = _actor.getTemplate().getEventQuests(ScriptEventType.ON_ATTACK_ACT);
-				if (scripts != null)
-					for (final Quest quest : scripts)
-						quest.notifyAttackAct(_actor, victim);
+				for (Quest quest : _actor.getTemplate().getEventQuests(ScriptEventType.ON_ATTACK_ACT))
+					quest.notifyAttackAct(_actor, victim);
 			}
 		}
 		return isHit;

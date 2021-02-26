@@ -37,7 +37,7 @@ import net.sf.l2j.gameserver.scripting.QuestState;
 
 public class FourSepulchersManager
 {
-	private static enum State
+	private enum State
 	{
 		ENTRY,
 		ATTACK,
@@ -619,7 +619,7 @@ public class FourSepulchersManager
 		
 		for (Player member : party.getMembers())
 		{
-			final QuestState qs = member.getQuestState(QUEST_ID);
+			final QuestState qs = member.getQuestList().getQuestState(QUEST_ID);
 			if (qs == null || (!qs.isStarted() && !qs.isCompleted()))
 			{
 				showHtmlFile(player, npcId + "-NS.htm", npc, member);

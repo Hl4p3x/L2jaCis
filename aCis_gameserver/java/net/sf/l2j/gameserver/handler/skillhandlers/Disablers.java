@@ -12,7 +12,6 @@ import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
-import net.sf.l2j.gameserver.model.actor.ai.type.AttackableAI;
 import net.sf.l2j.gameserver.model.actor.instance.SiegeSummon;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
@@ -156,23 +155,26 @@ public class Disablers implements ISkillHandler
 				
 				case AGGDAMAGE:
 					if (target instanceof Attackable)
-						target.getAI().notifyEvent(AiEventType.AGGRESSION, activeChar, (int) ((150 * skill.getPower()) / (target.getStatus().getLevel() + 7)));
+						target.getAI().notifyEvent(AiEventType.AGGRESSION, activeChar, (int) (skill.getPower() / (target.getStatus().getLevel() + 7) * 150));
 					
 					skill.getEffects(activeChar, target, shld, bsps);
 					break;
 				
 				case AGGREDUCE:
-					// these skills needs to be rechecked
+					// TODO these skills needs to be rechecked
 					if (target instanceof Attackable)
 					{
 						skill.getEffects(activeChar, target, shld, bsps);
 						
-						final double aggdiff = ((Attackable) target).getHating(activeChar) - target.getStatus().calcStat(Stats.AGGRESSION, ((Attackable) target).getHating(activeChar), target, skill);
-						
 						if (skill.getPower() > 0)
-							((Attackable) target).reduceHate(null, (int) skill.getPower());
-						else if (aggdiff > 0)
-							((Attackable) target).reduceHate(null, (int) aggdiff);
+							((Attackable) target).getAggroList().reduceAllHate((int) skill.getPower());
+						else
+						{
+							final int hate = ((Attackable) target).getAggroList().getHate(activeChar);
+							final double diff = hate - target.getStatus().calcStat(Stats.AGGRESSION, hate, target, skill);
+							if (diff > 0)
+								((Attackable) target).getAggroList().reduceAllHate((int) diff);
+						}
 					}
 					break;
 				
@@ -181,17 +183,8 @@ public class Disablers implements ISkillHandler
 					if (Formulas.calcSkillSuccess(activeChar, target, skill, shld, bsps))
 					{
 						if (target instanceof Attackable)
-						{
-							final Attackable targ = (Attackable) target;
-							targ.stopHating(activeChar);
-							if (targ.getMostHated() == null && targ.hasAI() && targ.getAI() instanceof AttackableAI)
-							{
-								((AttackableAI) targ.getAI()).setGlobalAggro(-25);
-								targ.getAggroList().clear();
-								targ.getAI().tryToActive();
-								targ.forceWalkStance();
-							}
-						}
+							((Attackable) target).getAggroList().stopHate(activeChar);
+						
 						skill.getEffects(activeChar, target, shld, bsps);
 					}
 					else
@@ -202,7 +195,7 @@ public class Disablers implements ISkillHandler
 					break;
 				
 				case AGGREMOVE:
-					// these skills needs to be rechecked
+					// TODO these skills needs to be rechecked
 					if (target instanceof Attackable && !target.isRaidRelated())
 					{
 						if (Formulas.calcSkillSuccess(activeChar, target, skill, shld, bsps))
@@ -210,10 +203,10 @@ public class Disablers implements ISkillHandler
 							if (skill.getTargetType() == SkillTargetType.UNDEAD)
 							{
 								if (target.isUndead())
-									((Attackable) target).reduceHate(null, ((Attackable) target).getHating(((Attackable) target).getMostHated()));
+									((Attackable) target).getAggroList().stopHate(activeChar);
 							}
 							else
-								((Attackable) target).reduceHate(null, ((Attackable) target).getHating(((Attackable) target).getMostHated()));
+								((Attackable) target).getAggroList().stopHate(activeChar);
 						}
 						else
 						{

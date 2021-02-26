@@ -21,6 +21,7 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.LoginServerThread;
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.data.sql.PlayerInfoTable;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.model.CharSelectSlot;
 import net.sf.l2j.gameserver.model.World;
 import net.sf.l2j.gameserver.model.actor.Player;
@@ -60,7 +61,7 @@ public final class GameClient extends MMOClient<MMOConnection<GameClient>> imple
 	private static final String DELETE_CHAR_RBP = "DELETE FROM character_raid_points WHERE char_id=?";
 	private static final String DELETE_CHAR = "DELETE FROM characters WHERE obj_Id=?";
 	
-	public static enum GameClientState
+	public enum GameClientState
 	{
 		CONNECTED, // client has just connected
 		AUTHED, // client has authed but doesnt has character attached to it yet
@@ -68,7 +69,7 @@ public final class GameClient extends MMOClient<MMOConnection<GameClient>> imple
 		IN_GAME // client has selected a char and is in game
 	}
 	
-	private final long[] _floodProtectors = new long[FloodProtectors.Action.VALUES_LENGTH];
+	private final long[] _floodProtectors = new long[FloodProtector.VALUES_LENGTH];
 	private final ArrayBlockingQueue<ReceivablePacket<GameClient>> _packetQueue;
 	private final ReentrantLock _queueLock = new ReentrantLock();
 	private final ReentrantLock _activeCharLock = new ReentrantLock();
@@ -746,6 +747,30 @@ public final class GameClient extends MMOClient<MMOConnection<GameClient>> imple
 		}
 		catch (RejectedExecutionException e)
 		{
+		}
+	}
+	
+	/**
+	 * Try to perform an action according to client FPs value. A 0 reuse delay means the action is always possible.
+	 * @param fp : The {@link FloodProtector} to track.
+	 * @return True if the action is possible, False otherwise.
+	 */
+	public boolean performAction(FloodProtector fp)
+	{
+		final int reuseDelay = fp.getReuseDelay();
+		if (reuseDelay == 0)
+			return true;
+		
+		final long currentTime = System.nanoTime();
+		final long[] value = _floodProtectors;
+		
+		synchronized (value)
+		{
+			if (value[fp.getId()] > currentTime)
+				return false;
+			
+			value[fp.getId()] = currentTime + reuseDelay * 1000000;
+			return true;
 		}
 	}
 }

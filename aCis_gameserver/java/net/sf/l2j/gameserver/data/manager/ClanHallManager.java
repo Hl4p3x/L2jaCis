@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.pool.ConnectionPool;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.data.sql.ClanTable;
 import net.sf.l2j.gameserver.enums.SpawnType;
@@ -76,7 +76,7 @@ public class ClanHallManager implements IXmlReader
 					// Generate an Auction.
 					ch.setAuction(new Auction(ch, rs.getInt("sellerBid"), rs.getString("sellerName"), rs.getString("sellerClanName"), rs.getLong("endDate")));
 				}
-				// No default bid ; it's actually a Conquerable Hall.
+				// No default bid ; it's actually a Siegable Hall.
 				else
 				{
 					// Find the related zone, and associate it with the Clan Hall.
@@ -143,7 +143,7 @@ public class ClanHallManager implements IXmlReader
 	public void load()
 	{
 		parseFile("./data/xml/clanHalls.xml");
-		LOGGER.info("Loaded {} clan halls and {} conquerable clan halls.", _clanHalls.size(), getSiegableHalls().size());
+		LOGGER.info("Loaded {} clan halls and {} siegable clan halls.", _clanHalls.size(), getSiegableHalls().size());
 	}
 	
 	@Override
@@ -151,7 +151,7 @@ public class ClanHallManager implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "clanhall", chNode ->
 		{
-			final StatsSet set = parseAttributes(chNode);
+			final StatSet set = parseAttributes(chNode);
 			final ClanHall ch = (set.containsKey("siegeLength")) ? new SiegableHall(set) : new ClanHall(set);
 			
 			forEach(chNode, "spawns", spawnsNode -> forEach(spawnsNode, "spawn", spawnNode -> ch.addSpawn(parseEnum(spawnNode.getAttributes(), SpawnType.class, "type"), parseLocation(spawnNode))));

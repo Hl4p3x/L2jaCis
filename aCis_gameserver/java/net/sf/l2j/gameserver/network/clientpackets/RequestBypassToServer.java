@@ -7,6 +7,7 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.communitybbs.CommunityBoard;
 import net.sf.l2j.gameserver.data.manager.HeroManager;
 import net.sf.l2j.gameserver.data.xml.AdminData;
+import net.sf.l2j.gameserver.enums.FloodProtector;
 import net.sf.l2j.gameserver.handler.AdminCommandHandler;
 import net.sf.l2j.gameserver.handler.IAdminCommandHandler;
 import net.sf.l2j.gameserver.model.World;
@@ -15,8 +16,6 @@ import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.OlympiadManagerNpc;
 import net.sf.l2j.gameserver.model.olympiad.OlympiadManager;
-import net.sf.l2j.gameserver.network.FloodProtectors;
-import net.sf.l2j.gameserver.network.FloodProtectors.Action;
 import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
@@ -40,7 +39,7 @@ public final class RequestBypassToServer extends L2GameClientPacket
 		if (_command.isEmpty())
 			return;
 		
-		if (!FloodProtectors.performAction(getClient(), Action.SERVER_BYPASS))
+		if (!getClient().performAction(FloodProtector.SERVER_BYPASS))
 			return;
 		
 		final Player player = getClient().getPlayer();
@@ -91,8 +90,8 @@ public final class RequestBypassToServer extends L2GameClientPacket
 				
 				if (itemId == 7064 && cmd[0].equalsIgnoreCase("lidias_diary/7064-16.htm"))
 				{
-					final QuestState qs = player.getQuestState("Q023_LidiasHeart");
-					if (qs != null && qs.getInt("cond") == 5 && qs.getInt("diary") == 0)
+					final QuestState qs = player.getQuestList().getQuestState("Q023_LidiasHeart");
+					if (qs != null && qs.getCond() == 5 && qs.getInteger("diary") == 0)
 						qs.set("diary", "1");
 				}
 			}
@@ -115,7 +114,7 @@ public final class RequestBypassToServer extends L2GameClientPacket
 			{
 				final WorldObject object = World.getInstance().getObject(Integer.parseInt(id));
 				
-				if (object != null && object instanceof Npc && endOfId > 0 && player.getAI().canDoInteract(object))
+				if (object instanceof Npc && endOfId > 0 && player.getAI().canDoInteract(object))
 					((Npc) object).onBypassFeedback(player, _command.substring(endOfId + 1));
 				
 				player.sendPacket(ActionFailed.STATIC_PACKET);
@@ -142,9 +141,9 @@ public final class RequestBypassToServer extends L2GameClientPacket
 			
 			String[] str = _command.substring(6).trim().split(" ", 2);
 			if (str.length == 1)
-				player.processQuestEvent(str[0], "");
+				player.getQuestList().processQuestEvent(str[0], "");
 			else
-				player.processQuestEvent(str[0], str[1]);
+				player.getQuestList().processQuestEvent(str[0], str[1]);
 		}
 		else if (_command.startsWith("_match"))
 		{

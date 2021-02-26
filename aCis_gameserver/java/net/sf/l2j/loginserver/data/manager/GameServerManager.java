@@ -12,11 +12,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.loginserver.model.GameServerInfo;
 
@@ -61,7 +61,7 @@ public class GameServerManager implements IXmlReader
 		{
 			forEach(listNode, "server", serverNode ->
 			{
-				final StatsSet set = parseAttributes(serverNode);
+				final StatSet set = parseAttributes(serverNode);
 				_serverNames.put(set.getInteger("id"), set.getString("name"));
 			});
 		});

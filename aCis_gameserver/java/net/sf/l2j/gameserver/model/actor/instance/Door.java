@@ -20,6 +20,7 @@ import net.sf.l2j.gameserver.model.actor.ai.type.DoorAI;
 import net.sf.l2j.gameserver.model.actor.status.DoorStatus;
 import net.sf.l2j.gameserver.model.actor.template.DoorTemplate;
 import net.sf.l2j.gameserver.model.clanhall.ClanHall;
+import net.sf.l2j.gameserver.model.clanhall.SiegableHall;
 import net.sf.l2j.gameserver.model.entity.Castle;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Weapon;
@@ -146,6 +147,12 @@ public class Door extends Creature implements IGeoObject
 			return true;
 		}
 		
+		if (_clanHall instanceof SiegableHall)
+		{
+			final SiegableHall hall = (SiegableHall) _clanHall;
+			return hall.isInSiege() && hall.getSiege().doorIsAutoAttackable() && hall.getSiege().checkSides(attacker.getActingPlayer().getClan(), SiegeSide.ATTACKER);
+		}
+		
 		return false;
 	}
 	
@@ -169,15 +176,17 @@ public class Door extends Creature implements IGeoObject
 	@Override
 	public void reduceCurrentHp(double damage, Creature attacker, boolean awake, boolean isDOT, L2Skill skill)
 	{
-		// HPs can only be reduced during castle sieges.
-		if (!(_castle != null && _castle.getSiege().isInProgress()))
-			return;
-		
-		// SiegeSummon can attack both Walls and Doors (excepted Swoop Cannon - anti-infantery summon).
-		if (attacker instanceof SiegeSummon && ((SiegeSummon) attacker).getNpcId() == SiegeSummon.SWOOP_CANNON_ID)
-			return;
-		
-		super.reduceCurrentHp(damage, attacker, awake, isDOT, skill);
+		// HPs can only be reduced during sieges.
+		if (_castle != null && _castle.getSiege().isInProgress())
+		{
+			// SiegeSummon can attack both Walls and Doors (excepted Swoop Cannon - anti-infantery summon).
+			if (attacker instanceof SiegeSummon && ((SiegeSummon) attacker).getNpcId() == SiegeSummon.SWOOP_CANNON_ID)
+				return;
+			
+			super.reduceCurrentHp(damage, attacker, awake, isDOT, skill);
+		}
+		else if (_clanHall instanceof SiegableHall && ((SiegableHall) _clanHall).getSiegeZone().isActive())
+			super.reduceCurrentHp(damage, attacker, awake, isDOT, skill);
 	}
 	
 	@Override

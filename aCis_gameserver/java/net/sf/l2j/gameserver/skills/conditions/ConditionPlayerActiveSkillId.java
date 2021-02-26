@@ -24,7 +24,7 @@ public class ConditionPlayerActiveSkillId extends Condition
 	@Override
 	public boolean testImpl(Creature effector, Creature effected, L2Skill skill, Item item)
 	{
-		skill = effector.getSkill(_skillId);
-		return skill != null && _skillLevel <= skill.getLevel();
+		final L2Skill activeSkill = effector.getSkill(_skillId);
+		return activeSkill != null && _skillLevel <= activeSkill.getLevel();
 	}
 }

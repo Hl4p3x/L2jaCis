@@ -2,7 +2,7 @@ package net.sf.l2j.gameserver.model.item;
 
 import java.util.Arrays;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.CabalType;
 import net.sf.l2j.gameserver.enums.items.TicketType;
@@ -16,7 +16,7 @@ public final class MercenaryTicket
 	private final int _maxAmount;
 	private final CabalType[] _ssq;
 	
-	public MercenaryTicket(StatsSet set)
+	public MercenaryTicket(StatSet set)
 	{
 		_itemId = set.getInteger("itemId");
 		_type = set.getEnum("type", TicketType.class);

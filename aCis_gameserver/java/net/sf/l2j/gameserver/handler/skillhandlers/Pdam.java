@@ -35,8 +35,6 @@ public class Pdam implements ISkillHandler
 		if (activeChar.isAlikeDead())
 			return;
 		
-		int damage = 0;
-		
 		final boolean ss = activeChar.isChargedShot(ShotType.SOULSHOT);
 		
 		final ItemInstance weapon = activeChar.getActiveWeaponInstance();
@@ -67,21 +65,14 @@ public class Pdam implements ISkillHandler
 			}
 			
 			final byte shld = Formulas.calcShldUse(activeChar, target, skill);
+			final byte reflect = Formulas.calcSkillReflect(target, skill);
+			
+			int damage = (int) Formulas.calcPhysDam(activeChar, target, skill, shld, false, ss);
 			
 			// PDAM critical chance not affected by buffs, only by STR. Only some skills are meant to crit.
-			boolean crit = false;
-			if (skill.getBaseCritRate() > 0)
-				crit = Formulas.calcCrit(skill.getBaseCritRate() * 10 * Formulas.getSTRBonus(activeChar));
-			
-			if (!crit && (skill.getCondition() & L2Skill.COND_CRIT) != 0)
-				damage = 0;
-			else
-				damage = (int) Formulas.calcPhysDam(activeChar, target, skill, shld, false, ss);
-			
+			final boolean crit = skill.getBaseCritRate() > 0 && Formulas.calcCrit(skill.getBaseCritRate() * 10 * Formulas.getSTRBonus(activeChar));
 			if (crit)
-				damage *= 2; // PDAM Critical damage always 2x and not affected by buffs
-				
-			final byte reflect = Formulas.calcSkillReflect(target, skill);
+				damage *= 2;
 			
 			if (skill.hasEffects() && target.getFirstEffect(EffectType.BLOCK_DEBUFF) == null)
 			{

@@ -1,6 +1,7 @@
 package net.sf.l2j.gameserver.scripting;
 
 import java.util.Calendar;
+import java.util.concurrent.ScheduledFuture;
 
 import net.sf.l2j.gameserver.enums.ScheduleType;
 
@@ -10,6 +11,8 @@ public abstract class ScheduledQuest extends Quest
 	private Calendar _start;
 	private Calendar _end;
 	private boolean _started;
+	
+	private ScheduledFuture<?> _task;
 	
 	public ScheduledQuest(int questId, String descr)
 	{
@@ -102,7 +105,7 @@ public abstract class ScheduledQuest extends Quest
 		}
 	}
 	
-	private final Calendar parseTimeStamp(String value) throws Exception
+	private final Calendar parseTimeStamp(String value)
 	{
 		if (value == null)
 			return null;
@@ -279,12 +282,11 @@ public abstract class ScheduledQuest extends Quest
 	protected abstract void onEnd();
 	
 	/**
-	 * Convert text representation of day {@link Calendar} day.
-	 * @param day : String representation of day.
-	 * @return int : {@link Calendar} representation of day.
-	 * @throws Exception : Throws {@link Exception}, when can't convert day.
+	 * Convert a {@link String} representation of a day into a {@link Calendar} day.
+	 * @param day : The {@link String} representation of a day.
+	 * @return The {@link Calendar} representation of a day.
 	 */
-	private static final int getDayOfWeek(String day) throws Exception
+	private final int getDayOfWeek(String day)
 	{
 		if (day.equals("MON"))
 			return Calendar.MONDAY;
@@ -300,12 +302,29 @@ public abstract class ScheduledQuest extends Quest
 			return Calendar.SATURDAY;
 		else if (day.equals("SUN"))
 			return Calendar.SUNDAY;
-		else
-			throw new Exception();
+		
+		LOGGER.error("Error parsing day of week {}, MONDAY will be used for {}.", day, toString());
+		return Calendar.MONDAY;
 	}
 	
 	private final void print(Calendar c)
 	{
 		LOGGER.debug("{}: {} = {}.", toString(), ((c == _start) ? "Next start" : "Next end"), String.format("%d.%d.%d %d:%02d:%02d", c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.MONTH) + 1, c.get(Calendar.YEAR), c.get(Calendar.HOUR_OF_DAY), c.get(Calendar.MINUTE), c.get(Calendar.SECOND)));
+	}
+	
+	public final void setTask(ScheduledFuture<?> task)
+	{
+		cleanTask();
+		
+		_task = task;
+	}
+	
+	public final void cleanTask()
+	{
+		if (_task != null)
+		{
+			_task.cancel(false);
+			_task = null;
+		}
 	}
 }

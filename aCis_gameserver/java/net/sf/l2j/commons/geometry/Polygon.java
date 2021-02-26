@@ -137,11 +137,13 @@ public class Polygon extends AShape
 		
 		// get point
 		final int size = points.size();
+		
 		int index = 0;
-		int point[] = points.get(0);
+		int[] point = points.get(0);
+		
 		for (int i = 1; i < size; i++)
 		{
-			int pt[] = points.get(i);
+			int[] pt = points.get(i);
 			
 			// x lower, or x same and y higher
 			if ((pt[0] < point[0]) || pt[0] == point[0] && pt[1] > point[1])
@@ -152,10 +154,10 @@ public class Polygon extends AShape
 		}
 		
 		// get previous point
-		final int pointPrev[] = points.get(getPrevIndex(size, index));
+		final int[] pointPrev = points.get(getPrevIndex(size, index));
 		
 		// get next point
-		final int pointNext[] = points.get(getNextIndex(size, index));
+		final int[] pointNext = points.get(getNextIndex(size, index));
 		
 		// get orientation
 		final int vx = point[0] - pointPrev[0];
@@ -212,9 +214,9 @@ public class Polygon extends AShape
 		for (int i = 0; i < size - 1; i++)
 		{
 			// get 3 points
-			final int point[] = points.get(i);
-			final int pointNext[] = points.get(i + 1);
-			final int pointNextNext[] = points.get(getNextIndex(size, i + 2));
+			final int[] point = points.get(i);
+			final int[] pointNext = points.get(i + 1);
+			final int[] pointNextNext = points.get(getNextIndex(size, i + 2));
 			
 			final int vx = pointNext[0] - point[0];
 			final int vy = pointNext[1] - point[1];
@@ -251,9 +253,9 @@ public class Polygon extends AShape
 			final int indexNext = getNextIndex(size, index);
 			
 			// get points
-			final int pointPrev[] = points.get(indexPrev);
-			final int point[] = points.get(index);
-			final int pointNext[] = points.get(indexNext);
+			final int[] pointPrev = points.get(indexPrev);
+			final int[] point = points.get(index);
+			final int[] pointNext = points.get(indexNext);
 			
 			// check point to create polygon ear
 			if (isEar(isCw, nonConvexPoints, pointPrev, point, pointNext))
@@ -289,21 +291,21 @@ public class Polygon extends AShape
 	 * Returns true if the triangle formed by A, B, C points is an ear considering the polygon - thus if no other point is inside and it is convex.
 	 * @param isCw : Polygon orientation (clockwise/counterclockwise).
 	 * @param nonConvexPoints : List of all non-convex points.
-	 * @param A : ABC triangle
-	 * @param B : ABC triangle
-	 * @param C : ABC triangle
+	 * @param coordA : ABC triangle
+	 * @param coordB : ABC triangle
+	 * @param coordC : ABC triangle
 	 * @return {@code boolean} : True, when ABC is ear of the polygon.
 	 */
-	private static final boolean isEar(boolean isCw, List<int[]> nonConvexPoints, int A[], int B[], int C[])
+	private static final boolean isEar(boolean isCw, List<int[]> nonConvexPoints, int[] coordA, int[] coordB, int[] coordC)
 	{
 		// ABC triangle
-		if (!(isConvex(isCw, A, B, C)))
+		if (!(isConvex(isCw, coordA, coordB, coordC)))
 			return false;
 		
 		// iterate over all concave points and check if one of them lies inside the given triangle
 		for (int i = 0; i < nonConvexPoints.size(); i++)
 		{
-			if (isInside(A, B, C, nonConvexPoints.get(i)))
+			if (isInside(coordA, coordB, coordC, nonConvexPoints.get(i)))
 				return false;
 		}
 		
@@ -313,19 +315,19 @@ public class Polygon extends AShape
 	/**
 	 * Returns true when the point B is convex considered the actual polygon. A, B and C are three consecutive points of the polygon.
 	 * @param isCw : Polygon orientation (clockwise/counterclockwise).
-	 * @param A : Point, previous to B.
-	 * @param B : Point, which convex information is being checked.
-	 * @param C : Point, next to B.
+	 * @param coordA : Point, previous to B.
+	 * @param coordB : Point, which convex information is being checked.
+	 * @param coordC : Point, next to B.
 	 * @return {@code boolean} : True, when B is convex point.
 	 */
-	private static final boolean isConvex(boolean isCw, int A[], int B[], int C[])
+	private static final boolean isConvex(boolean isCw, int[] coordA, int[] coordB, int[] coordC)
 	{
 		// get vector coordinates
-		final int BAx = B[0] - A[0];
-		final int BAy = B[1] - A[1];
+		final int BAx = coordB[0] - coordA[0];
+		final int BAy = coordB[1] - coordA[1];
 		
 		// get virtual triangle orientation
-		final boolean cw = (C[0] * BAy - C[1] * BAx + BAx * A[1] - BAy * A[0]) > 0;
+		final boolean cw = (coordC[0] * BAy - coordC[1] * BAx + BAx * coordA[1] - BAy * coordA[0]) > 0;
 		
 		// compare with orientation of polygon
 		return cw != isCw;
@@ -333,21 +335,21 @@ public class Polygon extends AShape
 	
 	/**
 	 * Returns true, when point P is inside triangle ABC.
-	 * @param A : ABC triangle
-	 * @param B : ABC triangle
-	 * @param C : ABC triangle
-	 * @param P : Point to be checked in ABC.
+	 * @param coordA : ABC triangle
+	 * @param coordB : ABC triangle
+	 * @param coordC : ABC triangle
+	 * @param coordPoint : Point to be checked in ABC.
 	 * @return {@code boolean} : True, when P is inside ABC.
 	 */
-	private static final boolean isInside(int A[], int B[], int C[], int P[])
+	private static final boolean isInside(int[] coordA, int[] coordB, int[] coordC, int[] coordPoint)
 	{
 		// get vector coordinates
-		final int BAx = B[0] - A[0];
-		final int BAy = B[1] - A[1];
-		final int CAx = C[0] - A[0];
-		final int CAy = C[1] - A[1];
-		final int PAx = P[0] - A[0];
-		final int PAy = P[1] - A[1];
+		final int BAx = coordB[0] - coordA[0];
+		final int BAy = coordB[1] - coordA[1];
+		final int CAx = coordC[0] - coordA[0];
+		final int CAy = coordC[1] - coordA[1];
+		final int PAx = coordPoint[0] - coordA[0];
+		final int PAy = coordPoint[1] - coordA[1];
 		
 		// get determinant
 		final double detXYZ = BAx * CAy - CAx * BAy;

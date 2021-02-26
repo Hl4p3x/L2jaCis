@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.items.ActionType;
 import net.sf.l2j.gameserver.enums.items.ArmorType;
@@ -134,7 +134,7 @@ public abstract class Item
 	
 	private List<Quest> _questEvents = Collections.emptyList();
 	
-	protected Item(StatsSet set)
+	protected Item(StatSet set)
 	{
 		_itemId = set.getInteger("item_id");
 		_name = set.getString("name");

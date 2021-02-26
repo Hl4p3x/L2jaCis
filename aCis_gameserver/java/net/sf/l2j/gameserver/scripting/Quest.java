@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.logging.CLogger;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
@@ -15,29 +16,50 @@ import net.sf.l2j.Config;
 import net.sf.l2j.gameserver.data.DocumentSkill.Skill;
 import net.sf.l2j.gameserver.data.cache.HtmCache;
 import net.sf.l2j.gameserver.data.manager.CastleManager;
+import net.sf.l2j.gameserver.data.manager.GrandBossManager;
 import net.sf.l2j.gameserver.data.manager.ZoneManager;
 import net.sf.l2j.gameserver.data.xml.ItemData;
 import net.sf.l2j.gameserver.data.xml.NpcData;
+import net.sf.l2j.gameserver.enums.QuestStatus;
 import net.sf.l2j.gameserver.enums.ScriptEventType;
+import net.sf.l2j.gameserver.enums.StatusType;
+import net.sf.l2j.gameserver.enums.actors.ClassId;
+import net.sf.l2j.gameserver.geoengine.GeoEngine;
+import net.sf.l2j.gameserver.handler.ISkillHandler;
+import net.sf.l2j.gameserver.handler.SkillHandler;
 import net.sf.l2j.gameserver.model.WorldObject;
+import net.sf.l2j.gameserver.model.actor.Attackable;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Npc;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.Summon;
+import net.sf.l2j.gameserver.model.actor.instance.GrandBoss;
 import net.sf.l2j.gameserver.model.actor.template.NpcTemplate;
 import net.sf.l2j.gameserver.model.entity.Castle;
 import net.sf.l2j.gameserver.model.entity.Siege;
 import net.sf.l2j.gameserver.model.group.Party;
+import net.sf.l2j.gameserver.model.item.DropData;
 import net.sf.l2j.gameserver.model.item.instance.ItemInstance;
 import net.sf.l2j.gameserver.model.item.kind.Item;
+import net.sf.l2j.gameserver.model.location.Location;
 import net.sf.l2j.gameserver.model.location.SpawnLocation;
 import net.sf.l2j.gameserver.model.pledge.Clan;
 import net.sf.l2j.gameserver.model.pledge.ClanMember;
 import net.sf.l2j.gameserver.model.spawn.Spawn;
 import net.sf.l2j.gameserver.model.zone.type.subtype.ZoneType;
+import net.sf.l2j.gameserver.network.SystemMessageId;
 import net.sf.l2j.gameserver.network.serverpackets.ActionFailed;
+import net.sf.l2j.gameserver.network.serverpackets.InventoryUpdate;
+import net.sf.l2j.gameserver.network.serverpackets.MagicSkillUse;
 import net.sf.l2j.gameserver.network.serverpackets.NpcHtmlMessage;
-import net.sf.l2j.gameserver.scripting.scripts.ai.L2AttackableAIScript;
+import net.sf.l2j.gameserver.network.serverpackets.PlaySound;
+import net.sf.l2j.gameserver.network.serverpackets.StatusUpdate;
+import net.sf.l2j.gameserver.network.serverpackets.SystemMessage;
+import net.sf.l2j.gameserver.network.serverpackets.TutorialCloseHtml;
+import net.sf.l2j.gameserver.network.serverpackets.TutorialEnableClientEvent;
+import net.sf.l2j.gameserver.network.serverpackets.TutorialShowHtml;
+import net.sf.l2j.gameserver.network.serverpackets.TutorialShowQuestionMark;
+import net.sf.l2j.gameserver.scripting.script.ai.AttackableAIScript;
 import net.sf.l2j.gameserver.skills.L2Skill;
 import net.sf.l2j.gameserver.taskmanager.GameTimeTaskManager;
 
@@ -49,16 +71,30 @@ public class Quest
 	private static final String HTML_ALREADY_COMPLETED = "<html><body>This quest has already been completed.</body></html>";
 	private static final String HTML_TOO_MUCH_QUESTS = "<html><body>You have already accepted the maximum number of quests. No more than 25 quests may be undertaken simultaneously.<br>For quest information, enter Alt+U.</body></html>";
 	
-	public static final byte STATE_CREATED = 0;
-	public static final byte STATE_STARTED = 1;
-	public static final byte STATE_COMPLETED = 2;
+	public static final byte DROP_DIVMOD = 0;
+	public static final byte DROP_FIXED_RATE = 1;
+	public static final byte DROP_FIXED_COUNT = 2;
+	public static final byte DROP_FIXED_BOTH = 3;
+	
+	public static final String SOUND_ACCEPT = "ItemSound.quest_accept";
+	public static final String SOUND_ITEMGET = "ItemSound.quest_itemget";
+	public static final String SOUND_MIDDLE = "ItemSound.quest_middle";
+	public static final String SOUND_FINISH = "ItemSound.quest_finish";
+	public static final String SOUND_GIVEUP = "ItemSound.quest_giveup";
+	public static final String SOUND_JACKPOT = "ItemSound.quest_jackpot";
+	public static final String SOUND_FANFARE = "ItemSound.quest_fanfare_2";
+	public static final String SOUND_BEFORE_BATTLE = "Itemsound.quest_before_battle";
+	public static final String SOUND_TUTORIAL = "ItemSound.quest_tutorial";
 	
 	private final Set<QuestTimer> _timers = ConcurrentHashMap.newKeySet();
 	
 	private final int _id;
 	private final String _descr;
-	private boolean _isTriggeredOnEnterWorld;
+	
 	private int[] _itemsIds;
+	
+	private boolean _isOnEnterWorld;
+	private boolean _isOnDeath;
 	
 	/**
 	 * Create a script/quest using quest id and description.
@@ -75,7 +111,7 @@ public class Quest
 	public boolean equals(Object o)
 	{
 		// core AIs are available only in one instance (in the list of event of NpcTemplate)
-		if (o instanceof L2AttackableAIScript && this instanceof L2AttackableAIScript)
+		if (o instanceof AttackableAIScript && this instanceof AttackableAIScript)
 			return true;
 		
 		if (o instanceof Quest)
@@ -130,23 +166,6 @@ public class Quest
 	}
 	
 	/**
-	 * @return True if this {@link Quest} triggers on {@link Player} entering world event.
-	 */
-	public boolean isTriggeredOnEnterWorld()
-	{
-		return _isTriggeredOnEnterWorld;
-	}
-	
-	/**
-	 * Set/reset {@link Player} entering world event for this {@link Quest}.
-	 * @param val : If true, event is valid.
-	 */
-	public void setTriggeredOnEnterWorld(boolean val)
-	{
-		_isTriggeredOnEnterWorld = val;
-	}
-	
-	/**
 	 * @return An array of registered quest items ids. Those items are automatically destroyed in case a {@link Player} aborts or finishes this {@link Quest}.
 	 */
 	public int[] getItemsIds()
@@ -164,36 +183,97 @@ public class Quest
 	}
 	
 	/**
+	 * @return True if this {@link Quest} triggers on {@link Player} entering world event.
+	 */
+	public boolean isTriggeredOnEnterWorld()
+	{
+		return _isOnEnterWorld;
+	}
+	
+	/**
+	 * Set this {@link Quest} to notify {@link Player} entering world event.
+	 */
+	public void setTriggeredOnEnterWorld()
+	{
+		_isOnEnterWorld = true;
+	}
+	
+	/**
+	 * @return True if this {@link Quest} triggers on {@link Player} or its {@link Summon} dying event.
+	 */
+	public boolean isTriggeredOnDeath()
+	{
+		return _isOnDeath;
+	}
+	
+	/**
+	 * Set this {@link Quest} to notify {@link Player} or its {@link Summon} dying event.
+	 */
+	public void setTriggeredOnDeath()
+	{
+		_isOnDeath = true;
+	}
+	
+	/**
 	 * Add a new {@link QuestState} related to this {@link Quest} for the {@link Player} set as parameter to the database, and return it.
 	 * @param player : The {@link Player} used as parameter.
 	 * @return A newly created {@link QuestState}.
 	 */
 	public QuestState newQuestState(Player player)
 	{
-		return new QuestState(player, this, STATE_CREATED);
+		return new QuestState(player, this);
 	}
 	
 	/**
 	 * Check a {@link Player}'s {@link QuestState} condition. {@link Player} must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
 	 * @param player : The {@link Player} who acted towards the {@link Npc}.
 	 * @param npc : The {@link Npc} used to compare distance.
-	 * @param var : A tuple specifying a quest condition that must be satisfied.
-	 * @param value : A tuple specifying a quest condition that must be satisfied.
+	 * @param cond : Quest condition value that must be satisfied.
 	 * @return The {@link QuestState} of that {@link Player}.
 	 */
-	public QuestState checkPlayerCondition(Player player, Npc npc, String var, String value)
+	public QuestState checkPlayerCondition(Player player, Npc npc, int cond)
 	{
 		// No valid player or npc instance is passed, there is nothing to check.
 		if (player == null || npc == null)
 			return null;
 		
 		// Check player's quest conditions.
-		final QuestState st = player.getQuestState(getName());
+		final QuestState st = player.getQuestList().getQuestState(getName());
 		if (st == null)
 			return null;
 		
-		// Condition exists? Condition has correct value?
-		final String toCheck = st.get(var);
+		// Check quest's condition.
+		if (st.getCond() != cond)
+			return null;
+		
+		// Player is in range?
+		if (!player.isIn3DRadius(npc, Config.PARTY_RANGE))
+			return null;
+		
+		return st;
+	}
+	
+	/**
+	 * Check a {@link Player}'s {@link QuestState} condition. {@link Player} must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
+	 * @param player : The {@link Player} who acted towards the {@link Npc}.
+	 * @param npc : The {@link Npc} used to compare distance.
+	 * @param variable : A tuple specifying a quest condition that must be satisfied.
+	 * @param value : A tuple specifying a quest condition that must be satisfied.
+	 * @return The {@link QuestState} of that {@link Player}.
+	 */
+	public QuestState checkPlayerVariable(Player player, Npc npc, String variable, String value)
+	{
+		// No valid player or npc instance is passed, there is nothing to check.
+		if (player == null || npc == null)
+			return null;
+		
+		// Check player's quest conditions.
+		final QuestState st = player.getQuestList().getQuestState(getName());
+		if (st == null)
+			return null;
+		
+		// Check variable and its value.
+		final String toCheck = st.get(variable);
 		if (toCheck == null || !value.equalsIgnoreCase(toCheck))
 			return null;
 		
@@ -207,21 +287,63 @@ public class Quest
 	/**
 	 * Check a {@link Player}'s {@link Clan} leader {@link QuestState} condition. Both of them must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
 	 * @param player : The {@link Player} who acted towards the {@link Npc}.
-	 * @param npc : The {@link Npc} used to compare distance.
-	 * @param var : A tuple specifying a quest condition that must be satisfied.
-	 * @param value : A tuple specifying a quest condition that must be satisfied.
+	 * @param npc : The {@link Npc} used to compare distance (optional).
+	 * @param cond : Quest condition value that must be satisfied.
 	 * @return The {@link QuestState} of that {@link Player}'s {@link Clan} leader, if existing - otherwise, null.
 	 */
-	public QuestState checkClanLeaderCondition(Player player, Npc npc, String var, String value)
+	public QuestState checkClanLeaderCondition(Player player, Npc npc, int cond)
 	{
 		// Check player's quest conditions.
 		final QuestState leaderQs = getClanLeaderQuestState(player, npc);
 		if (leaderQs == null)
 			return null;
 		
-		// Condition exists? Condition has correct value?
-		final String toCheck = leaderQs.get(var);
+		// Check quest's condition.
+		if (leaderQs.getCond() != cond)
+			return null;
+		
+		return leaderQs;
+	}
+	
+	/**
+	 * Check a {@link Player}'s {@link Clan} leader {@link QuestState} condition. Both of them must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
+	 * @param player : The {@link Player} who acted towards the {@link Npc}.
+	 * @param npc : The {@link Npc} used to compare distance (optional).
+	 * @param variable : A tuple specifying a quest condition that must be satisfied.
+	 * @param value : A tuple specifying a quest condition that must be satisfied.
+	 * @return The {@link QuestState} of that {@link Player}'s {@link Clan} leader, if existing - otherwise, null.
+	 */
+	public QuestState checkClanLeaderVariable(Player player, Npc npc, String variable, String value)
+	{
+		// Check player's quest conditions.
+		final QuestState leaderQs = getClanLeaderQuestState(player, npc);
+		if (leaderQs == null)
+			return null;
+		
+		// Check variable and its value.
+		final String toCheck = leaderQs.get(variable);
 		if (toCheck == null || !value.equalsIgnoreCase(toCheck))
+			return null;
+		
+		return leaderQs;
+	}
+	
+	/**
+	 * Check a {@link Player}'s {@link Clan} leader {@link QuestState} condition. Both of them must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
+	 * @param player : The {@link Player} who acted towards the {@link Npc}.
+	 * @param npc : The {@link Npc} used to compare distance (optional).
+	 * @param state : The {@link QuestStatus} state to be matched.
+	 * @return The {@link QuestState} of that {@link Player}'s {@link Clan} leader, if existing - otherwise, null.
+	 */
+	public QuestState checkClanLeaderState(Player player, Npc npc, QuestStatus state)
+	{
+		// Check player's quest conditions.
+		final QuestState leaderQs = getClanLeaderQuestState(player, npc);
+		if (leaderQs == null)
+			return null;
+		
+		// State correct?
+		if (leaderQs.getState() != state)
 			return null;
 		
 		return leaderQs;
@@ -233,12 +355,10 @@ public class Quest
 	 * Note: This function is only here because of how commonly it may be used by quest developers. For any variations on this function, the quest script can always handle things on its own.
 	 * @param player : The {@link Player} whose {@link Party} is to be checked.
 	 * @param npc : The {@link Npc} used to compare distance.
-	 * @param var : A tuple specifying a quest condition that must be satisfied for a party member to be considered.
-	 * @param value : A tuple specifying a quest condition that must be satisfied for a party member to be considered.
-	 * @return The {@link List} of party members, that matches the specified condition, empty list if none matches. If the var is null, empty list is returned (i.e. no condition is applied). The party member must be within Config.PARTY_RANGE distance from the npc. If npc is null, distance condition
-	 *         is ignored.
+	 * @param cond : Quest condition value that must be satisfied for a party member to be considered.
+	 * @return The {@link List} of party members, that matches the specified condition, empty list if none matches.
 	 */
-	public List<QuestState> getPartyMembers(Player player, Npc npc, String var, String value)
+	public List<QuestState> getPartyMembers(Player player, Npc npc, int cond)
 	{
 		if (player == null)
 			return Collections.emptyList();
@@ -246,14 +366,14 @@ public class Quest
 		final Party party = player.getParty();
 		if (party == null)
 		{
-			final QuestState st = checkPlayerCondition(player, npc, var, value);
+			final QuestState st = checkPlayerCondition(player, npc, cond);
 			return (st != null) ? Arrays.asList(st) : Collections.emptyList();
 		}
 		
 		final List<QuestState> list = new ArrayList<>();
 		for (Player member : party.getMembers())
 		{
-			final QuestState st = checkPlayerCondition(member, npc, var, value);
+			final QuestState st = checkPlayerCondition(member, npc, cond);
 			if (st != null)
 				list.add(st);
 		}
@@ -268,8 +388,58 @@ public class Quest
 	 * @param npc : The {@link Npc} used to compare distance.
 	 * @param var : A tuple specifying a quest condition that must be satisfied for a party member to be considered.
 	 * @param value : A tuple specifying a quest condition that must be satisfied for a party member to be considered.
-	 * @return The {@link QuestState} of random party member, that matches the specified condition, or null if no match. If the var is null, null is returned (i.e. no condition is applied). The party member must be within Config.PARTY_RANGE distance from the npc. If npc is null, distance condition
-	 *         is ignored.
+	 * @return The {@link List} of party members, that matches the specified condition, empty list if none matches. If the var is null, empty list is returned (i.e. no condition is applied).
+	 */
+	public List<QuestState> getPartyMembers(Player player, Npc npc, String var, String value)
+	{
+		if (player == null)
+			return Collections.emptyList();
+		
+		final Party party = player.getParty();
+		if (party == null)
+		{
+			final QuestState st = checkPlayerVariable(player, npc, var, value);
+			return (st != null) ? Arrays.asList(st) : Collections.emptyList();
+		}
+		
+		final List<QuestState> list = new ArrayList<>();
+		for (Player member : party.getMembers())
+		{
+			final QuestState st = checkPlayerVariable(member, npc, var, value);
+			if (st != null)
+				list.add(st);
+		}
+		return list;
+	}
+	
+	/**
+	 * Auxiliary function for party quests.<br>
+	 * <br>
+	 * Note: This function is only here because of how commonly it may be used by quest developers. For any variations on this function, the quest script can always handle things on its own.
+	 * @param player : The {@link Player} whose {@link Party} is to be checked.
+	 * @param npc : The {@link Npc} used to compare distance.
+	 * @param cond : Quest condition value that must be satisfied.
+	 * @return The {@link QuestState} of random party member, that matches the specified condition, or null if no match.
+	 */
+	public QuestState getRandomPartyMember(Player player, Npc npc, int cond)
+	{
+		// No valid player instance is passed, there is nothing to check.
+		if (player == null)
+			return null;
+		
+		// Return random candidate.
+		return Rnd.get(getPartyMembers(player, npc, cond));
+	}
+	
+	/**
+	 * Auxiliary function for party quests.<br>
+	 * <br>
+	 * Note: This function is only here because of how commonly it may be used by quest developers. For any variations on this function, the quest script can always handle things on its own.
+	 * @param player : The {@link Player} whose {@link Party} is to be checked.
+	 * @param npc : The {@link Npc} used to compare distance.
+	 * @param var : A tuple specifying a quest condition that must be satisfied for a party member to be considered.
+	 * @param value : A tuple specifying a quest condition that must be satisfied for a party member to be considered.
+	 * @return The {@link QuestState} of random party member, that matches the specified condition, or null if no match. If the var is null, null is returned (i.e. no condition is applied).
 	 */
 	public QuestState getRandomPartyMember(Player player, Npc npc, String var, String value)
 	{
@@ -282,38 +452,24 @@ public class Quest
 	}
 	
 	/**
-	 * Auxiliary function for party quests.<br>
-	 * <br>
-	 * Note: This function is only here because of how commonly it may be used by quest developers. For any variations on this function, the quest script can always handle things on its own.
-	 * @param player : The {@link Player} whose {@link Party} is to be checked.
-	 * @param npc : The {@link Npc} used to compare distance.
-	 * @param value : The value of the "cond" variable that must be matched.
-	 * @return The {@link QuestState} of random party member, that matches the specified condition, or null if no match. The party member must be within Config.PARTY_RANGE distance from the npc. If npc is null, distance condition is ignored.
-	 */
-	public QuestState getRandomPartyMember(Player player, Npc npc, String value)
-	{
-		return getRandomPartyMember(player, npc, "cond", value);
-	}
-	
-	/**
-	 * Check the {@link Player}'s {@link QuestState} state. {@link Player} must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
+	 * Check the {@link Player}'s {@link QuestState} state. {@link Player} must be within Config.PARTY_RANGE distance from the {@link Npc}.
 	 * @param player : The {@link Player} who acted towards the {@link Npc}.
 	 * @param npc : The {@link Npc} used to compare distance.
 	 * @param state : The {@link QuestState} state to be matched.
 	 * @return The {@link QuestState} of that {@link Player}.
 	 */
-	public QuestState checkPlayerState(Player player, Npc npc, byte state)
+	public QuestState checkPlayerState(Player player, Npc npc, QuestStatus state)
 	{
 		// No valid player or npc instance is passed, there is nothing to check.
 		if (player == null || npc == null)
 			return null;
 		
 		// Check player's quest conditions.
-		final QuestState st = player.getQuestState(getName());
+		final QuestState st = player.getQuestList().getQuestState(getName());
 		if (st == null)
 			return null;
 		
-		// State correct?
+		// Check quest's state.
 		if (st.getState() != state)
 			return null;
 		
@@ -331,9 +487,9 @@ public class Quest
 	 * @param player : The {@link Player} whose {@link Party} is to be checked.
 	 * @param npc : The {@link Npc} used to compare distance.
 	 * @param state : The {@link QuestState} state to be matched by every party member.
-	 * @return {@link List} of party members, that matches the specified {@link QuestState} state, empty list if none matches. The party member must be within Config.PARTY_RANGE distance from the npc. If npc is null, distance condition is ignored.
+	 * @return {@link List} of party members, that matches the specified {@link QuestState} state, empty list if none matches.
 	 */
-	public List<QuestState> getPartyMembersState(Player player, Npc npc, byte state)
+	public List<QuestState> getPartyMembersState(Player player, Npc npc, QuestStatus state)
 	{
 		if (player == null)
 			return Collections.emptyList();
@@ -362,9 +518,9 @@ public class Quest
 	 * @param player : The {@link Player} whose {@link Party} is to be checked.
 	 * @param npc : The {@link Npc} used to compare distance.
 	 * @param state : The {@link QuestState} state to be matched by every party member.
-	 * @return The {@link QuestState} of random party member, that matches the specified {@link QuestState} state, or null if no match. The party member must be within Config.PARTY_RANGE distance from the npc. If npc is null, distance condition is ignored.
+	 * @return The {@link QuestState} of random party member, that matches the specified {@link QuestState} state, or null if no match.
 	 */
-	public QuestState getRandomPartyMemberState(Player player, Npc npc, byte state)
+	public QuestState getRandomPartyMemberState(Player player, Npc npc, QuestStatus state)
 	{
 		// No valid player instance is passed, there is nothing to check.
 		if (player == null)
@@ -377,22 +533,22 @@ public class Quest
 	/**
 	 * Check a {@link Player}'s {@link Clan} leader {@link QuestState} state. Both of them must be within Config.PARTY_RANGE distance from the {@link Npc}. If {@link Npc} is null, distance condition is ignored.
 	 * @param player : The {@link Player} who acted towards the {@link Npc}.
-	 * @param npc : The {@link Npc} used to compare distance.
+	 * @param npc : The {@link Npc} used to compare distance (optional).
 	 * @return The {@link QuestState} of that {@link Player}'s {@link Clan} leader, if existing and online - otherwise, null.
 	 */
 	public QuestState getClanLeaderQuestState(Player player, Npc npc)
 	{
 		// No valid player instance is passed, there is nothing to check.
-		if (player == null || npc == null)
+		if (player == null)
 			return null;
 		
 		// Player killer must be in range with npc.
-		if (!player.isIn3DRadius(npc, Config.PARTY_RANGE))
+		if (npc != null && !player.isIn3DRadius(npc, Config.PARTY_RANGE))
 			return null;
 		
 		// If player is the leader, retrieves directly the qS and bypass others checks
 		if (player.isClanLeader())
-			return player.getQuestState(getName());
+			return player.getQuestList().getQuestState(getName());
 		
 		// Verify if the player got a clan
 		final Clan clan = player.getClan();
@@ -404,11 +560,11 @@ public class Quest
 		if (leader == null)
 			return null;
 		
-		// Verify if the leader is on the radius of the npc. If true, send leader's quest state.
-		if (leader.isIn3DRadius(npc, Config.PARTY_RANGE))
-			return leader.getQuestState(getName());
+		// Verify if the leader is on the radius of the npc.
+		if (npc != null && !leader.isIn3DRadius(npc, Config.PARTY_RANGE))
+			return null;
 		
-		return null;
+		return leader.getQuestList().getQuestState(getName());
 	}
 	
 	/**
@@ -619,6 +775,31 @@ public class Quest
 	}
 	
 	/**
+	 * Spawn a temporary {@link Npc}, based on provided {@link StatSet} informations.<br>
+	 * <br>
+	 * This {@link Npc} is registered into {@link GrandBossManager}, his HP/MP restored, and is forced to run.
+	 * @param npcId : The {@link Npc} template to spawn.
+	 * @param set : The {@link StatSet} used to retrieve informations.
+	 * @return The spawned {@link Npc}, null if some problem occurs.
+	 */
+	public Npc addGrandBossSpawn(int npcId, StatSet set)
+	{
+		// Generate and spawn a Npc based on StatsSet informations.
+		final Npc npc = addSpawn(npcId, set.getInteger("loc_x"), set.getInteger("loc_y"), set.getInteger("loc_z"), set.getInteger("heading"), false, 0, false);
+		
+		// Add the Npc into the GrandBossManager.
+		GrandBossManager.getInstance().addBoss((GrandBoss) npc);
+		
+		// Set HP/MP based on StatsSet informations.
+		npc.getStatus().setHpMp(set.getDouble("currentHP"), set.getDouble("currentMP"));
+		
+		// Force the Npc to run.
+		npc.forceRunStance();
+		
+		return npc;
+	}
+	
+	/**
 	 * Spawns temporary (quest) {@link Npc} on the location of a {@link Creature}.
 	 * @param npcId : The {@link Npc} template to spawn.
 	 * @param cha : The {@link Creature} on whose position to spawn.
@@ -662,20 +843,33 @@ public class Quest
 	{
 		try
 		{
+			// Get NPC template.
 			final NpcTemplate template = NpcData.getInstance().getTemplate(npcId);
 			if (template == null)
 				return null;
 			
+			// Get spawn location.
 			if (randomOffset)
 			{
-				x += Rnd.get(-100, 100);
-				y += Rnd.get(-100, 100);
+				// Get new coordinates.
+				final int nx = x + Rnd.get(-100, 100);
+				final int ny = y + Rnd.get(-100, 100);
+				
+				// Validate new coordinates.
+				final Location loc = GeoEngine.getInstance().getValidLocation(x, y, z, nx, ny, z, null);
+				x = loc.getX();
+				y = loc.getY();
+				z = loc.getZ();
 			}
+			else
+				z = GeoEngine.getInstance().getHeight(x, y, z);
 			
+			// Create spawn.
 			final Spawn spawn = new Spawn(template);
-			spawn.setLoc(x, y, z + 20, heading);
+			spawn.setLoc(x, y, z, heading);
 			spawn.setRespawnState(false);
 			
+			// Spawn NPC.
 			final Npc npc = spawn.doSpawn(isSummonSpawn);
 			if (despawnDelay > 0)
 				npc.scheduleDespawn(despawnDelay);
@@ -687,6 +881,429 @@ public class Quest
 			LOGGER.error("Couldn't spawn npcId {} for {}.", npcId, toString());
 			return null;
 		}
+	}
+	
+	/**
+	 * Give items to the {@link Player}'s inventory.
+	 * @param player : The {@link Player} to give items.
+	 * @param itemId : Identifier of the item.
+	 * @param itemCount : Quantity of items to add.
+	 */
+	public static void giveItems(Player player, int itemId, int itemCount)
+	{
+		giveItems(player, itemId, itemCount, 0);
+	}
+	
+	/**
+	 * Give items to the {@link Player}'s inventory.
+	 * @param player : The {@link Player} to give items.
+	 * @param itemId : Identifier of the item.
+	 * @param itemCount : Quantity of items to add.
+	 * @param enchantLevel : Enchant level of items to add.
+	 */
+	public static void giveItems(Player player, int itemId, int itemCount, int enchantLevel)
+	{
+		// Incorrect amount.
+		if (itemCount <= 0)
+			return;
+		
+		// Add items to player's inventory.
+		final ItemInstance item = player.getInventory().addItem("Quest", itemId, itemCount, player, player);
+		if (item == null)
+			return;
+		
+		// Set enchant level for the item.
+		if (enchantLevel > 0)
+			item.setEnchantLevel(enchantLevel);
+		
+		// Send message to the client.
+		if (itemId == 57)
+			player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.EARNED_S1_ADENA).addItemNumber(itemCount));
+		else
+		{
+			if (itemCount > 1)
+				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.EARNED_S2_S1_S).addItemName(itemId).addItemNumber(itemCount));
+			else
+				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.EARNED_ITEM_S1).addItemName(itemId));
+		}
+		
+		// Send status update packet.
+		StatusUpdate su = new StatusUpdate(player);
+		su.addAttribute(StatusType.CUR_LOAD, player.getCurrentWeight());
+		player.sendPacket(su);
+	}
+	
+	/**
+	 * Remove items from the {@link Player}'s inventory.
+	 * @param player : The {@link Player} to remove items.
+	 * @param itemId : Identifier of the item.
+	 * @param itemCount : Quantity of items to destroy.
+	 */
+	public static void takeItems(Player player, int itemId, int itemCount)
+	{
+		// Get item template.
+		final Item template = ItemData.getInstance().getTemplate(itemId);
+		if (template == null)
+			return;
+		
+		if (template.isStackable())
+		{
+			// Find item in player's inventory.
+			final ItemInstance item = player.getInventory().getItemByItemId(itemId);
+			if (item == null)
+				return;
+			
+			// Tests on count value and set correct value if necessary.
+			if (itemCount < 0 || itemCount > item.getCount())
+				itemCount = item.getCount();
+			
+			// Disarm item, if equipped.
+			if (item.isEquipped())
+			{
+				InventoryUpdate iu = new InventoryUpdate();
+				for (ItemInstance disarmed : player.getInventory().unequipItemInBodySlotAndRecord(item))
+					iu.addModifiedItem(disarmed);
+				
+				player.sendPacket(iu);
+				player.broadcastUserInfo();
+			}
+			
+			// Destroy the quantity of items wanted.
+			player.destroyItemByItemId("Quest", itemId, itemCount, player, true);
+		}
+		else
+		{
+			// Find items in player's inventory and remove required amount.
+			int removed = 0;
+			for (ItemInstance item : player.getInventory().getItemsByItemId(itemId))
+			{
+				// Check removed amount.
+				if (itemCount >= 0 && removed == itemCount)
+					break;
+				
+				// Disarm item, if equipped.
+				if (item.isEquipped())
+				{
+					InventoryUpdate iu = new InventoryUpdate();
+					for (ItemInstance disarmed : player.getInventory().unequipItemInBodySlotAndRecord(item))
+						iu.addModifiedItem(disarmed);
+					
+					player.sendPacket(iu);
+					player.broadcastUserInfo();
+				}
+				
+				// Destroy the quantity of items wanted.
+				player.destroyItem("Quest", item, player, true);
+				removed++;
+			}
+		}
+	}
+	
+	/**
+	 * Drop items to the {@link Player}'s inventory. Rate is 100%, amount is affected by Config.RATE_QUEST_DROP.
+	 * @param player : The {@link Player} to drop items.
+	 * @param itemId : Identifier of the item to be dropped.
+	 * @param count : Quantity of items to be dropped.
+	 * @param neededCount : Quantity of items needed to complete the task. If set to 0, unlimited amount is collected.
+	 * @return boolean : Indicating whether item quantity has been reached.
+	 */
+	public static boolean dropItemsAlways(Player player, int itemId, int count, int neededCount)
+	{
+		return dropItems(player, itemId, count, neededCount, DropData.MAX_CHANCE, DROP_FIXED_RATE);
+	}
+	
+	/**
+	 * Drop items to the {@link Player}'s inventory. Rate and amount is affected by DIVMOD of Config.RATE_QUEST_DROP.
+	 * @param player : The {@link Player} to drop items.
+	 * @param itemId : Identifier of the item to be dropped.
+	 * @param count : Quantity of items to be dropped.
+	 * @param neededCount : Quantity of items needed to complete the task. If set to 0, unlimited amount is collected.
+	 * @param dropChance : Item drop rate (100% chance is defined by the L2DropData.MAX_CHANCE = 1.000.000).
+	 * @return boolean : Indicating whether item quantity has been reached.
+	 */
+	public static boolean dropItems(Player player, int itemId, int count, int neededCount, int dropChance)
+	{
+		return dropItems(player, itemId, count, neededCount, dropChance, DROP_DIVMOD);
+	}
+	
+	/**
+	 * Drop items to the {@link Player}'s inventory.
+	 * @param player : The {@link Player} to drop items.
+	 * @param itemId : Identifier of the item to be dropped.
+	 * @param count : Quantity of items to be dropped.
+	 * @param neededCount : Quantity of items needed to complete the task. If set to 0, unlimited amount is collected.
+	 * @param dropChance : Item drop rate (100% chance is defined by the L2DropData.MAX_CHANCE = 1.000.000).
+	 * @param type : Item drop behavior: DROP_DIVMOD (rate and), DROP_FIXED_RATE, DROP_FIXED_COUNT or DROP_FIXED_BOTH.
+	 * @return boolean : Indicating whether item quantity has been reached.
+	 */
+	public static boolean dropItems(Player player, int itemId, int count, int neededCount, int dropChance, byte type)
+	{
+		// Get current amount of item.
+		final int currentCount = player.getInventory().getItemCount(itemId);
+		
+		// Required amount reached already?
+		if (neededCount > 0 && currentCount >= neededCount)
+			return true;
+		
+		int amount = 0;
+		switch (type)
+		{
+			case DROP_DIVMOD:
+				dropChance *= Config.RATE_QUEST_DROP;
+				amount = count * (dropChance / DropData.MAX_CHANCE);
+				if (Rnd.get(DropData.MAX_CHANCE) < dropChance % DropData.MAX_CHANCE)
+					amount += count;
+				break;
+			
+			case DROP_FIXED_RATE:
+				if (Rnd.get(DropData.MAX_CHANCE) < dropChance)
+					amount = (int) (count * Config.RATE_QUEST_DROP);
+				break;
+			
+			case DROP_FIXED_COUNT:
+				if (Rnd.get(DropData.MAX_CHANCE) < dropChance * Config.RATE_QUEST_DROP)
+					amount = count;
+				break;
+			
+			case DROP_FIXED_BOTH:
+				if (Rnd.get(DropData.MAX_CHANCE) < dropChance)
+					amount = count;
+				break;
+		}
+		
+		boolean reached = false;
+		if (amount > 0)
+		{
+			// Limit count to reach required amount.
+			if (neededCount > 0)
+			{
+				reached = (currentCount + amount) >= neededCount;
+				amount = (reached) ? neededCount - currentCount : amount;
+			}
+			
+			// Inventory slot check.
+			if (!player.getInventory().validateCapacityByItemId(itemId, amount))
+				return false;
+			
+			// Give items to the player.
+			giveItems(player, itemId, amount, 0);
+			
+			// Play the sound.
+			playSound(player, reached ? SOUND_MIDDLE : SOUND_ITEMGET);
+		}
+		
+		return neededCount > 0 && reached;
+	}
+	
+	/**
+	 * Drop multiple items to the {@link Player}'s inventory. Rate and amount is affected by DIVMOD of Config.RATE_QUEST_DROP.
+	 * @param player : The {@link Player} to drop items.
+	 * @param rewardsInfos : Infos regarding drops (itemId, count, neededCount, dropChance).
+	 * @return boolean : Indicating whether item quantity has been reached.
+	 */
+	public static boolean dropMultipleItems(Player player, int[][] rewardsInfos)
+	{
+		return dropMultipleItems(player, rewardsInfos, DROP_DIVMOD);
+	}
+	
+	/**
+	 * Drop items to the {@link Player}'s inventory.
+	 * @param player : The {@link Player} to drop items.
+	 * @param rewardsInfos : Infos regarding drops (itemId, count, neededCount, dropChance).
+	 * @param type : Item drop behavior: DROP_DIVMOD (rate and), DROP_FIXED_RATE, DROP_FIXED_COUNT or DROP_FIXED_BOTH.
+	 * @return boolean : Indicating whether item quantity has been reached.
+	 */
+	public static boolean dropMultipleItems(Player player, int[][] rewardsInfos, byte type)
+	{
+		// Used for the sound.
+		boolean sendSound = false;
+		
+		// Used for the reached state.
+		boolean reached = true;
+		
+		// For each reward type, calculate the probability of drop.
+		for (int[] info : rewardsInfos)
+		{
+			final int itemId = info[0];
+			final int currentCount = player.getInventory().getItemCount(itemId);
+			final int neededCount = info[2];
+			
+			// Required amount reached already?
+			if (neededCount > 0 && currentCount >= neededCount)
+				continue;
+			
+			final int count = info[1];
+			
+			int dropChance = info[3];
+			int amount = 0;
+			
+			switch (type)
+			{
+				case DROP_DIVMOD:
+					dropChance *= Config.RATE_QUEST_DROP;
+					amount = count * (dropChance / DropData.MAX_CHANCE);
+					if (Rnd.get(DropData.MAX_CHANCE) < dropChance % DropData.MAX_CHANCE)
+						amount += count;
+					break;
+				
+				case DROP_FIXED_RATE:
+					if (Rnd.get(DropData.MAX_CHANCE) < dropChance)
+						amount = (int) (count * Config.RATE_QUEST_DROP);
+					break;
+				
+				case DROP_FIXED_COUNT:
+					if (Rnd.get(DropData.MAX_CHANCE) < dropChance * Config.RATE_QUEST_DROP)
+						amount = count;
+					break;
+				
+				case DROP_FIXED_BOTH:
+					if (Rnd.get(DropData.MAX_CHANCE) < dropChance)
+						amount = count;
+					break;
+			}
+			
+			if (amount > 0)
+			{
+				// Limit count to reach required amount.
+				if (neededCount > 0)
+					amount = ((currentCount + amount) >= neededCount) ? neededCount - currentCount : amount;
+				
+				// Inventory slot check.
+				if (!player.getInventory().validateCapacityByItemId(itemId, amount))
+					continue;
+				
+				// Give items to the player.
+				giveItems(player, itemId, amount, 0);
+				
+				// Send sound.
+				sendSound = true;
+			}
+			
+			// Illimited needed count or current count being inferior to needed count means the state isn't reached.
+			if (neededCount <= 0 || ((currentCount + amount) < neededCount))
+				reached = false;
+		}
+		
+		// Play the sound.
+		if (sendSound)
+			playSound(player, (reached) ? SOUND_MIDDLE : SOUND_ITEMGET);
+		
+		return reached;
+	}
+	
+	/**
+	 * Reward {@link Player} with items. The amount is affected by Config.RATE_QUEST_REWARD or Config.RATE_QUEST_REWARD_ADENA.
+	 * @param player : The {@link Player} to reward items.
+	 * @param itemId : Identifier of the item.
+	 * @param itemCount : Quantity of item to reward before applying multiplier.
+	 */
+	public static void rewardItems(Player player, int itemId, int itemCount)
+	{
+		if (itemId == 57)
+			giveItems(player, itemId, (int) (itemCount * Config.RATE_QUEST_REWARD_ADENA), 0);
+		else
+			giveItems(player, itemId, (int) (itemCount * Config.RATE_QUEST_REWARD), 0);
+	}
+	
+	/**
+	 * Reward ss or sps for beginners.
+	 * @param player : The {@link Player} to reward shots.
+	 * @param ssCount : The count of ss to reward.
+	 * @param spsCount : The count of ss to reward.
+	 */
+	public void rewardNewbieShots(Player player, int ssCount, int spsCount)
+	{
+		// Don't process if not a newbie or already rewarded.
+		if (!player.isNewbie(true) || player.getMemos().containsKey(getName() + "_OneTimeQuestFlag"))
+			return;
+		
+		// Reward ss or sps, according Player class. Call Tutorial voice 26 or 27.
+		final boolean isMage = player.isMageClass() && player.getClassId() != ClassId.ORC_MYSTIC && player.getClassId() != ClassId.ORC_SHAMAN;
+		if (spsCount > 0 && isMage)
+		{
+			showQuestionMark(player, 26);
+			
+			rewardItems(player, 5790, spsCount);
+			playTutorialVoice(player, "tutorial_voice_027");
+		}
+		else if (ssCount > 0 && !isMage)
+		{
+			showQuestionMark(player, 26);
+			
+			rewardItems(player, 5789, ssCount);
+			playTutorialVoice(player, "tutorial_voice_026");
+		}
+		
+		// Set the Memo for further usage.
+		player.getMemos().set(getName() + "_OneTimeQuestFlag", true);
+	}
+	
+	/**
+	 * Reward {@link Player} with EXP and SP. The amount is affected by Config.RATE_QUEST_REWARD_XP and Config.RATE_QUEST_REWARD_SP.
+	 * @param player : The {@link Player} to add EXP and SP.
+	 * @param exp : Experience amount.
+	 * @param sp : Skill point amount.
+	 */
+	public static void rewardExpAndSp(Player player, long exp, int sp)
+	{
+		player.addExpAndSp((long) (exp * Config.RATE_QUEST_REWARD_XP), (int) (sp * Config.RATE_QUEST_REWARD_SP));
+	}
+	
+	/**
+	 * Send a packet in order to play sound at client terminal.
+	 * @param player : The {@link Player} to play sound.
+	 * @param sound : The sound name to be played.
+	 */
+	public static void playSound(Player player, String sound)
+	{
+		player.sendPacket(new PlaySound(sound));
+	}
+	
+	public static void showQuestionMark(Player player, int number)
+	{
+		player.sendPacket(new TutorialShowQuestionMark(number));
+	}
+	
+	public static void playTutorialVoice(Player player, String voice)
+	{
+		player.sendPacket(new PlaySound(2, voice, player));
+	}
+	
+	public static void showTutorialHTML(Player player, String html)
+	{
+		player.sendPacket(new TutorialShowHtml(HtmCache.getInstance().getHtmForce("data/html/script/feature/Tutorial/" + html)));
+	}
+	
+	public static void closeTutorialHtml(Player player)
+	{
+		player.sendPacket(TutorialCloseHtml.STATIC_PACKET);
+	}
+	
+	public static void onTutorialClientEvent(Player player, int number)
+	{
+		player.sendPacket(new TutorialEnableClientEvent(number));
+	}
+	
+	public static void callSkill(Creature caster, Creature target, L2Skill skill)
+	{
+		// Send animation.
+		caster.broadcastPacket(new MagicSkillUse(caster, target, skill.getId(), skill.getLevel(), skill.getHitTime(), 0));
+		
+		// Define target.
+		final Creature[] targets = new Creature[]
+		{
+			target
+		};
+		
+		// Handle the effect.
+		final ISkillHandler handler = SkillHandler.getInstance().getHandler(skill.getSkillType());
+		if (handler != null)
+			handler.useSkill(caster, skill, targets);
+		else
+			skill.useSkill(caster, targets);
+		
+		// Send message to the target.
+		target.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.YOU_FEEL_S1_EFFECT).addSkillName(skill));
 	}
 	
 	/**
@@ -724,38 +1341,38 @@ public class Quest
 	 *            <li><u>otherwise:</u> The message to be shown in a chat box.</li>
 	 *            </ul>
 	 */
-	protected void showResult(Npc npc, Creature creature, String result)
+	private void showResult(Npc npc, Creature creature, String result)
 	{
-		if (creature == null)
+		if (creature == null || result == null || result.isEmpty())
 			return;
 		
 		final Player player = creature.getActingPlayer();
-		if (player == null || result == null || result.isEmpty())
+		if (player == null)
 			return;
 		
 		if (result.endsWith(".htm") || result.endsWith(".html"))
 		{
-			NpcHtmlMessage npcReply = new NpcHtmlMessage(npc == null ? 0 : npc.getNpcId());
+			final NpcHtmlMessage html = new NpcHtmlMessage(npc == null ? 0 : npc.getObjectId());
 			if (isRealQuest())
-				npcReply.setFile("./data/html/scripts/quests/" + getName() + "/" + result);
+				html.setFile("./data/html/script/quest/" + getName() + "/" + result);
 			else
-				npcReply.setFile("./data/html/scripts/" + getDescr() + "/" + getName() + "/" + result);
+				html.setFile("./data/html/script/" + getDescr() + "/" + getName() + "/" + result);
 			
 			if (npc != null)
-				npcReply.replace("%objectId%", npc.getObjectId());
+				html.replace("%objectId%", npc.getObjectId());
 			
-			player.sendPacket(npcReply);
+			player.sendPacket(html);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 		}
 		else if (result.startsWith("<html>"))
 		{
-			NpcHtmlMessage npcReply = new NpcHtmlMessage(npc == null ? 0 : npc.getNpcId());
-			npcReply.setHtml(result);
+			final NpcHtmlMessage html = new NpcHtmlMessage(npc == null ? 0 : npc.getObjectId());
+			html.setHtml(result);
 			
 			if (npc != null)
-				npcReply.replace("%objectId%", npc.getObjectId());
+				html.replace("%objectId%", npc.getObjectId());
 			
-			player.sendPacket(npcReply);
+			player.sendPacket(html);
 			player.sendPacket(ActionFailed.STATIC_PACKET);
 		}
 		else
@@ -769,9 +1386,9 @@ public class Quest
 	public final String getHtmlText(String fileName)
 	{
 		if (isRealQuest())
-			return HtmCache.getInstance().getHtmForce("./data/html/scripts/quests/" + getName() + "/" + fileName);
+			return HtmCache.getInstance().getHtmForce("./data/html/script/quest/" + getName() + "/" + fileName);
 		
-		return HtmCache.getInstance().getHtmForce("./data/html/scripts/" + getDescr() + "/" + getName() + "/" + fileName);
+		return HtmCache.getInstance().getHtmForce("./data/html/script/" + getDescr() + "/" + getName() + "/" + fileName);
 	}
 	
 	/**
@@ -1217,36 +1834,34 @@ public class Quest
 	}
 	
 	/**
-	 * Quest event listener for {@link Npc} performing faction call event on another {@link Npc}.
-	 * @param npc : Called {@link Npc}.
-	 * @param caller : Noticing {@link Npc}.
-	 * @param attacker : Attacking {@link Player} (his {@link Summon}).
-	 * @param isPet : Marks {@link Player}'s {@link Summon} is attacking.
+	 * Quest event listener for {@link Attackable} performing faction call event on another {@link Attackable}.
+	 * @param caller : The {@link Attackable} calling for assistance.
+	 * @param called : The {@link Attackable} called by {@link Attackable} caller to assist.
+	 * @param target : The {@link Creature} target affected by caller/called.
 	 */
-	public final void notifyFactionCall(Npc npc, Npc caller, Player attacker, boolean isPet)
+	public final void notifyFactionCall(Attackable caller, Attackable called, Creature target)
 	{
 		String res = null;
 		try
 		{
-			res = onFactionCall(npc, caller, attacker, isPet);
+			res = onFactionCall(caller, called, target);
 		}
 		catch (Exception e)
 		{
 			LOGGER.warn(toString(), e);
 			return;
 		}
-		showResult(npc, attacker, res);
+		showResult(caller, target, res);
 	}
 	
 	/**
-	 * Quest event for {@link Npc} performing faction call event on another {@link Npc}.
-	 * @param npc : Called {@link Npc}.
-	 * @param caller : Noticing {@link Npc}.
-	 * @param attacker : Attacking {@link Player} (his {@link Summon}).
-	 * @param isPet : Marks {@link Player}'s {@link Summon} is attacking.
+	 * Quest event for {@link Attackable} performing faction call event on another {@link Attackable}.
+	 * @param caller : The {@link Attackable} calling for assistance.
+	 * @param called : The {@link Attackable} called by {@link Attackable} caller to assist.
+	 * @param target : The {@link Creature} target affected by caller/called.
 	 * @return Either text message, html message or html file. Null when not defined.
 	 */
-	public String onFactionCall(Npc npc, Npc caller, Player attacker, boolean isPet)
+	public String onFactionCall(Attackable caller, Attackable called, Creature target)
 	{
 		return null;
 	}
@@ -1470,7 +2085,7 @@ public class Quest
 	 * @param targets : Affected targets.
 	 * @param isPet : Marks {@link Player}'s {@link Summon} is casting.
 	 */
-	public final void notifySkillSee(Npc npc, Player caster, L2Skill skill, WorldObject[] targets, boolean isPet)
+	public final void notifySkillSee(Npc npc, Player caster, L2Skill skill, Creature[] targets, boolean isPet)
 	{
 		ThreadPool.execute(() ->
 		{
@@ -1497,7 +2112,7 @@ public class Quest
 	 * @param isPet : Marks {@link Player}'s {@link Summon} is casting.
 	 * @return Either text message, html message or html file. Null when not defined.
 	 */
-	public String onSkillSee(Npc npc, Player caster, L2Skill skill, WorldObject[] targets, boolean isPet)
+	public String onSkillSee(Npc npc, Player caster, L2Skill skill, Creature[] targets, boolean isPet)
 	{
 		return null;
 	}
@@ -1570,7 +2185,6 @@ public class Quest
 			LOGGER.warn(toString(), e);
 			return;
 		}
-		player.setLastQuestNpcObject(npc.getObjectId());
 		showResult(npc, player, res);
 	}
 	

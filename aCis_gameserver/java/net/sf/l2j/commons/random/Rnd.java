@@ -5,7 +5,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * A central randomness provider. Currently all methods delegate to {@link ThreadLocalRandom}.
- * @author _dev_
  */
 public final class Rnd
 {
@@ -88,7 +87,7 @@ public final class Rnd
 	 */
 	public static final <T> T get(List<T> list)
 	{
-		if (list == null || list.size() == 0)
+		if (list == null || list.isEmpty())
 			return null;
 		
 		return list.get(get(list.size()));

@@ -13,15 +13,6 @@ public class SellProcessItem
 		_price = price;
 	}
 	
-	public boolean addToTradeList(TradeList list)
-	{
-		if ((Integer.MAX_VALUE / _count) < _price)
-			return false;
-		
-		list.addItem(_objectId, _count, _price);
-		return true;
-	}
-	
 	public int getObjectId()
 	{
 		return _objectId;
@@ -35,5 +26,10 @@ public class SellProcessItem
 	public long getPrice()
 	{
 		return _count * _price;
+	}
+	
+	public boolean addToTradeList(TradeList list)
+	{
+		return list.addItem(_objectId, _count, _price) != null;
 	}
 }

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.enums.skills.SkillType;
 import net.sf.l2j.gameserver.skills.L2Skill;
@@ -15,18 +15,15 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
-/**
- * @author mkizub
- */
 public final class DocumentSkill extends DocumentBase
 {
 	public class Skill
 	{
 		public int id;
 		public String name;
-		public StatsSet[] sets;
-		public StatsSet[] enchsets1;
-		public StatsSet[] enchsets2;
+		public StatSet[] sets;
+		public StatSet[] enchsets1;
+		public StatSet[] enchsets2;
 		public int currentLevel;
 		public List<L2Skill> skills = new ArrayList<>();
 		public List<L2Skill> currentSkills = new ArrayList<>();
@@ -46,7 +43,7 @@ public final class DocumentSkill extends DocumentBase
 	}
 	
 	@Override
-	protected StatsSet getStatsSet()
+	protected StatSet getStatSet()
 	{
 		return _currentSkill.sets[_currentSkill.currentLevel];
 	}
@@ -127,13 +124,13 @@ public final class DocumentSkill extends DocumentBase
 		
 		_currentSkill.id = skillId;
 		_currentSkill.name = skillName;
-		_currentSkill.sets = new StatsSet[lastLvl];
-		_currentSkill.enchsets1 = new StatsSet[enchantLevels1];
-		_currentSkill.enchsets2 = new StatsSet[enchantLevels2];
+		_currentSkill.sets = new StatSet[lastLvl];
+		_currentSkill.enchsets1 = new StatSet[enchantLevels1];
+		_currentSkill.enchsets2 = new StatSet[enchantLevels2];
 		
 		for (int i = 0; i < lastLvl; i++)
 		{
-			_currentSkill.sets[i] = new StatsSet();
+			_currentSkill.sets[i] = new StatSet();
 			_currentSkill.sets[i].set("skill_id", _currentSkill.id);
 			_currentSkill.sets[i].set("level", i + 1);
 			_currentSkill.sets[i].set("name", _currentSkill.name);
@@ -158,7 +155,7 @@ public final class DocumentSkill extends DocumentBase
 		}
 		for (int i = 0; i < enchantLevels1; i++)
 		{
-			_currentSkill.enchsets1[i] = new StatsSet();
+			_currentSkill.enchsets1[i] = new StatSet();
 			_currentSkill.enchsets1[i].set("skill_id", _currentSkill.id);
 			// currentSkill.enchsets1[i] = currentSkill.sets[currentSkill.sets.length-1];
 			_currentSkill.enchsets1[i].set("level", i + 101);
@@ -183,7 +180,7 @@ public final class DocumentSkill extends DocumentBase
 		
 		for (int i = 0; i < enchantLevels2; i++)
 		{
-			_currentSkill.enchsets2[i] = new StatsSet();
+			_currentSkill.enchsets2[i] = new StatSet();
 			// currentSkill.enchsets2[i] = currentSkill.sets[currentSkill.sets.length-1];
 			_currentSkill.enchsets2[i].set("skill_id", _currentSkill.id);
 			_currentSkill.enchsets2[i].set("level", i + 141);

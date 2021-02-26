@@ -92,7 +92,7 @@ public class CreatureStatus<T extends Creature>
 			final int period = Formulas.getRegeneratePeriod(_actor);
 			
 			// Create the HP/MP/CP regeneration task.
-			_regTask = ThreadPool.scheduleAtFixedRate(() -> doRegeneration(), period, period);
+			_regTask = ThreadPool.scheduleAtFixedRate(this::doRegeneration, period, period);
 		}
 	}
 	

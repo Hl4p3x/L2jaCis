@@ -16,41 +16,41 @@ public class ChatTell implements IChatHandler
 	};
 	
 	@Override
-	public void handleChat(SayType type, Player activeChar, String target, String text)
+	public void handleChat(SayType type, Player player, String target, String text)
 	{
 		if (target == null)
 			return;
 		
-		final Player receiver = World.getInstance().getPlayer(target);
-		if (receiver == null || receiver.getClient().isDetached())
+		final Player targetPlayer = World.getInstance().getPlayer(target);
+		if (targetPlayer == null || targetPlayer.getClient().isDetached())
 		{
-			activeChar.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
+			player.sendPacket(SystemMessageId.TARGET_IS_NOT_FOUND_IN_THE_GAME);
 			return;
 		}
 		
-		if (receiver.isInJail() || receiver.isChatBanned())
+		if (targetPlayer.isInJail() || targetPlayer.isChatBanned())
 		{
-			activeChar.sendPacket(SystemMessageId.TARGET_IS_CHAT_BANNED);
+			player.sendPacket(SystemMessageId.TARGET_IS_CHAT_BANNED);
 			return;
 		}
 		
-		if (!activeChar.isGM())
+		if (!player.isGM())
 		{
-			if (receiver.getBlockList().isBlockingAll())
+			if (targetPlayer.getBlockList().isBlockingAll())
 			{
-				activeChar.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addCharName(receiver));
+				player.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_BLOCKED_EVERYTHING).addCharName(targetPlayer));
 				return;
 			}
 			
-			if (receiver.getBlockList().isInBlockList(activeChar))
+			if (targetPlayer.getBlockList().isInBlockList(player))
 			{
-				activeChar.sendPacket(SystemMessageId.THE_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
+				player.sendPacket(SystemMessageId.THE_PERSON_IS_IN_MESSAGE_REFUSAL_MODE);
 				return;
 			}
 		}
 		
-		receiver.sendPacket(new CreatureSay(activeChar, type, text));
-		activeChar.sendPacket(new CreatureSay(activeChar.getObjectId(), type, "->" + receiver.getName(), text));
+		targetPlayer.sendPacket(new CreatureSay(player, type, text));
+		player.sendPacket(new CreatureSay(player.getObjectId(), type, "->" + targetPlayer.getName(), text));
 	}
 	
 	@Override

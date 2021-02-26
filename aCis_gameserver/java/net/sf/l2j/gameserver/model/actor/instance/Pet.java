@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 
+import net.sf.l2j.commons.math.MathUtil;
 import net.sf.l2j.commons.pool.ConnectionPool;
 import net.sf.l2j.commons.pool.ThreadPool;
 import net.sf.l2j.commons.random.Rnd;
@@ -78,8 +79,6 @@ public class Pet extends Summon
 	public Pet(int objectId, NpcTemplate template, Player owner, ItemInstance control)
 	{
 		super(objectId, template, owner);
-		
-		getPosition().set(owner.getX() + 50, owner.getY() + 100, owner.getZ());
 		
 		_inventory = new PetInventory(this);
 		_controlItemId = control.getObjectId();
@@ -344,14 +343,21 @@ public class Pet extends Summon
 	}
 	
 	@Override
-	public final int getSkillLevel(int skillId)
+	public int getSkillLevel(int skillId)
 	{
 		// Unknown skill. Return 0.
 		if (getSkill(skillId) == null)
 			return 0;
 		
-		// Max level for pet is 80, max level for pet skills is 12 => ((80 - 8) / 6) = 12.
-		return Math.max(1, Math.min((getStatus().getLevel() - 8) / 6, SkillTable.getInstance().getMaxLevel(skillId)));
+		// Pet levels 1-69 increase the skill level by 1 per 10 levels. From 70+ level increase the skill level by 1 per 5 levels.
+		int level = getStatus().getLevel();
+		if (level < 70)
+			level = 1 + level / 10;
+		else
+			level = 8 + (level - 70) / 5;
+		
+		// Validate skill level.
+		return MathUtil.limit(level, 1, SkillTable.getInstance().getMaxLevel(skillId));
 	}
 	
 	/**

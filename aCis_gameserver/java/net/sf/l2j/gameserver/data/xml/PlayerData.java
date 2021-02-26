@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.sf.l2j.commons.data.StatSet;
 import net.sf.l2j.commons.data.xml.IXmlReader;
-import net.sf.l2j.commons.util.StatsSet;
 
 import net.sf.l2j.gameserver.enums.actors.ClassId;
 import net.sf.l2j.gameserver.model.actor.template.PlayerTemplate;
@@ -49,7 +49,7 @@ public class PlayerData implements IXmlReader
 	{
 		forEach(doc, "list", listNode -> forEach(listNode, "class", classNode ->
 		{
-			final StatsSet set = new StatsSet();
+			final StatSet set = new StatSet();
 			forEach(classNode, "set", setNode -> set.putAll(parseAttributes(setNode)));
 			forEach(classNode, "items", itemsNode ->
 			{

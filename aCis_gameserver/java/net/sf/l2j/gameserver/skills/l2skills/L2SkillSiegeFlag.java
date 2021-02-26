@@ -1,6 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.data.manager.CastleManager;
 import net.sf.l2j.gameserver.enums.SiegeSide;
@@ -21,7 +21,7 @@ public class L2SkillSiegeFlag extends L2Skill
 {
 	private final boolean _isAdvanced;
 	
-	public L2SkillSiegeFlag(StatsSet set)
+	public L2SkillSiegeFlag(StatSet set)
 	{
 		super(set);
 		
@@ -44,7 +44,7 @@ public class L2SkillSiegeFlag extends L2Skill
 			return;
 		
 		// Template initialization
-		final StatsSet npcDat = new StatsSet();
+		final StatSet npcDat = new StatSet();
 		
 		npcDat.set("id", 35062);
 		npcDat.set("type", "");

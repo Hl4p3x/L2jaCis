@@ -32,7 +32,7 @@ public class CastleGatekeeper extends Folk
 		if (command.startsWith("tele"))
 		{
 			if (_teleportTask == null)
-				_teleportTask = ThreadPool.schedule(() -> oustPlayers(), getTeleportDelay() * 1000);
+				_teleportTask = ThreadPool.schedule(this::oustPlayers, getTeleportDelay() * 1000L);
 			
 			final NpcHtmlMessage html = new NpcHtmlMessage(getObjectId());
 			html.setFile("data/html/castleteleporter/MassGK-1.htm");

@@ -128,6 +128,23 @@ public class SummonAI extends PlayableAI
 	}
 	
 	@Override
+	protected void thinkFollow()
+	{
+		if (getActor().denyAiAction() || getActor().isMovementDisabled())
+			return;
+		
+		final Creature target = _currentIntention.getFinalTarget();
+		if (getActor() == target)
+			return;
+		
+		final boolean isShiftPressed = _currentIntention.isShiftPressed();
+		if (isShiftPressed)
+			return;
+		
+		getActor().getMove().maybeStartFriendlyFollow(target, 70);
+	}
+	
+	@Override
 	protected void thinkInteract()
 	{
 		final WorldObject target = _currentIntention.getTarget();
@@ -213,28 +230,28 @@ public class SummonAI extends PlayableAI
 		}
 		else
 		{
+			SystemMessage sm;
+			
 			if (item.getItemType() instanceof ArmorType || item.getItemType() instanceof WeaponType)
 			{
-				SystemMessage msg;
 				if (item.getEnchantLevel() > 0)
-					msg = SystemMessage.getSystemMessage(SystemMessageId.ATTENTION_S1_PET_PICKED_UP_S2_S3).addCharName(getActor().getOwner()).addNumber(item.getEnchantLevel()).addItemName(item.getItemId());
+					sm = SystemMessage.getSystemMessage(SystemMessageId.ATTENTION_S1_PET_PICKED_UP_S2_S3).addCharName(getActor().getOwner()).addNumber(item.getEnchantLevel()).addItemName(item.getItemId());
 				else
-					msg = SystemMessage.getSystemMessage(SystemMessageId.ATTENTION_S1_PET_PICKED_UP_S2).addCharName(getActor().getOwner()).addItemName(item.getItemId());
+					sm = SystemMessage.getSystemMessage(SystemMessageId.ATTENTION_S1_PET_PICKED_UP_S2).addCharName(getActor().getOwner()).addItemName(item.getItemId());
 				
-				getOwner().broadcastPacketInRadius(msg, 1400);
+				getOwner().broadcastPacketInRadius(sm, 1400);
 			}
 			
-			SystemMessage sm2;
 			if (item.getItemId() == 57)
-				sm2 = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S1_ADENA).addItemNumber(item.getCount());
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S1_ADENA).addItemNumber(item.getCount());
 			else if (item.getEnchantLevel() > 0)
-				sm2 = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S1_S2).addNumber(item.getEnchantLevel()).addItemName(item.getItemId());
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S1_S2).addNumber(item.getEnchantLevel()).addItemName(item.getItemId());
 			else if (item.getCount() > 1)
-				sm2 = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S2_S1_S).addItemName(item.getItemId()).addItemNumber(item.getCount());
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S2_S1_S).addItemName(item.getItemId()).addItemNumber(item.getCount());
 			else
-				sm2 = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S1).addItemName(item.getItemId());
+				sm = SystemMessage.getSystemMessage(SystemMessageId.PET_PICKED_S1).addItemName(item.getItemId());
 			
-			getOwner().sendPacket(sm2);
+			getOwner().sendPacket(sm);
 			getActor().getInventory().addItem("Pickup", item, getOwner(), getActor());
 			getOwner().sendPacket(new PetItemList(getActor()));
 		}

@@ -37,7 +37,7 @@ public class FishShots implements IItemHandler
 			return;
 		}
 		
-		if (!player.destroyItemWithoutTrace("Consume", item.getObjectId(), 1, null, false))
+		if (!player.destroyItemWithoutTrace(item.getObjectId(), 1))
 		{
 			player.sendPacket(SystemMessageId.NOT_ENOUGH_SOULSHOTS);
 			return;

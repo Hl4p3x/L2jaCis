@@ -1,7 +1,6 @@
 package net.sf.l2j.gameserver.skills.l2skills;
 
-import net.sf.l2j.commons.random.Rnd;
-import net.sf.l2j.commons.util.StatsSet;
+import net.sf.l2j.commons.data.StatSet;
 
 import net.sf.l2j.gameserver.model.WorldObject;
 import net.sf.l2j.gameserver.model.actor.Creature;
@@ -13,17 +12,13 @@ public class L2SkillSpawn extends L2Skill
 {
 	private final int _npcId;
 	private final int _despawnDelay;
-	private final boolean _summonSpawn;
-	private final boolean _randomOffset;
 	
-	public L2SkillSpawn(StatsSet set)
+	public L2SkillSpawn(StatSet set)
 	{
 		super(set);
 		
 		_npcId = set.getInteger("npcId", 0);
 		_despawnDelay = set.getInteger("despawnDelay", 0);
-		_summonSpawn = set.getBool("isSummonSpawn", false);
-		_randomOffset = set.getBool("randomOffset", true);
 	}
 	
 	@Override
@@ -34,20 +29,13 @@ public class L2SkillSpawn extends L2Skill
 		
 		try
 		{
+			// Create spawn.
 			final Spawn spawn = new Spawn(_npcId);
-			
-			int x = caster.getX();
-			int y = caster.getY();
-			if (_randomOffset)
-			{
-				x += Rnd.nextBoolean() ? Rnd.get(20, 50) : Rnd.get(-50, -20);
-				y += Rnd.nextBoolean() ? Rnd.get(20, 50) : Rnd.get(-50, -20);
-			}
-			spawn.setLoc(x, y, caster.getZ() + 20, caster.getHeading());
-			
 			spawn.setRespawnState(false);
+			spawn.setLoc(caster.getPosition());
 			
-			final Npc npc = spawn.doSpawn(_summonSpawn);
+			// Spawn NPC.
+			final Npc npc = spawn.doSpawn(false);
 			if (_despawnDelay > 0)
 				npc.scheduleDespawn(_despawnDelay);
 		}

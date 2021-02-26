@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
 
 import net.sf.l2j.commons.data.xml.IXmlReader;
 import net.sf.l2j.commons.pool.ThreadPool;
@@ -24,6 +25,8 @@ public final class ScriptData implements IXmlReader, Runnable
 	private final List<Quest> _quests = new ArrayList<>();
 	private final List<ScheduledQuest> _scheduled = new LinkedList<>();
 	
+	private ScheduledFuture<?> _scheduledTask;
+	
 	public ScriptData()
 	{
 		load();
@@ -35,7 +38,7 @@ public final class ScriptData implements IXmlReader, Runnable
 		parseFile("./data/xml/scripts.xml");
 		LOGGER.info("Loaded {} regular scripts and {} scheduled scripts.", _quests.size(), _scheduled.size());
 		
-		ThreadPool.scheduleAtFixedRate(this, 0, PERIOD);
+		_scheduledTask = ThreadPool.scheduleAtFixedRate(this, 0, PERIOD);
 	}
 	
 	@Override
@@ -102,8 +105,28 @@ public final class ScriptData implements IXmlReader, Runnable
 			// When next action triggers in closest period, schedule the script action.
 			final long eta = next - script.getTimeNext();
 			if (eta > 0)
-				ThreadPool.schedule(new Scheduler(script), PERIOD - eta);
+				script.setTask(ThreadPool.schedule(new Scheduler(script), PERIOD - eta));
 		}
+	}
+	
+	public void reload()
+	{
+		// Stop the general 5min task.
+		if (_scheduledTask != null)
+		{
+			_scheduledTask.cancel(false);
+			_scheduledTask = null;
+		}
+		
+		_quests.clear();
+		
+		// Stop the individual scheduled tasks.
+		for (ScheduledQuest script : _scheduled)
+			script.cleanTask();
+		
+		_scheduled.clear();
+		
+		load();
 	}
 	
 	/**
@@ -152,7 +175,7 @@ public final class ScriptData implements IXmlReader, Runnable
 			// In case the next action is triggered before the resolution, schedule the the action again.
 			final long eta = System.currentTimeMillis() + PERIOD - _script.getTimeNext();
 			if (eta > 0)
-				ThreadPool.schedule(this, PERIOD - eta);
+				_script.setTask(ThreadPool.schedule(this, PERIOD - eta));
 		}
 	}
 	

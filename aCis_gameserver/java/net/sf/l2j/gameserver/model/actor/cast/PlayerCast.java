@@ -12,13 +12,11 @@ import net.sf.l2j.gameserver.enums.SiegeSide;
 import net.sf.l2j.gameserver.enums.ZoneId;
 import net.sf.l2j.gameserver.enums.skills.SkillTargetType;
 import net.sf.l2j.gameserver.enums.skills.SkillType;
-import net.sf.l2j.gameserver.geoengine.GeoEngine;
 import net.sf.l2j.gameserver.handler.ISkillHandler;
 import net.sf.l2j.gameserver.handler.SkillHandler;
 import net.sf.l2j.gameserver.handler.skillhandlers.StriderSiegeAssault;
 import net.sf.l2j.gameserver.handler.skillhandlers.SummonFriend;
 import net.sf.l2j.gameserver.handler.skillhandlers.TakeCastle;
-import net.sf.l2j.gameserver.model.WorldRegion;
 import net.sf.l2j.gameserver.model.actor.Creature;
 import net.sf.l2j.gameserver.model.actor.Player;
 import net.sf.l2j.gameserver.model.actor.instance.Monster;
@@ -41,13 +39,15 @@ import net.sf.l2j.gameserver.skills.l2skills.L2SkillSummon;
  */
 public class PlayerCast extends PlayableCast<Player>
 {
+	private final Location _signetLocation = new Location(Location.DUMMY_LOC);
+	
 	public PlayerCast(Player actor)
 	{
 		super(actor);
 	}
 	
 	@Override
-	public void doFusionCasttimeCast(L2Skill skill, Creature target)
+	public void doFusionCast(L2Skill skill, Creature target)
 	{
 		final int reuseDelay = skill.getReuseDelay();
 		
@@ -93,7 +93,7 @@ public class PlayerCast extends PlayableCast<Player>
 		_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.USE_S1).addSkillName(skill));
 		_actor.sendPacket(new SetupGauge(GaugeColor.BLUE, _hitTime));
 		
-		_castTask = ThreadPool.schedule(() -> onMagicEffectHitTimer(), hitTime > 410 ? hitTime - 400 : 0);
+		_castTask = ThreadPool.schedule(this::onMagicEffectHitTimer, hitTime > 410 ? hitTime - 400 : 0);
 	}
 	
 	@Override
@@ -180,7 +180,7 @@ public class PlayerCast extends PlayableCast<Player>
 				_skill.useSkill(_actor, _targets);
 		}
 		
-		_castTask = ThreadPool.schedule(() -> onMagicFinalizer(), 0);
+		_castTask = ThreadPool.schedule(this::onMagicFinalizer, 0);
 	}
 	
 	@Override
@@ -231,7 +231,7 @@ public class PlayerCast extends PlayableCast<Player>
 			return false;
 		}
 		
-		if (skill.getTargetType() == SkillTargetType.GROUND && _actor.getCurrentSkillWorldPosition() == null)
+		if (skill.getTargetType() == SkillTargetType.GROUND && _signetLocation.equals(Location.DUMMY_LOC))
 			return false;
 		
 		if (_actor.isInDuel())
@@ -275,19 +275,7 @@ public class PlayerCast extends PlayableCast<Player>
 		if (!super.canDoCast(target, skill, isCtrlPressed, itemObjectId))
 			return false;
 		
-		if (!skill.checkCondition(_actor, target, false))
-			return false;
-		
-		final SkillTargetType skillTargetType = skill.getTargetType();
-		final Location worldPosition = _actor.getCurrentSkillWorldPosition();
-		if (skillTargetType == SkillTargetType.GROUND && !GeoEngine.getInstance().canSeeLocation(_actor, worldPosition))
-		{
-			_actor.sendPacket(SystemMessageId.CANT_SEE_TARGET);
-			return false;
-		}
-		
-		final SkillType skillType = skill.getSkillType();
-		switch (skillType)
+		switch (skill.getSkillType())
 		{
 			case SUMMON:
 				if (!((L2SkillSummon) skill).isCubic() && (_actor.getSummon() != null || _actor.isMounted()))
@@ -332,20 +320,8 @@ public class PlayerCast extends PlayableCast<Player>
 				}
 				break;
 			
-			case SIGNET:
-			case SIGNET_CASTTIME:
-				final WorldRegion region = _actor.getRegion();
-				if (region == null)
-					return false;
-				
-				if (!region.checkEffectRangeInsidePeaceZone(skill, skillTargetType == SkillTargetType.GROUND ? worldPosition : _actor.getPosition()))
-				{
-					_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
-					return false;
-				}
-				break;
-			
 			case SPOIL:
+			case DRAIN_SOUL:
 				if (!(target instanceof Monster))
 				{
 					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
@@ -354,25 +330,20 @@ public class PlayerCast extends PlayableCast<Player>
 				break;
 			
 			case SWEEP:
-				final int spoilerId = ((Monster) target).getSpoilState().getSpoilerId();
-				if (spoilerId == 0)
+				if (skill.getTargetType() != SkillTargetType.AREA_CORPSE_MOB)
 				{
-					_actor.sendPacket(SystemMessageId.SWEEPER_FAILED_TARGET_NOT_SPOILED);
-					return false;
-				}
-				
-				if (!_actor.isLooterOrInLooterParty(spoilerId))
-				{
-					_actor.sendPacket(SystemMessageId.SWEEP_NOT_ALLOWED);
-					return false;
-				}
-				break;
-			
-			case DRAIN_SOUL:
-				if (!(target instanceof Monster))
-				{
-					_actor.sendPacket(SystemMessageId.INVALID_TARGET);
-					return false;
+					final int spoilerId = ((Monster) target).getSpoilState().getSpoilerId();
+					if (spoilerId == 0)
+					{
+						_actor.sendPacket(SystemMessageId.SWEEPER_FAILED_TARGET_NOT_SPOILED);
+						return false;
+					}
+					
+					if (!_actor.isLooterOrInLooterParty(spoilerId))
+					{
+						_actor.sendPacket(SystemMessageId.SWEEP_NOT_ALLOWED);
+						return false;
+					}
 				}
 				break;
 			
@@ -400,35 +371,19 @@ public class PlayerCast extends PlayableCast<Player>
 				
 				break;
 		}
-		
-		if (_actor.isInOlympiadMode() && (skill.isHeroSkill() || skillType == SkillType.RESURRECT))
-		{
-			_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.THIS_SKILL_IS_NOT_AVAILABLE_FOR_THE_OLYMPIAD_EVENT));
-			return false;
-		}
-		
-		if (skill.getItemConsumeId() > 0)
-		{
-			final ItemInstance requiredItems = _actor.getInventory().getItemByItemId(skill.getItemConsumeId());
-			if (requiredItems == null || requiredItems.getCount() < skill.getItemConsume())
-			{
-				_actor.sendPacket(SystemMessage.getSystemMessage(SystemMessageId.S1_CANNOT_BE_USED).addSkillName(skill));
-				return false;
-			}
-		}
-		
 		return true;
 	}
 	
 	/**
-	 * Used by {@link #doFusionCasttimeCast(L2Skill, Creature)}
+	 * Used by {@link #doFusionCast(L2Skill, Creature)}
 	 */
-	public void onMagicEffectHitTimer()
+	private final void onMagicEffectHitTimer()
 	{
-		_targets = _skill.isSingleTarget() ? new Creature[]
-		{
-			_target
-		} : _skill.getTargetList(_actor, _target);
+		// Content was cleaned meantime, simply return doing nothing.
+		if (!isCastingNow())
+			return;
+		
+		_targets = _skill.getTargetList(_actor, _target);
 		
 		if (_actor.getFusionSkill() != null)
 		{
@@ -455,11 +410,11 @@ public class PlayerCast extends PlayableCast<Player>
 			_actor.getStatus().reduceMp(mpConsume);
 		}
 		
-		_castTask = ThreadPool.schedule(() -> onMagicEffectFinalizer(), 400);
+		_castTask = ThreadPool.schedule(this::onMagicEffectFinalizer, 400);
 	}
 	
 	/**
-	 * Used by {@link #doFusionCasttimeCast(L2Skill, Creature)}
+	 * Used by {@link #doFusionCast(L2Skill, Creature)}
 	 */
 	public void onMagicEffectFinalizer()
 	{
@@ -471,5 +426,10 @@ public class PlayerCast extends PlayableCast<Player>
 		clearCastTask();
 		
 		_actor.getAI().notifyEvent(AiEventType.FINISHED_CASTING, null, null);
+	}
+	
+	public Location getSignetLocation()
+	{
+		return _signetLocation;
 	}
 }
